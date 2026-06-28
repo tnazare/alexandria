@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/alexandria
+    username: alexandria
+    password: alexandria
+
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.alexandria: DEBUG
+    org.hibernate.SQL: DEBUG
