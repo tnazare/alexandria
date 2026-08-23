@@ -4,6 +4,9 @@ export default defineConfig({
   title: 'Alexandria',
   description: 'Open-source, self-hosted enterprise skill layer for AI-assisted software engineering',
   outDir: '.vitepress/dist',
+  ignoreDeadLinks: [
+    /^https?:\/\/localhost/
+  ],
 
   themeConfig: {
     nav: [
