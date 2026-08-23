@@ -61,11 +61,10 @@ function App() {
 
           {/* Catalog routes — any authenticated user */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/catalog" element={<CatalogPage />} />
-            <Route
-              path="/catalog/skills/:skillId"
-              element={<SkillDetailPage />}
-            />
+            <Route path="/catalog" element={<BrowserLayout />}>
+              <Route index element={<CatalogPage />} />
+              <Route path="skills/:skillId" element={<SkillDetailPage />} />
+            </Route>
           </Route>
 
           {/* Root redirect — send to admin if admin, otherwise catalog */}
