@@ -29,7 +29,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Add FK constraint on audit_events.actor_user_id referencing users(id) ON DELETE RESTRICT
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
 
-- [ ] 3. Backend entities and repositories
+- [x] 3. Backend entities and repositories
   - [x] 3.1 Create Role enum and UserEntity
     - Create `Role` enum in `alexandria-entities` module at `com.alexandria.user.entity.Role` with values: Read_Only_Auditor(0), Skill_Consumer(1), Skill_Author(2), Reviewer(3), Team_Owner(4), Catalog_Admin(5), Org_Admin(6) and privilege field with `hasAtLeast(Role)` and `isAdmin()` methods
     - Create `UserEntity` extending `BaseEntity` in `com.alexandria.user.entity` with fields: externalSubject (String, not null), email (String, not null), displayName (String, nullable), role (String, not null default "Skill_Consumer"), enabled (boolean, default true). Map to `users` table
@@ -43,13 +43,13 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `TeamMemberRepository` in `com.alexandria.team` with methods: `findByTeamId(UUID teamId)`, `findByTeamIdAndUserId(UUID teamId, UUID userId)`, `countByTeamIdAndTeamRole(UUID teamId, String role)`, `deleteByTeamIdAndUserId(UUID teamId, UUID userId)`
     - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.9_
 
-  - [-] 3.3 Write property test for Role enum validation (Property 2)
+  - [x] 3.3 Write property test for Role enum validation (Property 2)
     - **Property 2: Role enum membership validation**
     - Generate random strings and verify that only the 7 allowed role values are accepted; all others are rejected. Similarly verify team_role accepts only "owner" or "member"
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 2.9, 6.7**
 
-- [ ] 4. Backend security (OIDC, provisioning filter, RBAC)
+- [x] 4. Backend security (OIDC, provisioning filter, RBAC)
   - [x] 4.1 Configure OIDC resource server and update SecurityConfig
     - Add `spring-boot-starter-oauth2-resource-server` dependency to `alexandria-service/pom.xml`
     - Update `application.yml` with `spring.security.oauth2.resourceserver.jwt.issuer-uri` and audience configuration using `${OIDC_ISSUER_URI}` and `${OIDC_CLIENT_ID}` environment variables
@@ -57,27 +57,27 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Update `SecurityConfig` to configure JWT resource server, permit `/actuator/health` and `/actuator/info` without auth, require authentication for all other endpoints, and set session policy to STATELESS
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [-] 4.2 Implement AlexandriaUserDetails and UserProvisioningFilter
+  - [x] 4.2 Implement AlexandriaUserDetails and UserProvisioningFilter
     - Create `AlexandriaUserDetails` in `com.alexandria.auth` implementing custom principal with userId (UUID), organizationId (UUID), role (Role), email (String), and `getAuthorities()` returning a single GrantedAuthority matching the role
     - Create `UserProvisioningFilter` as a `OncePerRequestFilter` in `com.alexandria.config` that: extracts `sub` and `email` claims from `JwtAuthenticationToken`, validates email format (rejects with 403 if missing/invalid), looks up user by (orgId, sub), creates new user with Skill_Consumer role if not found, builds `AlexandriaUserDetails`, replaces SecurityContext authentication with enriched principal
     - Register the filter in SecurityConfig after `BearerTokenAuthenticationFilter`
     - Handle provisioning failures: respond 500, log audit event with action "user.auto_provision_failed"
     - _Requirements: 4.1, 4.2, 4.4, 4.5, 4.6, 4.7_
 
-  - [-] 4.3 Implement RBAC enforcement via @PreAuthorize
+  - [x] 4.3 Implement RBAC enforcement via @PreAuthorize
     - Configure method-level security expressions that check `AlexandriaUserDetails` role
     - Create `TeamSecurity` bean in `com.alexandria.config` with `isOwnerOrAdmin(UUID teamId, Authentication auth)` for team-member-scoped operations
     - Define SpEL expressions: `hasRole('Org_Admin')`, `hasAnyRole('Org_Admin', 'Catalog_Admin')`, `@teamSecurity.isOwnerOrAdmin(#teamId, authentication)`
     - Ensure org scoping is enforced: all data queries filter by authenticated user's organizationId
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.10, 6.11_
 
-  - [ ] 4.4 Write property test for email claim validation (Property 3)
+  - [x] 4.4 Write property test for email claim validation (Property 3)
     - **Property 3: Email claim validation on every request**
     - Generate invalid email formats (missing @, empty local part, empty domain, null, empty string) and verify the filter rejects with 403
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 4.4, 4.7**
 
-  - [ ] 4.5 Write property test for user provisioning idempotency (Property 4)
+  - [x] 4.5 Write property test for user provisioning idempotency (Property 4)
     - **Property 4: User provisioning idempotency**
     - Generate random (orgId, subject, email) tuples, simulate multiple sequential provisioning calls, verify exactly one user record exists after all calls
     - Use jqwik with minimum 100 iterations, Testcontainers for database
@@ -87,12 +87,12 @@ This plan implements the foundational layer of the Alexandria platform — proje
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Backend services and resources
-  - [ ] 6.1 Implement AuditService
+  - [x] 6.1 Implement AuditService
     - Create `AuditService` interface in `com.alexandria.audit` with method `record(UUID orgId, UUID actorUserId, String action, String targetType, UUID targetId, Map<String, Object> metadata)`
     - Create `AuditServiceImpl` in `com.alexandria.audit` with fire-and-forget pattern: catch all exceptions, log at ERROR level with full event details, never let audit failures propagate to callers
     - _Requirements: 7.1, 7.2, 7.6_
 
-  - [ ] 6.2 Implement UserService and UserResource
+  - [x] 6.2 Implement UserService and UserResource
     - Create `UserService` interface and `UserServiceImpl` in `com.alexandria.user` with methods: `getCurrentUser(AlexandriaUserDetails)`, `listUsers(UUID orgId, Pageable)`, `changeRole(UUID orgId, UUID userId, String newRole)`
     - Create DTOs in `alexandria-api`: `UserResponse`, `CurrentUserResponse`, `UpdateRoleRequest` (records with Jakarta validation)
     - Create `UserApi` interface in `alexandria-api` at `com.alexandria.user`
@@ -101,7 +101,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Record audit events on role change: action "user.role_changed" with previous and new role in metadata
     - _Requirements: 6.6, 6.7, 6.8, 6.9, 8.4, 8.5_
 
-  - [ ] 6.3 Implement TeamService and TeamResource
+  - [x] 6.3 Implement TeamService and TeamResource
     - Create `TeamService` interface and `TeamServiceImpl` in `com.alexandria.team` with methods: `createTeam(UUID orgId, UUID actorId, CreateTeamRequest)`, `listTeams(UUID orgId, Pageable)`, `getTeamDetail(UUID orgId, UUID teamId)`, `addMember(UUID orgId, UUID teamId, AddMemberRequest)`, `removeMember(UUID orgId, UUID teamId, UUID userId)`
     - Create DTOs in `alexandria-api`: `CreateTeamRequest`, `TeamResponse`, `TeamDetailResponse`, `AddMemberRequest`, `TeamMemberResponse`
     - Create `TeamApi` interface in `alexandria-api` at `com.alexandria.team`
@@ -111,7 +111,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Record audit events: "team.created", "team_member.added", "team_member.removed"
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 5.11, 5.12_
 
-  - [ ] 6.4 Implement AuditResource
+  - [x] 6.4 Implement AuditResource
     - Create `AuditApi` interface in `alexandria-api` with query parameters: page, size, target_type, target_id, actor_user_id, action, start_date, end_date
     - Create `AuditEventResponse` and `AuditEventFilter` DTOs in `alexandria-api`
     - Create `AuditResource` in `alexandria-service` at `com.alexandria.audit` implementing `AuditApi`
@@ -119,26 +119,26 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Restrict access to Org_Admin and Read_Only_Auditor via @PreAuthorize
     - _Requirements: 7.3, 7.4, 7.5_
 
-  - [ ] 6.5 Implement HealthResource (/api/me already in UserResource, verify actuator config)
+  - [x] 6.5 Implement HealthResource (/api/me already in UserResource, verify actuator config)
     - Verify actuator health endpoint returns status UP/DOWN with DB check
     - Verify actuator info endpoint returns app name and version from build metadata
     - Configure health indicator with 5-second DB timeout
     - Ensure `/actuator/health` and `/actuator/info` are accessible without auth
     - _Requirements: 8.1, 8.2, 8.3, 8.6_
 
-  - [ ] 6.6 Write property test for slug generation (Property 1)
+  - [-] 6.6 Write property test for slug generation (Property 1)
     - **Property 1: Slug generation is a deterministic, well-formed transformation**
     - For any valid team name (2-100 chars from [a-zA-Z0-9 \-_]), verify slug is lowercase, only [a-z0-9-], no consecutive hyphens, doesn't start/end with hyphen, non-empty. Names differing only in case/whitespace-vs-hyphen/underscore-vs-hyphen produce same slug
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 5.9**
 
-  - [ ] 6.7 Write property test for role ordering consistency (Property 9)
+  - [-] 6.7 Write property test for role ordering consistency (Property 9)
     - **Property 9: Role privilege ordering consistency**
     - Generate all role pairs, verify that if A < B in privilege, B has access to at least every endpoint A can access. Ordering is strict and transitive
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 6.2**
 
-  - [ ] 6.8 Write property test for audit filter monotonicity (Property 11)
+  - [-] 6.8 Write property test for audit filter monotonicity (Property 11)
     - **Property 11: Audit event ordering and filter correctness**
     - Generate sets of audit events and random filter combinations, verify adding a filter never increases result set size and results are ordered by created_at descending
     - Use jqwik with Testcontainers, minimum 100 iterations
@@ -147,7 +147,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
 - [ ] 7. Checkpoint - Verify backend services
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Frontend scaffolding and setup
+- [x] 8. Frontend scaffolding and setup
   - [x] 8.1 Initialize Vite + React 19 + TypeScript project
     - Create `frontend/` directory with Vite 6 + React 19 + TypeScript 5.x project
     - Configure `vite.config.ts` with proxy to `http://localhost:8080` for `/api` and `/actuator` in dev
@@ -157,21 +157,21 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `src/config.ts` for runtime config (API base URL from `VITE_API_BASE_URL`, OIDC authority from `VITE_OIDC_AUTHORITY`, client ID from `VITE_OIDC_CLIENT_ID`)
     - _Requirements: 10.1, 10.10, 11.1, 11.10_
 
-  - [-] 8.2 Set up shared components and types
+  - [x] 8.2 Set up shared components and types
     - Create `src/shared/types/` with TypeScript interfaces matching backend DTOs: UserResponse, CurrentUserResponse, TeamResponse, TeamDetailResponse, TeamMemberResponse, AuditEventResponse, PageResponse, ErrorResponse
     - Create `src/shared/components/` with reusable UI primitives: Button, Modal, Table, Pagination, LoadingSpinner, Toast/Notification
     - Create `src/shared/hooks/` with: useDebounce, usePagination
     - _Requirements: 10.8, 10.9, 11.11_
 
-- [ ] 9. Frontend auth integration
-  - [-] 9.1 Implement OIDC auth provider and protected routes
+- [x] 9. Frontend auth integration
+  - [x] 9.1 Implement OIDC auth provider and protected routes
     - Create `src/auth/AuthProvider.tsx` wrapping oidc-client-ts UserManager with React context: handles login redirect, callback, silent refresh, logout
     - Create `src/auth/useAuth.ts` hook exposing: user, isAuthenticated, isLoading, login, logout, getAccessToken
     - Create `src/auth/ProtectedRoute.tsx` component that checks authentication and role requirements before rendering children; redirects to OIDC login if unauthenticated, shows "insufficient permissions" if role check fails
     - Create `src/auth/CallbackPage.tsx` for `/auth/callback` route handling OIDC code exchange
     - _Requirements: 10.2, 10.4, 11.2_
 
-  - [ ] 9.2 Implement API client with token interceptor
+  - [x] 9.2 Implement API client with token interceptor
     - Create `src/api/client.ts` with Axios instance: base URL from config, request interceptor attaching `Authorization: Bearer <token>`, response interceptor handling 401 (trigger refresh/re-login), 403 (show permission error), 4xx/5xx (show toast)
     - Create `src/api/users.ts` with functions: `getMe()`, `listUsers(page, size)`, `changeRole(userId, role)`
     - Create `src/api/teams.ts` with functions: `createTeam(name, description)`, `listTeams(page, size)`, `getTeam(teamId)`, `addMember(teamId, userId, role)`, `removeMember(teamId, userId)`
@@ -179,27 +179,27 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - _Requirements: 10.1, 10.8, 11.1, 11.11_
 
 - [ ] 10. Frontend admin pages
-  - [ ] 10.1 Create admin layout and routing
+  - [x] 10.1 Create admin layout and routing
     - Create `src/App.tsx` with React Router 7 configuration: role-gated admin routes, browser routes, auth callback, unauthorized page
     - Create `src/admin/AdminLayout.tsx` with sidebar navigation (Users, Teams, Audit Logs) and content area
     - Create `src/pages/UnauthorizedPage.tsx` for insufficient permissions
     - Wire routing: `/admin/*` requires Org_Admin or Catalog_Admin role, `/catalog/*` requires any authenticated user
     - _Requirements: 10.3, 10.4_
 
-  - [ ] 10.2 Implement Users management page
+  - [-] 10.2 Implement Users management page
     - Create `src/admin/UsersPage.tsx` with paginated table (TanStack Table) showing email, display name, role, enabled status, creation date
     - Implement inline role change dropdown calling PATCH `/api/users/{id}/role`
     - Use TanStack Query for data fetching with loading/error states
     - _Requirements: 10.5_
 
-  - [ ] 10.3 Implement Teams management pages
+  - [-] 10.3 Implement Teams management pages
     - Create `src/admin/TeamsPage.tsx` with paginated team list showing name, member count, creation date, and "Create Team" button with modal form
     - Create `src/admin/TeamDetailPage.tsx` showing team members with add/remove controls
     - Handle form validation (name: 2-100 chars, [a-zA-Z0-9 \-_])
     - Handle API errors: 409 Conflict for duplicate name, 404 for not found
     - _Requirements: 10.6_
 
-  - [ ] 10.4 Implement Audit Logs page
+  - [-] 10.4 Implement Audit Logs page
     - Create `src/admin/AuditLogsPage.tsx` with paginated table showing timestamp, actor, action, target type, target ID
     - Implement filter controls: action type dropdown, target type dropdown, actor search, date range picker
     - Results sorted by timestamp descending, filters applied as URL query params
@@ -247,7 +247,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `docs/index.md` landing page with project introduction
     - _Requirements: 9.5_
 
-  - [-] 13.2 Write installation and configuration guides
+  - [x] 13.2 Write installation and configuration guides
     - Create `docs/guide/installation.md` with prerequisites (Java 25, Node.js, Docker, Docker Compose, PostgreSQL), step-by-step setup
     - Create `docs/guide/configuration.md` with environment variable reference: every variable with name, description, required/optional, default, example
     - Create `docs/guide/oidc-setup.md` with OIDC provider configuration steps
