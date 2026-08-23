@@ -5,15 +5,10 @@ import { AuditLogsPage } from '@/admin/AuditLogsPage'
 import { TeamsPage } from '@/admin/TeamsPage'
 import { TeamDetailPage } from '@/admin/TeamDetailPage'
 import { UsersPage } from '@/admin/UsersPage'
+import { BrowserLayout } from '@/browser/BrowserLayout'
+import { CatalogPage } from '@/browser/CatalogPage'
+import { SkillDetailPage } from '@/browser/SkillDetailPage'
 import { UnauthorizedPage } from '@/pages/UnauthorizedPage'
-
-function CatalogPage() {
-  return <h2 className="text-xl font-semibold">Skill Catalog</h2>
-}
-
-function SkillDetailPage() {
-  return <h2 className="text-xl font-semibold">Skill Detail</h2>
-}
 
 /**
  * Redirects users based on their role:
