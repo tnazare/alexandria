@@ -35,6 +35,7 @@ Consistent error body:
 ## Security
 
 - All endpoints require authentication (except health/info)
+- Authentication via OIDC (configurable identity provider)
 - Use `@PreAuthorize` for authorization checks
-- Tenant scoping enforced before data access — never trust path params alone
+- Organization scoping enforced before data access — never trust path params alone
 - Sanitize all user-provided content (especially Markdown) before storage and rendering

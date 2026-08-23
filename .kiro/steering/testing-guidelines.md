@@ -67,10 +67,11 @@ class SkillServiceImplTest {
 
 ## Security Tests (Critical)
 
-- Cross-tenant access must be rejected
-- Private skills must not appear in other tenants' search results
+- Private skills must not appear in unauthorized users' search results
+- Visibility rules must be enforced (private, team, organization, restricted)
 - Unauthorized approval/review attempts must fail
 - Sensitive content scanning must block secrets in skill content
+- RBAC enforcement must prevent privilege escalation
 
 ## Search Relevance Tests
 

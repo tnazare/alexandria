@@ -39,10 +39,27 @@ alexandria/
 │   │   ├── components/                    # React components
 │   │   └── lib/                           # Client utilities & API client
 │   └── package.json
+├── infrastructure/                        # Deployment infrastructure
+│   ├── terraform/                         # Terraform modules for AWS deployment
+│   │   ├── modules/
+│   │   │   ├── networking/                # VPC, subnets, security groups
+│   │   │   ├── database/                  # RDS PostgreSQL
+│   │   │   ├── storage/                   # S3 bucket
+│   │   │   ├── compute/                   # ECS Fargate services
+│   │   │   ├── queue/                     # SQS
+│   │   │   └── load-balancer/             # ALB + TLS
+│   │   ├── environments/
+│   │   │   └── production/                # Example production config
+│   │   └── main.tf                        # Root module
+│   └── helm/                              # Helm charts (Phase 2)
 ├── cli/                                   # Go CLI (Phase 2)
 ├── extension/                             # VS Code extension (Phase 2)
-├── infrastructure/                        # Terraform/Pulumi IaC
-└── docker-compose.yml                     # Local dev environment
+├── docker-compose.yml                     # Local dev environment
+├── Dockerfile.backend                     # Backend container image
+├── Dockerfile.frontend                    # Frontend container image
+├── CONTRIBUTING.md                        # Contribution guidelines
+├── LICENSE                                # Open-source license
+└── README.md                              # Project overview & quick start
 ```
 
 ## Backend Module Dependency
@@ -76,9 +93,11 @@ alexandria-service      ← depends on alexandria-api + alexandria-entities
 
 ## Design Rules
 
-- All tenant-owned entities include `organizationId` field
+- All entities include `organizationId` field (design convention for single-org deployment)
 - All repository queries filter by `organizationId`
 - ACL enforcement happens before search results are returned
 - Audit events logged for every governance action
 - Sensitive content scanning on skill create/update
 - Markdown output sanitized to prevent XSS
+- All configuration through environment variables (no code changes for deployment)
+- Container images are self-contained and stateless

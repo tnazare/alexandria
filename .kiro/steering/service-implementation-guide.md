@@ -75,7 +75,7 @@ public class SkillResource implements SkillApi {
 - Business logic lives in Service, never in Resource
 - Always validate inputs in the service layer
 - Always use `@Transactional` — `readOnly = true` for queries
-- Always scope queries by `organizationId`
+- Always scope queries by `organizationId` (design convention even for single-org deployment)
 - Log audit events for governance actions (create, update, publish, approve, delete)
 - Handle `DataIntegrityViolationException` for unique constraint violations
 - Use mappers (static methods or dedicated class) to convert between entity/DTO — not Lombok @Builder chains in resources

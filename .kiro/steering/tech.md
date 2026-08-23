@@ -9,25 +9,35 @@
 
 ## Database
 - **PostgreSQL** — relational data, JSONB metadata, full-text search (Phase 1), pgvector (Phase 2)
-- Every tenant-owned table has `organization_id UUID NOT NULL`
+- Every table has `organization_id UUID NOT NULL` (design convention for single-org deployment)
 
 ## Storage & Infra
-- S3-compatible object storage
-- AWS: ECS Fargate (or K8s), RDS PostgreSQL, SQS, CloudFront, WAF
+- S3-compatible object storage (deployer-provisioned)
+- Self-hosted on customer AWS: ECS Fargate (or K8s), RDS PostgreSQL, SQS
 - OpenTelemetry for observability
-- Terraform or Pulumi for IaC
+- Terraform modules provided for deployment
+- Docker Compose for local dev and evaluation
 
 ## Auth
-- OIDC (MVP) → SAML SSO (enterprise) → SCIM (later)
-- Providers: Okta, Microsoft Entra ID, Google Workspace, OneLogin
+- OIDC (configurable provider) — Okta, Microsoft Entra ID, Google Workspace, OneLogin, or any OIDC-compliant IdP
+- SAML SSO (later)
+- SCIM (later)
 
 ## IDE & CLI (Phase 2)
-- VS Code extension (TypeScript)
+- VS Code extension (TypeScript) — connects to organization's Alexandria instance
 - CLI in Go (cross-platform binaries)
 
 ## Background Jobs
-- SQS on AWS (production), BullMQ/Redis (local dev)
+- SQS on AWS (production deployment)
+- In-memory or Redis queue (local dev via Docker Compose)
 - Tasks: search index updates, embedding generation, import processing, usage aggregation, notifications
+
+## Deployment Model
+- Open-source, self-hosted on customer AWS account
+- Single-organization instance (no multi-tenant SaaS)
+- Container images published to GHCR
+- Deployer provisions: AWS account, RDS, S3, SQS, OIDC provider
+- All config via environment variables (no source modification needed)
 
 ## Common Commands
 
@@ -47,11 +57,23 @@ npm run test                    # Run tests
 # Database
 ./mvnw flyway:migrate           # Run migrations
 ./mvnw flyway:info              # Migration status
+
+# Docker (local dev)
+docker compose up               # Start all services
+docker compose down             # Stop all services
+
+# Container images
+docker build -t alexandria-backend ./backend
+docker build -t alexandria-frontend ./frontend
 ```
 
 ## Key Principles
+- Open source with permissive license
+- Self-hosted — all data stays in customer's security boundary
 - Modular monolith — extract to services only when justified by scale
 - Embedding provider abstraction — never hardcode one model vendor
 - Event capture from day one — usage data feeds future ranking
-- Tenant scoping enforced at query layer AND application layer
+- Organization scoping enforced at query layer AND application layer
+- Simple to deploy and operate — platform team can get running in an afternoon
 - No microservices, no Kafka, no separate vector DB until necessary
+- Configuration through environment variables, not code changes

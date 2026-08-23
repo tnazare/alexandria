@@ -45,11 +45,11 @@ Package: `com.alexandria.{module}` (one package per domain module)
 - `@Transactional` for writes
 - Keep transactions as short as possible
 
-## Multi-Tenancy
+## Organization Scoping
 
-- Every service method that accesses tenant data must receive or resolve `organizationId`
+- Every service method that accesses data must receive or resolve `organizationId`
 - Repository methods must filter by `organizationId`
-- Never allow cross-tenant data access
+- This convention enables future flexibility (multi-instance management, data export) even in single-org deployments
 
 ## Documentation
 
