@@ -6,16 +6,16 @@ This plan implements the foundational layer of the Alexandria platform — proje
 
 ## Tasks
 
-- [ ] 1. Project structure and documentation cleanup
-  - [ ] 1.1 Create root project files (README, LICENSE, CONTRIBUTING, .gitignore)
+- [x] 1. Project structure and documentation cleanup
+  - [x] 1.1 Create root project files (README, LICENSE, CONTRIBUTING, .gitignore)
     - Create `README.md` at repository root with project description, prerequisites (Java 25, Docker, Docker Compose), quick-start commands (`docker compose up`, health-check verification), and high-level architecture overview identifying backend modules (api, entities, service), frontend, and infrastructure
     - Create `LICENSE` with Apache 2.0 license text
     - Create `CONTRIBUTING.md` with contribution guidelines, coding standards (reference .kiro/steering/java-coding-standards.md conventions), branch naming (`feature/`, `fix/`, `docs/`), and PR process
     - Update root `.gitignore` to cover Java build artifacts (`target/`), IDE files (`.idea/`, `.vscode/`), OS files (`.DS_Store`, `Thumbs.db`), environment secrets (`.env`), and Node artifacts (`node_modules/`, `dist/`)
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Backend database migration (V2)
-  - [ ] 2.1 Create Flyway V2 migration script for users, teams, and team_members tables
+- [x] 2. Backend database migration (V2)
+  - [x] 2.1 Create Flyway V2 migration script for users, teams, and team_members tables
     - Create `backend/alexandria-entities/src/main/resources/db/migration/V2__users_teams_schema.sql`
     - Define `users` table with columns: id (UUID PK DEFAULT gen_random_uuid()), organization_id (UUID NOT NULL FK to organizations ON DELETE RESTRICT), external_subject (TEXT NOT NULL), email (TEXT NOT NULL), display_name (TEXT), role (TEXT NOT NULL DEFAULT 'Skill_Consumer'), enabled (BOOLEAN NOT NULL DEFAULT TRUE), created_at (TIMESTAMPTZ NOT NULL DEFAULT NOW()), updated_at (TIMESTAMPTZ NOT NULL DEFAULT NOW())
     - Create unique index `uq_users_org_subject` on (organization_id, external_subject)
@@ -30,54 +30,54 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8_
 
 - [ ] 3. Backend entities and repositories
-  - [ ] 3.1 Create Role enum and UserEntity
+  - [x] 3.1 Create Role enum and UserEntity
     - Create `Role` enum in `alexandria-entities` module at `com.alexandria.user.entity.Role` with values: Read_Only_Auditor(0), Skill_Consumer(1), Skill_Author(2), Reviewer(3), Team_Owner(4), Catalog_Admin(5), Org_Admin(6) and privilege field with `hasAtLeast(Role)` and `isAdmin()` methods
     - Create `UserEntity` extending `BaseEntity` in `com.alexandria.user.entity` with fields: externalSubject (String, not null), email (String, not null), displayName (String, nullable), role (String, not null default "Skill_Consumer"), enabled (boolean, default true). Map to `users` table
     - Create `UserRepository` in `com.alexandria.user` with methods: `findByOrganizationIdAndExternalSubject(UUID orgId, String subject)`, `findByOrganizationId(UUID orgId, Pageable)`, `findByIdAndOrganizationId(UUID id, UUID orgId)`
     - _Requirements: 2.1, 2.9, 2.10, 6.2_
 
-  - [ ] 3.2 Create TeamEntity, TeamMemberEntity, and repositories
+  - [x] 3.2 Create TeamEntity, TeamMemberEntity, and repositories
     - Create `TeamEntity` extending `BaseEntity` in `com.alexandria.team.entity` with fields: name (String, not null), slug (String, not null), description (String, nullable), createdBy (UUID, not null). Map to `teams` table
     - Create `TeamMemberEntity` in `com.alexandria.team.entity` (does NOT extend BaseEntity) with fields: id (UUID PK), teamId (UUID, not null), userId (UUID, not null), teamRole (String, not null), joinedAt (Instant, not null). Map to `team_members` table
     - Create `TeamRepository` in `com.alexandria.team` with methods: `findByOrganizationId(UUID orgId, Pageable)`, `findByIdAndOrganizationId(UUID id, UUID orgId)`, `existsByOrganizationIdAndSlug(UUID orgId, String slug)`
     - Create `TeamMemberRepository` in `com.alexandria.team` with methods: `findByTeamId(UUID teamId)`, `findByTeamIdAndUserId(UUID teamId, UUID userId)`, `countByTeamIdAndTeamRole(UUID teamId, String role)`, `deleteByTeamIdAndUserId(UUID teamId, UUID userId)`
     - _Requirements: 2.3, 2.4, 2.5, 2.6, 2.9_
 
-  - [ ]* 3.3 Write property test for Role enum validation (Property 2)
+  - [-] 3.3 Write property test for Role enum validation (Property 2)
     - **Property 2: Role enum membership validation**
     - Generate random strings and verify that only the 7 allowed role values are accepted; all others are rejected. Similarly verify team_role accepts only "owner" or "member"
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 2.9, 6.7**
 
 - [ ] 4. Backend security (OIDC, provisioning filter, RBAC)
-  - [ ] 4.1 Configure OIDC resource server and update SecurityConfig
+  - [x] 4.1 Configure OIDC resource server and update SecurityConfig
     - Add `spring-boot-starter-oauth2-resource-server` dependency to `alexandria-service/pom.xml`
     - Update `application.yml` with `spring.security.oauth2.resourceserver.jwt.issuer-uri` and audience configuration using `${OIDC_ISSUER_URI}` and `${OIDC_CLIENT_ID}` environment variables
     - Create `OidcProperties` configuration properties class in `com.alexandria.config`
     - Update `SecurityConfig` to configure JWT resource server, permit `/actuator/health` and `/actuator/info` without auth, require authentication for all other endpoints, and set session policy to STATELESS
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 4.2 Implement AlexandriaUserDetails and UserProvisioningFilter
+  - [-] 4.2 Implement AlexandriaUserDetails and UserProvisioningFilter
     - Create `AlexandriaUserDetails` in `com.alexandria.auth` implementing custom principal with userId (UUID), organizationId (UUID), role (Role), email (String), and `getAuthorities()` returning a single GrantedAuthority matching the role
     - Create `UserProvisioningFilter` as a `OncePerRequestFilter` in `com.alexandria.config` that: extracts `sub` and `email` claims from `JwtAuthenticationToken`, validates email format (rejects with 403 if missing/invalid), looks up user by (orgId, sub), creates new user with Skill_Consumer role if not found, builds `AlexandriaUserDetails`, replaces SecurityContext authentication with enriched principal
     - Register the filter in SecurityConfig after `BearerTokenAuthenticationFilter`
     - Handle provisioning failures: respond 500, log audit event with action "user.auto_provision_failed"
     - _Requirements: 4.1, 4.2, 4.4, 4.5, 4.6, 4.7_
 
-  - [ ] 4.3 Implement RBAC enforcement via @PreAuthorize
+  - [-] 4.3 Implement RBAC enforcement via @PreAuthorize
     - Configure method-level security expressions that check `AlexandriaUserDetails` role
     - Create `TeamSecurity` bean in `com.alexandria.config` with `isOwnerOrAdmin(UUID teamId, Authentication auth)` for team-member-scoped operations
     - Define SpEL expressions: `hasRole('Org_Admin')`, `hasAnyRole('Org_Admin', 'Catalog_Admin')`, `@teamSecurity.isOwnerOrAdmin(#teamId, authentication)`
     - Ensure org scoping is enforced: all data queries filter by authenticated user's organizationId
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.10, 6.11_
 
-  - [ ]* 4.4 Write property test for email claim validation (Property 3)
+  - [ ] 4.4 Write property test for email claim validation (Property 3)
     - **Property 3: Email claim validation on every request**
     - Generate invalid email formats (missing @, empty local part, empty domain, null, empty string) and verify the filter rejects with 403
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 4.4, 4.7**
 
-  - [ ]* 4.5 Write property test for user provisioning idempotency (Property 4)
+  - [ ] 4.5 Write property test for user provisioning idempotency (Property 4)
     - **Property 4: User provisioning idempotency**
     - Generate random (orgId, subject, email) tuples, simulate multiple sequential provisioning calls, verify exactly one user record exists after all calls
     - Use jqwik with minimum 100 iterations, Testcontainers for database
@@ -126,19 +126,19 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Ensure `/actuator/health` and `/actuator/info` are accessible without auth
     - _Requirements: 8.1, 8.2, 8.3, 8.6_
 
-  - [ ]* 6.6 Write property test for slug generation (Property 1)
+  - [ ] 6.6 Write property test for slug generation (Property 1)
     - **Property 1: Slug generation is a deterministic, well-formed transformation**
     - For any valid team name (2-100 chars from [a-zA-Z0-9 \-_]), verify slug is lowercase, only [a-z0-9-], no consecutive hyphens, doesn't start/end with hyphen, non-empty. Names differing only in case/whitespace-vs-hyphen/underscore-vs-hyphen produce same slug
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 5.9**
 
-  - [ ]* 6.7 Write property test for role ordering consistency (Property 9)
+  - [ ] 6.7 Write property test for role ordering consistency (Property 9)
     - **Property 9: Role privilege ordering consistency**
     - Generate all role pairs, verify that if A < B in privilege, B has access to at least every endpoint A can access. Ordering is strict and transitive
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 6.2**
 
-  - [ ]* 6.8 Write property test for audit filter monotonicity (Property 11)
+  - [ ] 6.8 Write property test for audit filter monotonicity (Property 11)
     - **Property 11: Audit event ordering and filter correctness**
     - Generate sets of audit events and random filter combinations, verify adding a filter never increases result set size and results are ordered by created_at descending
     - Use jqwik with Testcontainers, minimum 100 iterations
@@ -148,7 +148,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Frontend scaffolding and setup
-  - [ ] 8.1 Initialize Vite + React 19 + TypeScript project
+  - [x] 8.1 Initialize Vite + React 19 + TypeScript project
     - Create `frontend/` directory with Vite 6 + React 19 + TypeScript 5.x project
     - Configure `vite.config.ts` with proxy to `http://localhost:8080` for `/api` and `/actuator` in dev
     - Add dependencies: react-router (v7), tailwindcss (v4), oidc-client-ts, axios, @tanstack/react-query, @tanstack/react-table
@@ -157,14 +157,14 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `src/config.ts` for runtime config (API base URL from `VITE_API_BASE_URL`, OIDC authority from `VITE_OIDC_AUTHORITY`, client ID from `VITE_OIDC_CLIENT_ID`)
     - _Requirements: 10.1, 10.10, 11.1, 11.10_
 
-  - [ ] 8.2 Set up shared components and types
+  - [-] 8.2 Set up shared components and types
     - Create `src/shared/types/` with TypeScript interfaces matching backend DTOs: UserResponse, CurrentUserResponse, TeamResponse, TeamDetailResponse, TeamMemberResponse, AuditEventResponse, PageResponse, ErrorResponse
     - Create `src/shared/components/` with reusable UI primitives: Button, Modal, Table, Pagination, LoadingSpinner, Toast/Notification
     - Create `src/shared/hooks/` with: useDebounce, usePagination
     - _Requirements: 10.8, 10.9, 11.11_
 
 - [ ] 9. Frontend auth integration
-  - [ ] 9.1 Implement OIDC auth provider and protected routes
+  - [-] 9.1 Implement OIDC auth provider and protected routes
     - Create `src/auth/AuthProvider.tsx` wrapping oidc-client-ts UserManager with React context: handles login redirect, callback, silent refresh, logout
     - Create `src/auth/useAuth.ts` hook exposing: user, isAuthenticated, isLoading, login, logout, getAccessToken
     - Create `src/auth/ProtectedRoute.tsx` component that checks authentication and role requirements before rendering children; redirects to OIDC login if unauthenticated, shows "insufficient permissions" if role check fails
@@ -225,13 +225,13 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Implement URL state serialization: search query and all filter selections persisted as URL query parameters, restored on page load for direct navigation/bookmarking
     - _Requirements: 11.9, 11.12_
 
-  - [ ]* 11.4 Write property test for lifecycle badge exhaustiveness (Property 13)
+  - [ ] 11.4 Write property test for lifecycle badge exhaustiveness (Property 13)
     - **Property 13: Lifecycle badge mapping is exhaustive**
     - For every lifecycle status value, verify badge renders a non-empty, distinct visual indicator
     - Use fast-check with Vitest
     - **Validates: Requirements 11.9**
 
-  - [ ]* 11.5 Write property test for URL state round-trip (Property 14)
+  - [ ] 11.5 Write property test for URL state round-trip (Property 14)
     - **Property 14: URL state round-trip for search and filters**
     - Generate arbitrary combinations of search query and filter selections, serialize to URL params, parse back, verify equivalence
     - Use fast-check with Vitest, minimum 100 iterations
@@ -241,13 +241,13 @@ This plan implements the foundational layer of the Alexandria platform — proje
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 13. Documentation site
-  - [ ] 13.1 Initialize VitePress documentation site
+  - [x] 13.1 Initialize VitePress documentation site
     - Create `docs/` directory with VitePress project: `package.json`, `.vitepress/config.ts`
     - Configure site title, navigation, and sidebar structure
     - Create `docs/index.md` landing page with project introduction
     - _Requirements: 9.5_
 
-  - [ ] 13.2 Write installation and configuration guides
+  - [-] 13.2 Write installation and configuration guides
     - Create `docs/guide/installation.md` with prerequisites (Java 25, Node.js, Docker, Docker Compose, PostgreSQL), step-by-step setup
     - Create `docs/guide/configuration.md` with environment variable reference: every variable with name, description, required/optional, default, example
     - Create `docs/guide/oidc-setup.md` with OIDC provider configuration steps
@@ -262,8 +262,8 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `docs/troubleshooting.md` covering OIDC misconfiguration, DB connection errors, container health-check failures
     - _Requirements: 9.2, 9.3, 9.7_
 
-- [ ] 14. Docker Compose and containerization
-  - [ ] 14.1 Update Docker Compose with backend and frontend services
+- [x] 14. Docker Compose and containerization
+  - [x] 14.1 Update Docker Compose with backend and frontend services
     - Move `docker-compose.yml` to repository root (or create root-level compose file)
     - Add `backend` service: build from `./backend`, expose 8080, configure env vars (datasource, OIDC), depends on postgres with health check
     - Add `frontend` service: build from `./frontend`, expose 5173→80, configure VITE env vars, depends on backend
@@ -272,7 +272,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - _Requirements: 1.5_
 
 - [ ] 15. Backend integration tests
-  - [ ]* 15.1 Write integration tests for V2 migration and repositories
+  - [ ] 15.1 Write integration tests for V2 migration and repositories
     - Test V2 migration applies cleanly on Testcontainers PostgreSQL
     - Test UserRepository CRUD: create, find by org+subject, unique constraint enforcement
     - Test TeamRepository CRUD: create, find by org, slug uniqueness enforcement
@@ -280,7 +280,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Verify org scoping: queries only return records matching the org ID
     - _Requirements: 2.1–2.10_
 
-  - [ ]* 15.2 Write integration tests for security filter chain
+  - [ ] 15.2 Write integration tests for security filter chain
     - Test unauthenticated requests to `/actuator/health` succeed
     - Test unauthenticated requests to `/api/users` get 401
     - Test requests with invalid JWT get 401
@@ -289,7 +289,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Use `spring-security-test` JWT mocking with MockMvc
     - _Requirements: 3.1–3.5, 4.1, 4.4, 4.7_
 
-  - [ ]* 15.3 Write integration tests for RBAC and endpoint access
+  - [ ] 15.3 Write integration tests for RBAC and endpoint access
     - Test Org_Admin can access all endpoints (Property 6 validation)
     - Test Read_Only_Auditor cannot mutate (Property 7 validation)
     - Test Skill_Consumer/Skill_Author denied admin endpoints (Property 8 validation)
@@ -297,14 +297,14 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Use parameterized tests iterating over roles × endpoints
     - _Requirements: 6.1, 6.4, 6.5, 6.10, 6.11_
 
-  - [ ]* 15.4 Write integration tests for team and audit endpoints
+  - [ ] 15.4 Write integration tests for team and audit endpoints
     - Test team creation: valid name → 201, duplicate slug → 409, invalid role for creation → 403
     - Test add/remove members: valid → 201/204, last owner removal → 409, not found → 404
     - Test audit event listing: filters combine with AND logic, results ordered descending
     - Test /api/me returns correct user profile (Property 12 validation)
     - _Requirements: 5.1–5.12, 7.3, 7.4, 8.4_
 
-  - [ ]* 15.5 Write property test for audit completeness (Property 10)
+  - [ ] 15.5 Write property test for audit completeness (Property 10)
     - **Property 10: Audit completeness and field correctness**
     - For each governance operation (user provisioning, role change, team creation, member add/remove), verify exactly one audit event is created with correct organization_id, action, target_type, target_id, and non-empty metadata
     - Use jqwik with Testcontainers, minimum 100 iterations
