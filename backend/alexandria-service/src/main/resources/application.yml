@@ -19,6 +19,20 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+          audiences: ${OIDC_CLIENT_ID}
+
+alexandria:
+  oidc:
+    issuer-uri: ${OIDC_ISSUER_URI}
+    client-id: ${OIDC_CLIENT_ID}
+  organization:
+    default-id: ${ALEXANDRIA_DEFAULT_ORG_ID:00000000-0000-0000-0000-000000000001}
+
 server:
   port: 8080
 

@@ -9,3 +9,15 @@ spring:
 
   flyway:
     enabled: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://issuer.example.com
+          audiences: test-client-id
+
+alexandria:
+  oidc:
+    issuer-uri: https://issuer.example.com
+    client-id: test-client-id
