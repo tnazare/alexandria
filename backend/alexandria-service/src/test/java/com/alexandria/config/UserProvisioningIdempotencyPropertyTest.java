@@ -1,5 +1,6 @@
 package com.alexandria.config;
 
+import com.alexandria.AlexandriaApplication;
 import com.alexandria.organization.OrganizationRepository;
 import com.alexandria.organization.entity.OrganizationEntity;
 import com.alexandria.user.UserRepository;
@@ -7,18 +8,18 @@ import com.alexandria.user.entity.Role;
 import com.alexandria.user.entity.UserEntity;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
-import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import net.jqwik.api.Tag;
+import net.jqwik.api.lifecycle.AfterContainer;
 import net.jqwik.api.lifecycle.AfterProperty;
+import net.jqwik.api.lifecycle.BeforeContainer;
 import net.jqwik.api.lifecycle.BeforeProperty;
-import net.jqwik.spring.JqwikSpringSupport;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.context.ActiveProfiles;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.util.UUID;
 
@@ -35,28 +36,80 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>Validates: Requirements 4.1, 4.2</b></p>
  */
-@JqwikSpringSupport
-@SpringBootTest
-@ActiveProfiles("test")
-@Tag("Feature: alexandria-first-step, Property 4: User provisioning idempotency")
+@Tag("property-test")
 class UserProvisioningIdempotencyPropertyTest {
 
-    @Autowired
-    private UserRepository userRepository;
+    @SuppressWarnings("resource")
+    private static final PostgreSQLContainer<?> POSTGRES =
+            new PostgreSQLContainer<>("postgres:16-alpine")
+                    .withDatabaseName("alexandria_test")
+                    .withUsername("test")
+                    .withPassword("test");
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    private static ConfigurableApplicationContext context;
+    private static UserRepository userRepository;
+    private static OrganizationRepository organizationRepository;
 
     private UUID testOrgId;
+
+    @BeforeContainer
+    static void startContext() {
+        POSTGRES.start();
+
+        // Set system properties to override application.yml with highest precedence
+        System.setProperty("spring.datasource.url", POSTGRES.getJdbcUrl());
+        System.setProperty("spring.datasource.username", POSTGRES.getUsername());
+        System.setProperty("spring.datasource.password", POSTGRES.getPassword());
+        System.setProperty("spring.datasource.driver-class-name", "org.postgresql.Driver");
+        System.setProperty("spring.jpa.hibernate.ddl-auto", "validate");
+        System.setProperty("spring.jpa.database-platform", "org.hibernate.dialect.PostgreSQLDialect");
+        System.setProperty("spring.flyway.enabled", "true");
+        System.setProperty("spring.flyway.url", POSTGRES.getJdbcUrl());
+        System.setProperty("spring.flyway.user", POSTGRES.getUsername());
+        System.setProperty("spring.flyway.password", POSTGRES.getPassword());
+        System.setProperty("spring.flyway.locations", "classpath:db/migration");
+        System.setProperty("OIDC_ISSUER_URI", "https://issuer.example.com");
+        System.setProperty("OIDC_CLIENT_ID", "test-client-id");
+        System.setProperty("alexandria.organization.default-id", "00000000-0000-0000-0000-000000000001");
+        System.setProperty("server.port", "0");
+
+        context = new SpringApplicationBuilder(AlexandriaApplication.class)
+                .run();
+
+        userRepository = context.getBean(UserRepository.class);
+        organizationRepository = context.getBean(OrganizationRepository.class);
+    }
+
+    @AfterContainer
+    static void stopContext() {
+        if (context != null) {
+            context.close();
+        }
+        POSTGRES.stop();
+        System.clearProperty("spring.datasource.url");
+        System.clearProperty("spring.datasource.username");
+        System.clearProperty("spring.datasource.password");
+        System.clearProperty("spring.datasource.driver-class-name");
+        System.clearProperty("spring.jpa.hibernate.ddl-auto");
+        System.clearProperty("spring.jpa.database-platform");
+        System.clearProperty("spring.flyway.enabled");
+        System.clearProperty("spring.flyway.url");
+        System.clearProperty("spring.flyway.user");
+        System.clearProperty("spring.flyway.password");
+        System.clearProperty("spring.flyway.locations");
+        System.clearProperty("OIDC_ISSUER_URI");
+        System.clearProperty("OIDC_CLIENT_ID");
+        System.clearProperty("alexandria.organization.default-id");
+        System.clearProperty("server.port");
+    }
 
     @BeforeProperty
     void setUp() {
         // Create a test organization for each property run
         var org = new OrganizationEntity();
-        org.setId(UUID.randomUUID());
         org.setName("Test Org " + UUID.randomUUID());
         org.setSlug("test-org-" + UUID.randomUUID());
-        org = organizationRepository.save(org);
+        org = organizationRepository.saveAndFlush(org);
         testOrgId = org.getId();
     }
 
@@ -144,19 +197,18 @@ class UserProvisioningIdempotencyPropertyTest {
 
     @Provide
     Arbitrary<String> emails() {
-        var localPart = Arbitraries.strings()
+        return Arbitraries.strings()
                 .ofMinLength(1)
                 .ofMaxLength(20)
                 .alpha()
                 .numeric()
-                .withChars('.', '_', '-');
-        var domain = Arbitraries.strings()
-                .ofMinLength(2)
-                .ofMaxLength(15)
-                .alpha();
-        var tld = Arbitraries.of("com", "org", "net", "io", "dev");
-        return Combinators.combine(localPart, domain, tld)
-                .as((local, dom, t) -> local + "@" + dom + "." + t);
+                .withChars('.', '_', '-')
+                .flatMap(local -> Arbitraries.strings()
+                        .ofMinLength(2)
+                        .ofMaxLength(15)
+                        .alpha()
+                        .flatMap(domain -> Arbitraries.of("com", "org", "net", "io", "dev")
+                                .map(tld -> local + "@" + domain + "." + tld)));
     }
 
     @Provide
