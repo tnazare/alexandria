@@ -1,14 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { AuthProvider, ProtectedRoute, CallbackPage, useAuth } from '@/auth'
 import { AdminLayout } from '@/admin/AdminLayout'
+import { AuditLogsPage } from '@/admin/AuditLogsPage'
+import { UsersPage } from '@/admin/UsersPage'
 import { UnauthorizedPage } from '@/pages/UnauthorizedPage'
-
-/**
- * Placeholder pages — will be replaced by actual implementations in later tasks.
- */
-function UsersPage() {
-  return <h2 className="text-xl font-semibold">Users</h2>
-}
 
 function TeamsPage() {
   return <h2 className="text-xl font-semibold">Teams</h2>
@@ -16,10 +11,6 @@ function TeamsPage() {
 
 function TeamDetailPage() {
   return <h2 className="text-xl font-semibold">Team Detail</h2>
-}
-
-function AuditLogsPage() {
-  return <h2 className="text-xl font-semibold">Audit Logs</h2>
 }
 
 function CatalogPage() {
