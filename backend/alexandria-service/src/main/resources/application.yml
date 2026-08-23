@@ -6,6 +6,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/alexandria
     username: alexandria
     password: alexandria
+    hikari:
+      validation-timeout: 5000
+      connection-timeout: 5000
 
   jpa:
     hibernate:
@@ -44,6 +47,12 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  health:
+    db:
+      enabled: true
+  info:
+    build:
+      enabled: true
 
 logging:
   level:
