@@ -1,6 +1,7 @@
 package com.alexandria.common.exception;
 
 import com.alexandria.common.dto.ErrorResponse;
+import com.alexandria.team.TeamConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of("NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(TeamConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(TeamConflictException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("CONFLICT", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
