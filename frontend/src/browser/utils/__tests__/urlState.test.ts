@@ -18,9 +18,7 @@ import type { FilterValues } from '@/browser/components/FilterPanel'
  */
 describe('Property 14: URL state round-trip for search and filters', () => {
   /**
-   * Arbitrary for non-empty filter values.
-   * We use printable ASCII strings that don't contain characters
-   * that would be ambiguous in URL params (& and = are encoded by URLSearchParams).
+   * Arbitrary for filter values: either empty string or a non-empty trimmed string.
    */
   const filterValueArb = fc.oneof(
     fc.constant(''),
@@ -41,10 +39,10 @@ describe('Property 14: URL state round-trip for search and filters', () => {
   const catalogUrlStateArb: fc.Arbitrary<CatalogUrlState> = fc.record({
     query: filterValueArb,
     filters: filterValuesArb,
-    page: fc.nat({ max: 100 }),
+    page: fc.nat({ max: 1000 }),
   })
 
-  it('serialize → deserialize produces equivalent state', () => {
+  it('serialize → deserialize produces equivalent state (round-trip)', () => {
     fc.assert(
       fc.property(catalogUrlStateArb, (state) => {
         const serialized = serializeCatalogState(state)
@@ -83,13 +81,14 @@ describe('Property 14: URL state round-trip for search and filters', () => {
           expect(deserialized.query).toBe(state.query)
         }
 
-        expect(deserialized.page).toBe(state.page)
-
         for (const key of Object.keys(state.filters) as Array<keyof FilterValues>) {
           if (state.filters[key]) {
             expect(deserialized.filters[key]).toBe(state.filters[key])
           }
         }
+
+        // Page is always preserved
+        expect(deserialized.page).toBe(state.page)
       }),
       { numRuns: 100 },
     )
