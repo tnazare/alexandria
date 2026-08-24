@@ -3,8 +3,8 @@ package com.alexandria.integration;
 import com.alexandria.audit.AuditEventRepository;
 import com.alexandria.audit.AuditService;
 import com.alexandria.audit.entity.AuditEventEntity;
+import com.alexandria.auth.AlexandriaAuthentication;
 import com.alexandria.auth.AlexandriaUserDetails;
-import com.alexandria.config.UserProvisioningFilter;
 import com.alexandria.organization.OrganizationRepository;
 import com.alexandria.organization.entity.OrganizationEntity;
 import com.alexandria.team.TeamMemberRepository;
@@ -27,16 +27,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -61,37 +57,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p><b>Requirements: 5.1–5.12, 7.3, 7.4, 8.4</b></p>
  */
 @SpringBootTest
-@Testcontainers
+@ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(TeamAndAuditEndpointIntegrationTest.JwtDecoderTestConfig.class)
 class TeamAndAuditEndpointIntegrationTest {
 
-    @Container
-    @SuppressWarnings("resource")
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("alexandria_test")
-            .withUsername("test")
-            .withPassword("test");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
-        registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("spring.flyway.url", postgres::getJdbcUrl);
-        registry.add("spring.flyway.user", postgres::getUsername);
-        registry.add("spring.flyway.password", postgres::getPassword);
-        registry.add("alexandria.organization.default-id", () -> "00000000-0000-0000-0000-000000000001");
-        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> "https://issuer.example.com");
-    }
+    private MockMvc mockMvc;
 
     @Autowired
-    private org.springframework.web.context.WebApplicationContext webApplicationContext;
-
-    private MockMvc mockMvc;
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
     private UserRepository userRepository;
@@ -119,8 +93,8 @@ class TeamAndAuditEndpointIntegrationTest {
 
     @BeforeAll
     void setupTestData() {
-        this.mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
-                .webAppContextSetup(webApplicationContext)
+        // Set up MockMvc with Spring Security integration
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
                 .build();
 
@@ -644,16 +618,7 @@ class TeamAndAuditEndpointIntegrationTest {
             var userDetails = new AlexandriaUserDetails(userId, organizationId, role,
                     role.name().toLowerCase() + "@test.com");
 
-            Jwt jwt = Jwt.withTokenValue("mock-token")
-                    .header("alg", "RS256")
-                    .claim("sub", "subject-" + role.name().toLowerCase())
-                    .claim("email", role.name().toLowerCase() + "@test.com")
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
-
-            var jwtAuth = new JwtAuthenticationToken(jwt);
-            var alexandriaAuth = new UserProvisioningFilter.AlexandriaAuthentication(jwtAuth, userDetails);
+            var alexandriaAuth = new AlexandriaAuthentication(userDetails);
 
             var securityContext = SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(alexandriaAuth);
