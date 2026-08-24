@@ -1,4 +1,5 @@
 import type { SkillSummary } from '@/api/skills'
+import { LifecycleBadge } from './LifecycleBadge'
 
 interface SkillCardProps {
   skill: SkillSummary
@@ -46,7 +47,7 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
             {skill.ownerTeam}
           </span>
         )}
-        <StatusBadge status={skill.lifecycleStatus} />
+        <LifecycleBadge status={skill.lifecycleStatus} showIcon={false} />
         <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
           {skill.approvalState}
         </span>
@@ -89,26 +90,6 @@ function RiskBadge({ level }: { level: string }) {
       className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${styles[level] ?? 'bg-neutral-100 text-neutral-600'}`}
     >
       {level}
-    </span>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    Draft: 'bg-neutral-100 text-neutral-600',
-    Published: 'bg-green-50 text-green-700',
-    Team_Approved: 'bg-blue-50 text-blue-700',
-    Company_Approved: 'bg-purple-50 text-purple-700',
-    Deprecated: 'bg-yellow-50 text-yellow-700',
-    Archived: 'bg-neutral-200 text-neutral-500',
-    Blocked: 'bg-red-50 text-red-700',
-  }
-
-  return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles[status] ?? 'bg-neutral-100 text-neutral-600'}`}
-    >
-      {status.replace(/_/g, ' ')}
     </span>
   )
 }

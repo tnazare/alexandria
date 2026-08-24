@@ -1,54 +1,86 @@
-import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router'
+import { useCallback, useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { searchSkills } from '@/api/skills'
 import { LoadingSpinner, Pagination } from '@/shared/components'
 import { SearchBar } from './components/SearchBar'
-import { FilterPanel, EMPTY_FILTERS } from './components/FilterPanel'
+import { FilterPanel } from './components/FilterPanel'
 import type { FilterValues } from './components/FilterPanel'
 import { SkillCard } from './components/SkillCard'
+import { parseCatalogState, serializeCatalogState } from './utils/urlState'
 
 const PAGE_SIZE = 12
 
 /**
  * Catalog page with search input, filter panel, and paginated skill results.
- * Displays skills in a responsive grid layout.
+ * State (search query, filters, page) is persisted as URL query parameters
+ * for deep linking and bookmarking.
  */
 export function CatalogPage() {
   const navigate = useNavigate()
-  const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState<FilterValues>(EMPTY_FILTERS)
-  const [page, setPage] = useState(0)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Build query params from search + filters
-  const searchParams = {
-    query: query || undefined,
-    page,
-    size: PAGE_SIZE,
-    taskType: filters.taskType || undefined,
-    language: filters.language || undefined,
-    framework: filters.framework || undefined,
-    tool: filters.tool || undefined,
-    approvalState: filters.approvalState || undefined,
-    riskLevel: filters.riskLevel || undefined,
-    ownerTeam: filters.ownerTeam || undefined,
-    visibility: filters.visibility || undefined,
-  }
+  // Derive state from URL params
+  const { query, filters, page } = useMemo(
+    () => parseCatalogState(searchParams),
+    [searchParams],
+  )
+
+  // Build API query params from URL-derived state
+  const apiParams = useMemo(
+    () => ({
+      query: query || undefined,
+      page,
+      size: PAGE_SIZE,
+      taskType: filters.taskType || undefined,
+      language: filters.language || undefined,
+      framework: filters.framework || undefined,
+      tool: filters.tool || undefined,
+      approvalState: filters.approvalState || undefined,
+      riskLevel: filters.riskLevel || undefined,
+      ownerTeam: filters.ownerTeam || undefined,
+      visibility: filters.visibility || undefined,
+    }),
+    [query, page, filters],
+  )
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['skills', searchParams],
-    queryFn: () => searchSkills(searchParams),
+    queryKey: ['skills', apiParams],
+    queryFn: () => searchSkills(apiParams),
   })
 
-  const handleSearch = useCallback((newQuery: string) => {
-    setQuery(newQuery)
-    setPage(0)
-  }, [])
+  const updateUrl = useCallback(
+    (newQuery: string, newFilters: FilterValues, newPage: number) => {
+      const params = serializeCatalogState({
+        query: newQuery,
+        filters: newFilters,
+        page: newPage,
+      })
+      setSearchParams(params, { replace: true })
+    },
+    [setSearchParams],
+  )
 
-  const handleFilterChange = useCallback((newFilters: FilterValues) => {
-    setFilters(newFilters)
-    setPage(0)
-  }, [])
+  const handleSearch = useCallback(
+    (newQuery: string) => {
+      updateUrl(newQuery, filters, 0)
+    },
+    [filters, updateUrl],
+  )
+
+  const handleFilterChange = useCallback(
+    (newFilters: FilterValues) => {
+      updateUrl(query, newFilters, 0)
+    },
+    [query, updateUrl],
+  )
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      updateUrl(query, filters, newPage)
+    },
+    [query, filters, updateUrl],
+  )
 
   const handleSkillClick = useCallback(
     (skillId: string) => {
@@ -128,7 +160,7 @@ export function CatalogPage() {
               <Pagination
                 page={data.page}
                 totalPages={data.totalPages}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
               />
             </div>
           </>

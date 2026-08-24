@@ -5,6 +5,7 @@ import { getSkill, exportSkill } from '@/api/skills'
 import type { ExportFormat, SkillDetail, SkillExample, SkillVariant, SkillVersionSummary } from '@/api/skills'
 import { Button } from '@/shared/components/Button'
 import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
+import { LifecycleBadge } from './components/LifecycleBadge'
 
 // --- Export format definitions ---
 
@@ -84,27 +85,7 @@ function RiskBadge({ level }: { level: string }) {
   )
 }
 
-function LifecycleStatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    Draft: 'bg-neutral-100 text-neutral-700',
-    Published: 'bg-blue-100 text-blue-800',
-    Team_Approved: 'bg-indigo-100 text-indigo-800',
-    Company_Approved: 'bg-green-100 text-green-800',
-    Deprecated: 'bg-yellow-100 text-yellow-800',
-    Archived: 'bg-neutral-200 text-neutral-600',
-    Blocked: 'bg-red-100 text-red-800',
-  }
 
-  const displayLabel = status.replace(/_/g, ' ')
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] ?? 'bg-neutral-100 text-neutral-700'}`}
-    >
-      {displayLabel}
-    </span>
-  )
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -441,7 +422,7 @@ export function SkillDetailPage() {
       <header className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold text-neutral-900">{skill.name}</h1>
-          <LifecycleStatusBadge status={skill.lifecycleStatus} />
+          <LifecycleBadge status={skill.lifecycleStatus} size="md" />
           <RiskBadge level={skill.riskLevel} />
         </div>
         {skill.description && (
