@@ -29,12 +29,6 @@ services:
             }
           ]
         }
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 15s
 
   postgres:
     image: postgres:16-alpine
@@ -58,6 +52,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    restart: on-failure
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alexandria
       SPRING_DATASOURCE_USERNAME: alexandria
@@ -72,7 +67,7 @@ services:
       postgres:
         condition: service_healthy
       heptastadion:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
