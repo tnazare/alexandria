@@ -7,8 +7,8 @@ export const config = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
 
   /** OIDC identity provider authority URL */
-  oidcAuthority: import.meta.env.VITE_OIDC_AUTHORITY ?? 'http://localhost:9000',
+  oidcAuthority: import.meta.env.VITE_OIDC_AUTHORITY ?? 'http://localhost:9000/alexandria',
 
   /** OIDC client identifier */
-  oidcClientId: import.meta.env.VITE_OIDC_CLIENT_ID ?? 'alexandria',
+  oidcClientId: import.meta.env.VITE_OIDC_CLIENT_ID ?? 'alexandria-client',
 } as const

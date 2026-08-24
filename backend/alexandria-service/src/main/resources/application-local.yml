@@ -7,6 +7,18 @@ spring:
   jpa:
     show-sql: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000/alexandria
+          audiences: alexandria-client
+
+alexandria:
+  oidc:
+    issuer-uri: http://localhost:9000/alexandria
+    client-id: alexandria-client
+
 logging:
   level:
     com.alexandria: DEBUG
