@@ -83,10 +83,10 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Use jqwik with minimum 100 iterations, Testcontainers for database
     - **Validates: Requirements 4.1, 4.2**
 
-- [ ] 5. Checkpoint - Verify security layer
+- [x] 5. Checkpoint - Verify security layer
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 6. Backend services and resources
+- [x] 6. Backend services and resources
   - [x] 6.1 Implement AuditService
     - Create `AuditService` interface in `com.alexandria.audit` with method `record(UUID orgId, UUID actorUserId, String action, String targetType, UUID targetId, Map<String, Object> metadata)`
     - Create `AuditServiceImpl` in `com.alexandria.audit` with fire-and-forget pattern: catch all exceptions, log at ERROR level with full event details, never let audit failures propagate to callers
@@ -126,25 +126,25 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Ensure `/actuator/health` and `/actuator/info` are accessible without auth
     - _Requirements: 8.1, 8.2, 8.3, 8.6_
 
-  - [-] 6.6 Write property test for slug generation (Property 1)
+  - [x] 6.6 Write property test for slug generation (Property 1)
     - **Property 1: Slug generation is a deterministic, well-formed transformation**
     - For any valid team name (2-100 chars from [a-zA-Z0-9 \-_]), verify slug is lowercase, only [a-z0-9-], no consecutive hyphens, doesn't start/end with hyphen, non-empty. Names differing only in case/whitespace-vs-hyphen/underscore-vs-hyphen produce same slug
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 5.9**
 
-  - [-] 6.7 Write property test for role ordering consistency (Property 9)
+  - [x] 6.7 Write property test for role ordering consistency (Property 9)
     - **Property 9: Role privilege ordering consistency**
     - Generate all role pairs, verify that if A < B in privilege, B has access to at least every endpoint A can access. Ordering is strict and transitive
     - Use jqwik with minimum 100 iterations
     - **Validates: Requirements 6.2**
 
-  - [-] 6.8 Write property test for audit filter monotonicity (Property 11)
+  - [x] 6.8 Write property test for audit filter monotonicity (Property 11)
     - **Property 11: Audit event ordering and filter correctness**
     - Generate sets of audit events and random filter combinations, verify adding a filter never increases result set size and results are ordered by created_at descending
     - Use jqwik with Testcontainers, minimum 100 iterations
     - **Validates: Requirements 7.3, 7.4**
 
-- [ ] 7. Checkpoint - Verify backend services
+- [x] 7. Checkpoint - Verify backend services
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 8. Frontend scaffolding and setup
@@ -178,7 +178,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `src/api/audit.ts` with function: `listAuditEvents(filters)`
     - _Requirements: 10.1, 10.8, 11.1, 11.11_
 
-- [ ] 10. Frontend admin pages
+- [x] 10. Frontend admin pages
   - [x] 10.1 Create admin layout and routing
     - Create `src/App.tsx` with React Router 7 configuration: role-gated admin routes, browser routes, auth callback, unauthorized page
     - Create `src/admin/AdminLayout.tsx` with sidebar navigation (Users, Teams, Audit Logs) and content area
@@ -186,27 +186,27 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Wire routing: `/admin/*` requires Org_Admin or Catalog_Admin role, `/catalog/*` requires any authenticated user
     - _Requirements: 10.3, 10.4_
 
-  - [-] 10.2 Implement Users management page
+  - [x] 10.2 Implement Users management page
     - Create `src/admin/UsersPage.tsx` with paginated table (TanStack Table) showing email, display name, role, enabled status, creation date
     - Implement inline role change dropdown calling PATCH `/api/users/{id}/role`
     - Use TanStack Query for data fetching with loading/error states
     - _Requirements: 10.5_
 
-  - [-] 10.3 Implement Teams management pages
+  - [x] 10.3 Implement Teams management pages
     - Create `src/admin/TeamsPage.tsx` with paginated team list showing name, member count, creation date, and "Create Team" button with modal form
     - Create `src/admin/TeamDetailPage.tsx` showing team members with add/remove controls
     - Handle form validation (name: 2-100 chars, [a-zA-Z0-9 \-_])
     - Handle API errors: 409 Conflict for duplicate name, 404 for not found
     - _Requirements: 10.6_
 
-  - [-] 10.4 Implement Audit Logs page
+  - [x] 10.4 Implement Audit Logs page
     - Create `src/admin/AuditLogsPage.tsx` with paginated table showing timestamp, actor, action, target type, target ID
     - Implement filter controls: action type dropdown, target type dropdown, actor search, date range picker
     - Results sorted by timestamp descending, filters applied as URL query params
     - _Requirements: 10.7_
 
-- [ ] 11. Frontend skill browser pages
-  - [ ] 11.1 Create browser layout and catalog page
+- [x] 11. Frontend skill browser pages
+  - [x] 11.1 Create browser layout and catalog page
     - Create `src/browser/BrowserLayout.tsx` with catalog-focused layout
     - Create `src/browser/CatalogPage.tsx` with search input, filter panel, and paginated skill results grid/list
     - Create `src/browser/components/SearchBar.tsx` with debounced input
@@ -214,33 +214,33 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `src/browser/components/SkillCard.tsx` displaying: name, description, owner team, lifecycle status, approval state, tools, risk level, last updated
     - _Requirements: 11.3, 11.4, 11.5_
 
-  - [ ] 11.2 Create skill detail page with export actions
+  - [x] 11.2 Create skill detail page with export actions
     - Create `src/browser/SkillDetailPage.tsx` displaying: overview, instructions, variants, applicability, examples, limitations, risk level, review status, version history, feedback summary
     - Implement export/copy buttons: Copy generic prompt, Copy for GitHub Copilot, Copy for Codex, Export as Markdown, Export as AGENTS.md, Export as Cursor rule, Export as Kiro steering fragment
     - Handle clipboard API and file download triggers
     - _Requirements: 11.6, 11.7, 11.8_
 
-  - [ ] 11.3 Implement lifecycle badge component and URL state management
+  - [x] 11.3 Implement lifecycle badge component and URL state management
     - Create `src/browser/components/LifecycleBadge.tsx` with distinct color/icon for each status: Draft, Published, Team_Approved, Company_Approved, Deprecated, Archived, Blocked
     - Implement URL state serialization: search query and all filter selections persisted as URL query parameters, restored on page load for direct navigation/bookmarking
     - _Requirements: 11.9, 11.12_
 
-  - [ ] 11.4 Write property test for lifecycle badge exhaustiveness (Property 13)
+  - [x] 11.4 Write property test for lifecycle badge exhaustiveness (Property 13)
     - **Property 13: Lifecycle badge mapping is exhaustive**
     - For every lifecycle status value, verify badge renders a non-empty, distinct visual indicator
     - Use fast-check with Vitest
     - **Validates: Requirements 11.9**
 
-  - [ ] 11.5 Write property test for URL state round-trip (Property 14)
+  - [x] 11.5 Write property test for URL state round-trip (Property 14)
     - **Property 14: URL state round-trip for search and filters**
     - Generate arbitrary combinations of search query and filter selections, serialize to URL params, parse back, verify equivalence
     - Use fast-check with Vitest, minimum 100 iterations
     - **Validates: Requirements 11.12**
 
-- [ ] 12. Checkpoint - Verify frontend builds
+- [x] 12. Checkpoint - Verify frontend builds
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 13. Documentation site
+- [x] 13. Documentation site
   - [x] 13.1 Initialize VitePress documentation site
     - Create `docs/` directory with VitePress project: `package.json`, `.vitepress/config.ts`
     - Configure site title, navigation, and sidebar structure
@@ -255,7 +255,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `docs/guide/deployment-aws.md` with Terraform/AWS deployment guide
     - _Requirements: 9.1, 9.6_
 
-  - [ ] 13.3 Write feature guides and API reference
+  - [x] 13.3 Write feature guides and API reference
     - Create `docs/features/authentication.md`, `users.md`, `teams.md`, `rbac.md`, `audit.md`, `health.md` — each describing the feature's capabilities
     - Create `docs/api/overview.md` with API conventions (pagination, error format, auth header)
     - Create `docs/api/users.md`, `docs/api/teams.md`, `docs/api/audit.md` — each with method, path, request/response schemas, required role, example pairs
@@ -271,8 +271,8 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Create `frontend/Dockerfile` (multi-stage: npm build → nginx serving static assets)
     - _Requirements: 1.5_
 
-- [ ] 15. Backend integration tests
-  - [ ] 15.1 Write integration tests for V2 migration and repositories
+- [x] 15. Backend integration tests
+  - [x] 15.1 Write integration tests for V2 migration and repositories
     - Test V2 migration applies cleanly on Testcontainers PostgreSQL
     - Test UserRepository CRUD: create, find by org+subject, unique constraint enforcement
     - Test TeamRepository CRUD: create, find by org, slug uniqueness enforcement
@@ -280,7 +280,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Verify org scoping: queries only return records matching the org ID
     - _Requirements: 2.1–2.10_
 
-  - [ ] 15.2 Write integration tests for security filter chain
+  - [x] 15.2 Write integration tests for security filter chain
     - Test unauthenticated requests to `/actuator/health` succeed
     - Test unauthenticated requests to `/api/users` get 401
     - Test requests with invalid JWT get 401
@@ -289,7 +289,7 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Use `spring-security-test` JWT mocking with MockMvc
     - _Requirements: 3.1–3.5, 4.1, 4.4, 4.7_
 
-  - [ ] 15.3 Write integration tests for RBAC and endpoint access
+  - [x] 15.3 Write integration tests for RBAC and endpoint access
     - Test Org_Admin can access all endpoints (Property 6 validation)
     - Test Read_Only_Auditor cannot mutate (Property 7 validation)
     - Test Skill_Consumer/Skill_Author denied admin endpoints (Property 8 validation)
@@ -297,20 +297,20 @@ This plan implements the foundational layer of the Alexandria platform — proje
     - Use parameterized tests iterating over roles × endpoints
     - _Requirements: 6.1, 6.4, 6.5, 6.10, 6.11_
 
-  - [ ] 15.4 Write integration tests for team and audit endpoints
+  - [x] 15.4 Write integration tests for team and audit endpoints
     - Test team creation: valid name → 201, duplicate slug → 409, invalid role for creation → 403
     - Test add/remove members: valid → 201/204, last owner removal → 409, not found → 404
     - Test audit event listing: filters combine with AND logic, results ordered descending
     - Test /api/me returns correct user profile (Property 12 validation)
     - _Requirements: 5.1–5.12, 7.3, 7.4, 8.4_
 
-  - [ ] 15.5 Write property test for audit completeness (Property 10)
+  - [x] 15.5 Write property test for audit completeness (Property 10)
     - **Property 10: Audit completeness and field correctness**
     - For each governance operation (user provisioning, role change, team creation, member add/remove), verify exactly one audit event is created with correct organization_id, action, target_type, target_id, and non-empty metadata
     - Use jqwik with Testcontainers, minimum 100 iterations
     - **Validates: Requirements 7.1, 7.2, 4.3, 5.7, 5.8, 6.9**
 
-- [ ] 16. Final checkpoint - Ensure all tests pass
+- [x] 16. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
