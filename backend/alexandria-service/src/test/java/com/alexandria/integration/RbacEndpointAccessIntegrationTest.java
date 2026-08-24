@@ -1,7 +1,6 @@
 package com.alexandria.integration;
 
 import com.alexandria.auth.AlexandriaUserDetails;
-import com.alexandria.config.UserProvisioningFilter;
 import com.alexandria.organization.OrganizationRepository;
 import com.alexandria.organization.entity.OrganizationEntity;
 import com.alexandria.user.UserRepository;
@@ -20,12 +19,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -52,8 +50,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class RbacEndpointAccessIntegrationTest {
 
-    @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
     private UserRepository userRepository;
@@ -68,6 +68,11 @@ class RbacEndpointAccessIntegrationTest {
 
     @BeforeAll
     void setupTestData() {
+        // Set up MockMvc with Spring Security integration
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
+
         // Create two organizations for org-scoping tests
         var orgA = new OrganizationEntity();
         orgA.setName("Organization A");
@@ -272,7 +277,7 @@ class RbacEndpointAccessIntegrationTest {
                     .andExpect(status().isForbidden());
         }
 
-        @ParameterizedTest(name = "{0} cannot PATCH /api/users/{userId}/role")
+        @ParameterizedTest(name = "[{index}] {0} cannot PATCH user role")
         @MethodSource("restrictedRoles")
         @DisplayName("Restricted roles cannot change roles")
         void restrictedRole_cannotChangeRole(Role role) throws Exception {
@@ -346,7 +351,7 @@ class RbacEndpointAccessIntegrationTest {
             // Org B should not contain any org A user emails
             for (Role role : Role.values()) {
                 String orgAEmail = role.name().toLowerCase().replace("_", "") + "@orga.com";
-                org.assertj.core.api.Assertions.assertThat(body).doesNotContain(orgAEmail);
+                assertThat(body).doesNotContain(orgAEmail);
             }
         }
 
@@ -368,7 +373,7 @@ class RbacEndpointAccessIntegrationTest {
                     .andReturn();
 
             String body = result.getResponse().getContentAsString();
-            org.assertj.core.api.Assertions.assertThat(body).doesNotContain("Org A Scoping Team");
+            assertThat(body).doesNotContain("Org A Scoping Team");
         }
 
         @Test
@@ -382,7 +387,7 @@ class RbacEndpointAccessIntegrationTest {
             String body = result.getResponse().getContentAsString();
             // Org B should not contain any org A user IDs as actors
             for (UUID userId : orgAUserIds.values()) {
-                org.assertj.core.api.Assertions.assertThat(body).doesNotContain(userId.toString());
+                assertThat(body).doesNotContain(userId.toString());
             }
         }
     }
@@ -449,11 +454,11 @@ class RbacEndpointAccessIntegrationTest {
 
             int statusCode = result.getResponse().getStatus();
             if (expectedAllowed) {
-                org.assertj.core.api.Assertions.assertThat(statusCode)
+                assertThat(statusCode)
                         .as("Expected %s to be allowed %s %s but got %d", role, method, path, statusCode)
                         .isNotEqualTo(403);
             } else {
-                org.assertj.core.api.Assertions.assertThat(statusCode)
+                assertThat(statusCode)
                         .as("Expected %s to be denied %s %s but got %d", role, method, path, statusCode)
                         .isEqualTo(403);
             }
@@ -498,17 +503,9 @@ class RbacEndpointAccessIntegrationTest {
             var userDetails = new AlexandriaUserDetails(userId, organizationId, role,
                     role.name().toLowerCase() + "@test.com");
 
-            // Create a minimal JWT for the JwtAuthenticationToken
-            Jwt jwt = Jwt.withTokenValue("mock-token")
-                    .header("alg", "RS256")
-                    .claim("sub", "subject-" + role.name().toLowerCase())
-                    .claim("email", role.name().toLowerCase() + "@test.com")
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
-
-            var jwtAuth = new JwtAuthenticationToken(jwt);
-            var alexandriaAuth = new UserProvisioningFilter.AlexandriaAuthentication(jwtAuth, userDetails);
+            // Use the proper AlexandriaAuthentication from com.alexandria.auth
+            // (not the inner class from UserProvisioningFilter)
+            var alexandriaAuth = new com.alexandria.auth.AlexandriaAuthentication(userDetails);
 
             // Set the SecurityContext for this request
             var securityContext = SecurityContextHolder.createEmptyContext();

@@ -21,14 +21,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -53,11 +61,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p><b>Requirements: 5.1–5.12, 7.3, 7.4, 8.4</b></p>
  */
 @SpringBootTest
-@ActiveProfiles("test")
+@Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(TeamAndAuditEndpointIntegrationTest.JwtDecoderTestConfig.class)
 class TeamAndAuditEndpointIntegrationTest {
 
+    @Container
+    @SuppressWarnings("resource")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("alexandria_test")
+            .withUsername("test")
+            .withPassword("test");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.flyway.url", postgres::getJdbcUrl);
+        registry.add("spring.flyway.user", postgres::getUsername);
+        registry.add("spring.flyway.password", postgres::getPassword);
+        registry.add("alexandria.organization.default-id", () -> "00000000-0000-0000-0000-000000000001");
+        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> "https://issuer.example.com");
+    }
+
     @Autowired
+    private org.springframework.web.context.WebApplicationContext webApplicationContext;
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -86,6 +119,11 @@ class TeamAndAuditEndpointIntegrationTest {
 
     @BeforeAll
     void setupTestData() {
+        this.mockMvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity())
+                .build();
+
         var org = new OrganizationEntity();
         org.setName("Team Test Org");
         org.setSlug("team-test-org-" + UUID.randomUUID());
@@ -148,7 +186,7 @@ class TeamAndAuditEndpointIntegrationTest {
         @Test
         @DisplayName("Valid team creation returns 201 with correct response")
         void validTeamCreation_returns201() throws Exception {
-            var result = mockMvc.perform(post("/api/teams")
+            mockMvc.perform(post("/api/teams")
                             .with(authenticatedAs(Role.Org_Admin, orgId, adminUserId))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -159,8 +197,7 @@ class TeamAndAuditEndpointIntegrationTest {
                     .andExpect(jsonPath("$.description").value("The engineering team"))
                     .andExpect(jsonPath("$.id").isNotEmpty())
                     .andExpect(jsonPath("$.memberCount").value(1))
-                    .andExpect(jsonPath("$.createdAt").isNotEmpty())
-                    .andReturn();
+                    .andExpect(jsonPath("$.createdAt").isNotEmpty());
         }
 
         @Test
@@ -250,7 +287,7 @@ class TeamAndAuditEndpointIntegrationTest {
 
         @BeforeAll
         void createTeamForMemberTests() {
-            // Create a team directly via the repository to avoid test coupling
+            // Create a team directly via the repository
             var team = new TeamEntity();
             team.setOrganizationId(orgId);
             team.setName("Member Test Team");
@@ -413,13 +450,13 @@ class TeamAndAuditEndpointIntegrationTest {
         @DisplayName("Audit events are returned in descending order by created_at")
         void auditEvents_orderedDescending() throws Exception {
             var result = mockMvc.perform(get("/api/audit-events")
+                            .param("size", "100")
                             .with(authenticatedAs(Role.Org_Admin, orgId, adminUserId)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray())
                     .andReturn();
 
             String body = result.getResponse().getContentAsString();
-            // Parse the timestamps and verify descending order
             var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             mapper.findAndRegisterModules();
             var tree = mapper.readTree(body);
@@ -439,6 +476,7 @@ class TeamAndAuditEndpointIntegrationTest {
         void filterByAction_andLogic() throws Exception {
             var result = mockMvc.perform(get("/api/audit-events")
                             .param("action", "team.created")
+                            .param("size", "100")
                             .with(authenticatedAs(Role.Org_Admin, orgId, adminUserId)))
                     .andExpect(status().isOk())
                     .andReturn();
@@ -459,6 +497,7 @@ class TeamAndAuditEndpointIntegrationTest {
         void filterByTargetType_andLogic() throws Exception {
             var result = mockMvc.perform(get("/api/audit-events")
                             .param("target_type", "team_member")
+                            .param("size", "100")
                             .with(authenticatedAs(Role.Org_Admin, orgId, adminUserId)))
                     .andExpect(status().isOk())
                     .andReturn();
@@ -480,6 +519,7 @@ class TeamAndAuditEndpointIntegrationTest {
             var result = mockMvc.perform(get("/api/audit-events")
                             .param("action", "team.created")
                             .param("actor_user_id", auditActorId.toString())
+                            .param("size", "100")
                             .with(authenticatedAs(Role.Org_Admin, orgId, adminUserId)))
                     .andExpect(status().isOk())
                     .andReturn();
@@ -564,7 +604,7 @@ class TeamAndAuditEndpointIntegrationTest {
         }
 
         @Test
-        @DisplayName("/api/me returns correct profile for different roles")
+        @DisplayName("/api/me returns correct profile for Skill_Author")
         void apiMe_correctForSkillAuthor() throws Exception {
             mockMvc.perform(get("/api/me")
                             .with(authenticatedAs(Role.Skill_Author, orgId, memberUserId)))
@@ -623,5 +663,18 @@ class TeamAndAuditEndpointIntegrationTest {
 
             return request;
         };
+    }
+
+    /**
+     * Mock JwtDecoder to avoid needing real OIDC provider during tests.
+     */
+    @TestConfiguration
+    static class JwtDecoderTestConfig {
+        @Bean
+        public JwtDecoder jwtDecoder() {
+            return token -> {
+                throw new org.springframework.security.oauth2.jwt.JwtException("Invalid token");
+            };
+        }
     }
 }
