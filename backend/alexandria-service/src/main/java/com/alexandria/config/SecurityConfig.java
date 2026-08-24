@@ -3,6 +3,7 @@ package com.alexandria.config;
 import com.alexandria.audit.AuditEventRepository;
 import com.alexandria.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,6 +11,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -37,6 +41,9 @@ public class SecurityConfig {
     private final OrganizationProperties organizationProperties;
     private final UserRepository userRepository;
     private final AuditEventRepository auditEventRepository;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
+    private String jwkSetUri;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -78,5 +85,27 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         return new JwtAuthenticationConverter();
+    }
+
+    /**
+     * Custom JwtDecoder that uses JWK Set URI directly without issuer validation.
+     * This is necessary for local development with the mock-oauth2-server where
+     * the issuer in the token (http://localhost:9000/...) differs from the URL
+     * the backend uses to reach the server (http://heptastadion:9000/...).
+     *
+     * <p>In production, set spring.security.oauth2.resourceserver.jwt.issuer-uri
+     * and remove jwk-set-uri to get full issuer validation.</p>
+     */
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        if (jwkSetUri != null && !jwkSetUri.isBlank()) {
+            return NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                    .jwsAlgorithm(SignatureAlgorithm.RS256)
+                    .build();
+        }
+        // Fall back to issuer-uri based auto-configuration by returning
+        // a decoder built from the OIDC issuer URI
+        return NimbusJwtDecoder.withIssuerLocation(oidcProperties.issuerUri())
+                .build();
     }
 }
