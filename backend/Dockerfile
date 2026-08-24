@@ -1,8 +1,8 @@
 # Stage 1: Build with Maven
 FROM eclipse-temurin:25-jdk AS build
 
-# Install curl (needed by Maven wrapper to download Maven)
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# Install curl and unzip (needed by Maven wrapper to download and extract Maven)
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
