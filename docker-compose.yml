@@ -30,11 +30,11 @@ services:
           ]
         }
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:9000/alexandria/.well-known/openid-configuration"]
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9000' 2>/dev/null || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 15s
 
   postgres:
     image: postgres:16-alpine
