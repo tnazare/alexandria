@@ -1,28 +1,26 @@
 package com.alexandria.config;
 
 import com.alexandria.organization.OrganizationRepository;
-import com.alexandria.organization.entity.OrganizationEntity;
 import com.alexandria.user.UserRepository;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,38 +44,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p><b>Validates: Requirements 3.1–3.5, 4.1, 4.4, 4.7</b></p>
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@SpringBootTest
 @ActiveProfiles("test")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(SecurityFilterChainIntegrationTest.JwtDecoderTestConfig.class)
 class SecurityFilterChainIntegrationTest {
 
     private static final UUID DEFAULT_ORG_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
-    @Container
-    @SuppressWarnings("resource")
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("alexandria_test")
-            .withUsername("test")
-            .withPassword("test");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
-        registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("spring.flyway.url", postgres::getJdbcUrl);
-        registry.add("spring.flyway.user", postgres::getUsername);
-        registry.add("spring.flyway.password", postgres::getPassword);
-        registry.add("alexandria.organization.default-id", () -> DEFAULT_ORG_ID.toString());
-        registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> "https://issuer.example.com");
-    }
-
     @Autowired
-    private MockMvc mockMvc;
+    private WebApplicationContext webApplicationContext;
 
     @Autowired
     private UserRepository userRepository;
@@ -85,17 +61,29 @@ class SecurityFilterChainIntegrationTest {
     @Autowired
     private OrganizationRepository organizationRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    private MockMvc mockMvc;
+
+    @BeforeAll
+    void setUpMockMvc() {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .apply(SecurityMockMvcConfigurers.springSecurity())
+                .build();
+
+        // Ensure the default org exists using JDBC to avoid @GeneratedValue issues
+        if (!organizationRepository.existsById(DEFAULT_ORG_ID)) {
+            jdbcTemplate.update(
+                    "INSERT INTO organizations (id, name, slug, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())",
+                    DEFAULT_ORG_ID, "Test Organization", "test-org");
+        }
+    }
+
     @BeforeEach
     void setUp() {
-        // Ensure the default org exists for provisioning tests
-        if (!organizationRepository.existsById(DEFAULT_ORG_ID)) {
-            var org = new OrganizationEntity();
-            org.setId(DEFAULT_ORG_ID);
-            org.setName("Test Organization");
-            org.setSlug("test-org");
-            organizationRepository.saveAndFlush(org);
-        }
-        // Clean up users between tests
+        // Clean up audit events referencing users, then users between tests
+        jdbcTemplate.update("DELETE FROM audit_events WHERE organization_id = ?", DEFAULT_ORG_ID);
         userRepository.deleteAll();
     }
 
@@ -227,8 +215,9 @@ class SecurityFilterChainIntegrationTest {
         public JwtDecoder jwtDecoder() {
             // This decoder will reject all raw tokens (for the invalid token test)
             // The jwt() post-processor bypasses this for valid mocked JWTs
+            // Must throw BadJwtException so Spring Security returns 401 (not 500)
             return token -> {
-                throw new org.springframework.security.oauth2.jwt.JwtException("Invalid token");
+                throw new org.springframework.security.oauth2.jwt.BadJwtException("Invalid token");
             };
         }
     }
