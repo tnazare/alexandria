@@ -91,27 +91,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const userRole = useMemo(() => {
     if (!user?.profile) return null
-    // The role can come from a custom claim in the ID token
-    // or from the /api/me endpoint. For now, check common claim locations.
+    // Check ID token claims first
     const profile = user.profile as Record<string, unknown>
-    return (
+    const tokenRole =
       (profile['alexandria_role'] as string) ??
       (profile['role'] as string) ??
       null
-    )
+    return tokenRole
   }, [user])
+
+  // Fetch role from /api/me as fallback when token doesn't include it
+  const [apiRole, setApiRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user || user.expired) return
+    if (userRole) return // Already have role from token
+
+    async function fetchRole() {
+      try {
+        const token = user!.access_token
+        const response = await fetch(`${config.apiBaseUrl}/api/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setApiRole(data.role ?? null)
+        }
+      } catch {
+        // Ignore — role will be null, user gets /catalog
+      }
+    }
+
+    void fetchRole()
+  }, [user, userRole])
+
+  const effectiveRole = userRole ?? apiRole
 
   const value: AuthContextValue = useMemo(
     () => ({
       user,
       isAuthenticated: !!user && !user.expired,
       isLoading,
-      userRole,
+      userRole: effectiveRole,
       login,
       logout,
       getAccessToken,
     }),
-    [user, isLoading, userRole, login, logout, getAccessToken],
+    [user, isLoading, effectiveRole, login, logout, getAccessToken],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
