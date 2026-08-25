@@ -2,6 +2,7 @@ package com.alexandria.common.exception;
 
 import com.alexandria.common.dto.ErrorResponse;
 import com.alexandria.skill.SkillAccessDeniedException;
+import com.alexandria.skill.SkillConflictException;
 import com.alexandria.skill.SkillNotFoundException;
 import com.alexandria.taxonomy.TaxonomyConflictException;
 import com.alexandria.team.TeamConflictException;
@@ -47,6 +48,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of("FORBIDDEN", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SkillConflictException.class)
+    public ResponseEntity<ErrorResponse> handleSkillConflict(SkillConflictException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("CONFLICT", ex.getMessage()));
     }
 
     @ExceptionHandler(TeamConflictException.class)

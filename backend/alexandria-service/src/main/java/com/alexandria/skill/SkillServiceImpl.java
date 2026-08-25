@@ -3,7 +3,10 @@ package com.alexandria.skill;
 import com.alexandria.audit.AuditService;
 import com.alexandria.auth.AlexandriaUserDetails;
 import com.alexandria.skill.entity.SkillEntity;
+import com.alexandria.skill.entity.SkillTagEntity;
 import com.alexandria.skill.entity.SkillVersionEntity;
+import com.alexandria.taxonomy.TaxonomyEntryRepository;
+import com.alexandria.taxonomy.entity.TaxonomyEntryEntity;
 import com.alexandria.team.TeamMemberRepository;
 import com.alexandria.team.TeamRepository;
 import com.alexandria.user.entity.Role;
@@ -14,7 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +37,8 @@ public class SkillServiceImpl implements SkillService {
     private final SkillSlugGenerator skillSlugGenerator;
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final SkillTagRepository skillTagRepository;
+    private final TaxonomyEntryRepository taxonomyEntryRepository;
     private final AuditService auditService;
 
     @Override
@@ -148,6 +156,199 @@ public class SkillServiceImpl implements SkillService {
         return skillVersionRepository.findBySkillIdAndVersionNumber(skillId, versionNumber)
                 .orElseThrow(() -> new SkillNotFoundException(
                         "Version " + versionNumber + " not found for skill"));
+    }
+
+    @Override
+    @Transactional
+    public SkillEntity update(UUID skillId, UpdateParams params, AlexandriaUserDetails userDetails) {
+        UUID orgId = userDetails.organizationId();
+        UUID userId = userDetails.userId();
+
+        // 1. Load skill by ID and org (404 if not found)
+        SkillEntity skill = skillRepository.findByIdAndOrganizationId(skillId, orgId)
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
+
+        // 2. Enforce edit authority (team member OR admin, else 403)
+        if (!userDetails.role().isAdmin()) {
+            teamMemberRepository.findByTeamIdAndUserId(skill.getOwnerTeamId(), userId)
+                    .orElseThrow(() -> new SkillAccessDeniedException(
+                            "User is not a member of the owner team and lacks administrative authority"));
+        }
+
+        // 3. Check lifecycle status — reject if Deprecated/Archived/Blocked
+        String status = skill.getLifecycleStatus();
+        if (Set.of("Deprecated", "Archived", "Blocked").contains(status)) {
+            throw new SkillConflictException(
+                    "Cannot edit skill in " + status + " status");
+        }
+
+        // Determine current version
+        SkillVersionEntity currentVersion = skillVersionRepository.findById(skill.getCurrentVersionId())
+                .orElseThrow(() -> new SkillNotFoundException("Current version not found"));
+
+        SkillVersionEntity targetVersion;
+        List<String> modifiedFields = new ArrayList<>();
+
+        if ("Draft".equals(status)) {
+            // 4. Draft: update in-place
+            targetVersion = currentVersion;
+
+            // Update skill-level fields if provided
+            if (params.name() != null) {
+                skill.setName(params.name());
+                String newSlug = skillSlugGenerator.generateUniqueSlug(params.name(), orgId, skillRepository);
+                skill.setSlug(newSlug);
+                modifiedFields.add("name");
+                modifiedFields.add("slug");
+            }
+            if (params.description() != null) {
+                skill.setDescription(params.description());
+                modifiedFields.add("description");
+            }
+            if (params.riskLevel() != null) {
+                skill.setRiskLevel(params.riskLevel());
+                modifiedFields.add("riskLevel");
+            }
+
+            // Update version-level fields
+            updateVersionFields(targetVersion, params, modifiedFields);
+
+            skillVersionRepository.save(targetVersion);
+            skill = skillRepository.save(skill);
+
+            // Audit: "skill.updated"
+            auditService.record(orgId, userId, "skill.updated", "skill", skill.getId(),
+                    Map.of("modifiedFields", String.join(",", modifiedFields)));
+
+        } else {
+            // 5. Published/Team_Approved/Company_Approved: create new version
+            // Require changelog
+            if (params.changelog() == null || params.changelog().isBlank()
+                    || params.changelog().length() > 2000) {
+                throw new IllegalArgumentException(
+                        "Changelog is required (1-2000 characters) when editing a published skill");
+            }
+
+            // Create new version with incremented version number
+            int nextVersionNumber = skillVersionRepository.countBySkillId(skillId) + 1;
+
+            targetVersion = new SkillVersionEntity();
+            targetVersion.setSkillId(skillId);
+            targetVersion.setVersionNumber(nextVersionNumber);
+
+            // Copy fields from current version as baseline
+            targetVersion.setCanonicalInstructions(currentVersion.getCanonicalInstructions());
+            targetVersion.setApplicability(currentVersion.getApplicability());
+            targetVersion.setLimitations(currentVersion.getLimitations());
+            targetVersion.setWhenToUse(currentVersion.getWhenToUse());
+            targetVersion.setExamples(currentVersion.getExamples());
+            targetVersion.setSupportedTools(new ArrayList<>(currentVersion.getSupportedTools()));
+            targetVersion.setChangelog(params.changelog());
+
+            // Apply version-level updates from params
+            updateVersionFields(targetVersion, params, modifiedFields);
+
+            targetVersion = skillVersionRepository.save(targetVersion);
+
+            // Revert skill lifecycle_status to Draft
+            skill.setLifecycleStatus("Draft");
+            skill.setCurrentVersionId(targetVersion.getId());
+
+            // Update skill-level fields if provided
+            if (params.name() != null) {
+                skill.setName(params.name());
+                String newSlug = skillSlugGenerator.generateUniqueSlug(params.name(), orgId, skillRepository);
+                skill.setSlug(newSlug);
+            }
+            if (params.description() != null) {
+                skill.setDescription(params.description());
+            }
+            if (params.riskLevel() != null) {
+                skill.setRiskLevel(params.riskLevel());
+            }
+
+            skill = skillRepository.save(skill);
+
+            // Audit: "skill_version.created"
+            auditService.record(orgId, userId, "skill_version.created", "skill_version", targetVersion.getId(),
+                    Map.of(
+                            "skillId", skillId.toString(),
+                            "versionNumber", String.valueOf(nextVersionNumber)
+                    ));
+        }
+
+        // 6. Handle tags: if tagIds provided, validate and reinsert
+        if (params.tagIds() != null) {
+            handleTagUpdate(skill, params.tagIds(), orgId);
+        }
+
+        return skill;
+    }
+
+    /**
+     * Applies non-null version-level fields from params onto the target version entity.
+     */
+    private void updateVersionFields(SkillVersionEntity version, UpdateParams params, List<String> modifiedFields) {
+        if (params.canonicalInstructions() != null) {
+            version.setCanonicalInstructions(params.canonicalInstructions());
+            modifiedFields.add("canonicalInstructions");
+        }
+        if (params.applicability() != null) {
+            version.setApplicability(params.applicability());
+            modifiedFields.add("applicability");
+        }
+        if (params.limitations() != null) {
+            version.setLimitations(params.limitations());
+            modifiedFields.add("limitations");
+        }
+        if (params.whenToUse() != null) {
+            version.setWhenToUse(params.whenToUse());
+            modifiedFields.add("whenToUse");
+        }
+        if (params.examples() != null) {
+            version.setExamples(params.examples());
+            modifiedFields.add("examples");
+        }
+        if (params.changelog() != null) {
+            version.setChangelog(params.changelog());
+            modifiedFields.add("changelog");
+        }
+        if (params.supportedTools() != null) {
+            version.setSupportedTools(params.supportedTools());
+            modifiedFields.add("supportedTools");
+        }
+    }
+
+    /**
+     * Validates tag IDs against the org's taxonomy entries and replaces all skill tags.
+     */
+    private void handleTagUpdate(SkillEntity skill, List<UUID> tagIds, UUID orgId) {
+        if (tagIds.isEmpty()) {
+            skillTagRepository.deleteBySkillId(skill.getId());
+            return;
+        }
+
+        // Validate all tag IDs are active taxonomy entries in the org
+        List<TaxonomyEntryEntity> entries = taxonomyEntryRepository.findByOrganizationIdAndIdIn(orgId, tagIds);
+        List<UUID> validActiveIds = entries.stream()
+                .filter(TaxonomyEntryEntity::isActive)
+                .map(TaxonomyEntryEntity::getId)
+                .toList();
+
+        if (validActiveIds.size() != tagIds.size()) {
+            throw new IllegalArgumentException(
+                    "One or more tag IDs are invalid or inactive in this organization");
+        }
+
+        // Delete existing and reinsert
+        skillTagRepository.deleteBySkillId(skill.getId());
+
+        for (UUID tagId : tagIds) {
+            SkillTagEntity tag = new SkillTagEntity();
+            tag.setSkillId(skill.getId());
+            tag.setTaxonomyEntryId(tagId);
+            skillTagRepository.save(tag);
+        }
     }
 
     /**

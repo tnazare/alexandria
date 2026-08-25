@@ -82,4 +82,21 @@ public interface SkillService {
      * @throws SkillNotFoundException if the skill or version does not exist or the user lacks visibility
      */
     SkillVersionEntity getVersion(UUID skillId, int versionNumber, AlexandriaUserDetails userDetails);
+
+    /**
+     * Updates a skill with partial parameters, applying versioning logic based on lifecycle status.
+     *
+     * <p>If the skill is in Draft status, changes are applied in-place on the current version.
+     * If the skill is in Published/Team_Approved/Company_Approved status, a new version is created
+     * and the lifecycle is reverted to Draft.</p>
+     *
+     * @param skillId     the skill's UUID
+     * @param params      the update parameters (only non-null fields are applied)
+     * @param userDetails the authenticated user's details
+     * @return the updated SkillEntity
+     * @throws SkillNotFoundException      if the skill does not exist in the user's organization
+     * @throws SkillAccessDeniedException  if the user lacks edit authority
+     * @throws SkillConflictException      if the skill lifecycle status prevents editing
+     */
+    SkillEntity update(UUID skillId, UpdateParams params, AlexandriaUserDetails userDetails);
 }
