@@ -22,7 +22,8 @@ services:
                     "email": "dev@alexandria.local",
                     "email_verified": true,
                     "name": "Dev User",
-                    "preferred_username": "dev@alexandria.local"
+                    "preferred_username": "dev@alexandria.local",
+                    "alexandria_role": "Org_Admin"
                   }
                 }
               ]
