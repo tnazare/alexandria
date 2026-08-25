@@ -1,6 +1,8 @@
 package com.alexandria.common.exception;
 
 import com.alexandria.common.dto.ErrorResponse;
+import com.alexandria.skill.SkillAccessDeniedException;
+import com.alexandria.skill.SkillNotFoundException;
 import com.alexandria.taxonomy.TaxonomyConflictException;
 import com.alexandria.team.TeamConflictException;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +33,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of("NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SkillNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSkillNotFound(SkillNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SkillAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleSkillAccessDenied(SkillAccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("FORBIDDEN", ex.getMessage()));
     }
 
     @ExceptionHandler(TeamConflictException.class)
