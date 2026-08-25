@@ -173,6 +173,7 @@ class SkillCreationInvariantsPropertyTest {
     private TestFixture setupFixture(CreationInput input) {
         SkillRepository skillRepository = mock(SkillRepository.class);
         SkillVersionRepository skillVersionRepository = mock(SkillVersionRepository.class);
+        SkillVariantRepository skillVariantRepository = mock(SkillVariantRepository.class);
         SkillAccessGrantRepository skillAccessGrantRepository = mock(SkillAccessGrantRepository.class);
         SkillSlugGenerator skillSlugGenerator = mock(SkillSlugGenerator.class);
         TeamRepository teamRepository = mock(TeamRepository.class);
@@ -232,9 +233,9 @@ class SkillCreationInvariantsPropertyTest {
         });
 
         SkillServiceImpl service = new SkillServiceImpl(
-                skillRepository, skillVersionRepository, skillAccessGrantRepository,
-                skillSlugGenerator, teamRepository, teamMemberRepository,
-                skillTagRepository, taxonomyEntryRepository, auditService);
+                skillRepository, skillVersionRepository, skillVariantRepository,
+                skillAccessGrantRepository, skillSlugGenerator, teamRepository,
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
 
         return new TestFixture(service, skillCaptor, versionCaptor);
     }
