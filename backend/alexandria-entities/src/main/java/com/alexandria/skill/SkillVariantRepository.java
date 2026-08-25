@@ -1,7 +1,9 @@
 package com.alexandria.skill;
 
 import com.alexandria.skill.entity.SkillVariantEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,4 +21,8 @@ public interface SkillVariantRepository extends JpaRepository<SkillVariantEntity
     Optional<SkillVariantEntity> findBySkillVersionIdAndTool(UUID skillVersionId, String tool);
 
     boolean existsBySkillVersionIdAndTool(UUID skillVersionId, String tool);
+
+    @Modifying
+    @Transactional
+    void deleteBySkillVersionId(UUID skillVersionId);
 }

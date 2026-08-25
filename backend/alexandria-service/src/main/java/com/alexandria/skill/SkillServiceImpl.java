@@ -34,6 +34,7 @@ public class SkillServiceImpl implements SkillService {
 
     private final SkillRepository skillRepository;
     private final SkillVersionRepository skillVersionRepository;
+    private final SkillVariantRepository skillVariantRepository;
     private final SkillAccessGrantRepository skillAccessGrantRepository;
     private final SkillSlugGenerator skillSlugGenerator;
     private final TeamRepository teamRepository;
@@ -441,6 +442,101 @@ public class SkillServiceImpl implements SkillService {
                 ));
 
         return skill;
+    }
+
+    @Override
+    @Transactional
+    public SkillEntity changeVisibility(UUID skillId, String visibility, AlexandriaUserDetails userDetails) {
+        UUID orgId = userDetails.organizationId();
+        UUID userId = userDetails.userId();
+
+        // 1. Load skill by ID and org (404 if not found)
+        SkillEntity skill = skillRepository.findByIdAndOrganizationId(skillId, orgId)
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
+
+        // 2. Enforce edit authority (team member OR admin, else 403)
+        if (!userDetails.role().isAdmin()) {
+            teamMemberRepository.findByTeamIdAndUserId(skill.getOwnerTeamId(), userId)
+                    .orElseThrow(() -> new SkillAccessDeniedException(
+                            "User is not a member of the owner team and lacks administrative authority"));
+        }
+
+        // 3. Validate visibility value (400 via IllegalArgumentException)
+        Set<String> validVisibilities = Set.of("private", "team", "organization", "restricted");
+        if (!validVisibilities.contains(visibility)) {
+            throw new IllegalArgumentException(
+                    "Invalid visibility value: " + visibility + ". Must be one of: private, team, organization, restricted");
+        }
+
+        // 4. Update visibility field
+        String oldVisibility = skill.getVisibility();
+        skill.setVisibility(visibility);
+        skill = skillRepository.save(skill);
+
+        // 5. Fire audit event "skill.visibility_changed"
+        auditService.record(orgId, userId, "skill.visibility_changed", "skill", skill.getId(),
+                Map.of(
+                        "oldVisibility", oldVisibility,
+                        "newVisibility", visibility
+                ));
+
+        return skill;
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID skillId, AlexandriaUserDetails userDetails) {
+        UUID orgId = userDetails.organizationId();
+        UUID userId = userDetails.userId();
+
+        // 1. Load skill by ID and org (404 if not found)
+        SkillEntity skill = skillRepository.findByIdAndOrganizationId(skillId, orgId)
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
+
+        // 2. Enforce edit authority (team member OR admin, else 403)
+        if (!userDetails.role().isAdmin()) {
+            teamMemberRepository.findByTeamIdAndUserId(skill.getOwnerTeamId(), userId)
+                    .orElseThrow(() -> new SkillAccessDeniedException(
+                            "User is not a member of the owner team and lacks administrative authority"));
+        }
+
+        // 3. If lifecycle_status is NOT "Draft" → throw SkillConflictException (409)
+        if (!"Draft".equals(skill.getLifecycleStatus())) {
+            throw new SkillConflictException("Only Draft skills can be deleted");
+        }
+
+        // 4. Delete associated data in order
+        // 4a. Delete access grants
+        skillAccessGrantRepository.deleteBySkillId(skillId);
+
+        // 4b. Delete tags
+        skillTagRepository.deleteBySkillId(skillId);
+
+        // 4c. Delete variants (via versions)
+        List<SkillVersionEntity> versions = skillVersionRepository.findBySkillId(skillId);
+        for (SkillVersionEntity version : versions) {
+            skillVariantRepository.deleteBySkillVersionId(version.getId());
+        }
+
+        // 4d. Delete versions
+        // First clear the current_version_id FK on skill to avoid constraint violations
+        skill.setCurrentVersionId(null);
+        skillRepository.save(skill);
+        skillVersionRepository.deleteBySkillId(skillId);
+
+        // 4e. Delete the skill itself
+        skillRepository.delete(skill);
+
+        // 5. Fire audit event "skill.deleted" (allow deletion to succeed even if audit fails)
+        try {
+            auditService.record(orgId, userId, "skill.deleted", "skill", skillId,
+                    Map.of(
+                            "name", skill.getName(),
+                            "slug", skill.getSlug()
+                    ));
+        } catch (Exception e) {
+            log.warn("Failed to record audit event for skill deletion: skillId={}", skillId, e);
+        }
     }
 
     /**

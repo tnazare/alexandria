@@ -116,4 +116,30 @@ public interface SkillService {
      * @throws PublishValidationException     if required metadata is missing (HTTP 422)
      */
     SkillEntity publish(UUID skillId, AlexandriaUserDetails userDetails);
+
+    /**
+     * Changes the visibility of a skill.
+     *
+     * @param skillId     the skill's UUID
+     * @param visibility  the new visibility value (private, team, organization, or restricted)
+     * @param userDetails the authenticated user's details
+     * @return the updated SkillEntity
+     * @throws SkillNotFoundException      if the skill does not exist in the user's organization
+     * @throws SkillAccessDeniedException  if the user lacks edit authority
+     * @throws IllegalArgumentException    if the visibility value is invalid
+     */
+    SkillEntity changeVisibility(UUID skillId, String visibility, AlexandriaUserDetails userDetails);
+
+    /**
+     * Deletes a skill and all associated data (access grants, tags, variants, versions).
+     *
+     * <p>Only skills in "Draft" lifecycle status can be deleted.</p>
+     *
+     * @param skillId     the skill's UUID
+     * @param userDetails the authenticated user's details
+     * @throws SkillNotFoundException      if the skill does not exist in the user's organization
+     * @throws SkillAccessDeniedException  if the user lacks edit authority
+     * @throws SkillConflictException      if the skill is not in Draft status
+     */
+    void delete(UUID skillId, AlexandriaUserDetails userDetails);
 }

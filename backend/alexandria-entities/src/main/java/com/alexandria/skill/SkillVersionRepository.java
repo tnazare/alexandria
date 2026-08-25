@@ -1,11 +1,14 @@
 package com.alexandria.skill;
 
 import com.alexandria.skill.entity.SkillVersionEntity;
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,7 +20,13 @@ public interface SkillVersionRepository extends JpaRepository<SkillVersionEntity
 
     Page<SkillVersionEntity> findBySkillIdOrderByVersionNumberDesc(UUID skillId, Pageable pageable);
 
+    List<SkillVersionEntity> findBySkillId(UUID skillId);
+
     Optional<SkillVersionEntity> findBySkillIdAndVersionNumber(UUID skillId, int versionNumber);
 
     int countBySkillId(UUID skillId);
+
+    @Modifying
+    @Transactional
+    void deleteBySkillId(UUID skillId);
 }
