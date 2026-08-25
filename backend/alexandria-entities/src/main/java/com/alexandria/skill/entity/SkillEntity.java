@@ -45,6 +45,6 @@ public class SkillEntity extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
-    @Column(name = "search_vector", insertable = false, updatable = false)
+    @Column(name = "search_vector", insertable = false, updatable = false, columnDefinition = "tsvector")
     private String searchVector;
 }

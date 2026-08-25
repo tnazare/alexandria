@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   datasource:
     url: jdbc:tc:postgresql:16:///alexandria
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
@@ -15,6 +17,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: https://issuer.example.com
+          jwk-set-uri: https://issuer.example.com/.well-known/jwks.json
           audiences: test-client-id
 
 alexandria:
