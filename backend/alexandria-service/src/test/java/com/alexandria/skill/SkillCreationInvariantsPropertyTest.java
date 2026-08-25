@@ -177,6 +177,8 @@ class SkillCreationInvariantsPropertyTest {
         SkillSlugGenerator skillSlugGenerator = mock(SkillSlugGenerator.class);
         TeamRepository teamRepository = mock(TeamRepository.class);
         TeamMemberRepository teamMemberRepository = mock(TeamMemberRepository.class);
+        SkillTagRepository skillTagRepository = mock(SkillTagRepository.class);
+        com.alexandria.taxonomy.TaxonomyEntryRepository taxonomyEntryRepository = mock(com.alexandria.taxonomy.TaxonomyEntryRepository.class);
         AuditService auditService = mock(AuditService.class);
 
         UUID orgId = input.userDetails().organizationId();
@@ -231,7 +233,8 @@ class SkillCreationInvariantsPropertyTest {
 
         SkillServiceImpl service = new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillAccessGrantRepository,
-                skillSlugGenerator, teamRepository, teamMemberRepository, auditService);
+                skillSlugGenerator, teamRepository, teamMemberRepository,
+                skillTagRepository, taxonomyEntryRepository, auditService);
 
         return new TestFixture(service, skillCaptor, versionCaptor);
     }
