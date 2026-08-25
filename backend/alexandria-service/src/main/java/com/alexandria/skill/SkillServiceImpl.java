@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -349,6 +350,97 @@ public class SkillServiceImpl implements SkillService {
             tag.setTaxonomyEntryId(tagId);
             skillTagRepository.save(tag);
         }
+    }
+
+    @Override
+    @Transactional
+    public SkillEntity publish(UUID skillId, AlexandriaUserDetails userDetails) {
+        UUID orgId = userDetails.organizationId();
+        UUID userId = userDetails.userId();
+
+        // 1. Load skill by ID and org (404 if not found)
+        SkillEntity skill = skillRepository.findByIdAndOrganizationId(skillId, orgId)
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
+
+        // 2. Enforce edit authority (team member OR admin, else 403)
+        if (!userDetails.role().isAdmin()) {
+            teamMemberRepository.findByTeamIdAndUserId(skill.getOwnerTeamId(), userId)
+                    .orElseThrow(() -> new SkillAccessDeniedException(
+                            "User is not a member of the owner team and lacks administrative authority"));
+        }
+
+        // 3. If lifecycle_status is NOT "Draft" → throw SkillConflictException (409)
+        if (!"Draft".equals(skill.getLifecycleStatus())) {
+            throw new SkillConflictException(
+                    "Only skills in Draft status can be published. Current status: " + skill.getLifecycleStatus());
+        }
+
+        // 4. Validate required metadata on current version
+        SkillVersionEntity currentVersion = skillVersionRepository.findById(skill.getCurrentVersionId())
+                .orElseThrow(() -> new SkillNotFoundException("Current version not found"));
+
+        List<String> missingFields = new ArrayList<>();
+
+        // 4a. At least one task_type tag
+        List<SkillTagEntity> tags = skillTagRepository.findBySkillId(skillId);
+        boolean hasTaskTypeTag = false;
+        if (!tags.isEmpty()) {
+            List<UUID> taxonomyEntryIds = tags.stream()
+                    .map(SkillTagEntity::getTaxonomyEntryId)
+                    .toList();
+            List<TaxonomyEntryEntity> entries = taxonomyEntryRepository.findAllById(taxonomyEntryIds);
+            hasTaskTypeTag = entries.stream()
+                    .anyMatch(entry -> "task_type".equals(entry.getTagType()));
+        }
+        if (!hasTaskTypeTag) {
+            missingFields.add("task_type_tag");
+        }
+
+        // 4b. Visibility is set (non-null and non-empty)
+        if (skill.getVisibility() == null || skill.getVisibility().isBlank()) {
+            missingFields.add("visibility");
+        }
+
+        // 4c. At least one supported tool in the current version
+        if (currentVersion.getSupportedTools() == null || currentVersion.getSupportedTools().isEmpty()) {
+            missingFields.add("supportedTools");
+        }
+
+        // 4d. risk_level is set (non-null) on the skill
+        if (skill.getRiskLevel() == null || skill.getRiskLevel().isBlank()) {
+            missingFields.add("riskLevel");
+        }
+
+        // 4e. applicability is non-null and non-empty on the current version
+        if (currentVersion.getApplicability() == null || currentVersion.getApplicability().isBlank()) {
+            missingFields.add("applicability");
+        }
+
+        // 4f. At least one example (examples field non-null and non-empty) on the current version
+        if (currentVersion.getExamples() == null || currentVersion.getExamples().isBlank()) {
+            missingFields.add("examples");
+        }
+
+        // 5. If any metadata is missing, throw PublishValidationException (422)
+        if (!missingFields.isEmpty()) {
+            throw new PublishValidationException(missingFields);
+        }
+
+        // 6. Set lifecycle_status to "Published", set publishedAt on current version
+        skill.setLifecycleStatus("Published");
+        skill = skillRepository.save(skill);
+
+        currentVersion.setPublishedAt(Instant.now());
+        skillVersionRepository.save(currentVersion);
+
+        // 7. Fire audit event "skill.published"
+        auditService.record(orgId, userId, "skill.published", "skill", skill.getId(),
+                Map.of(
+                        "versionNumber", String.valueOf(currentVersion.getVersionNumber()),
+                        "publishedAt", currentVersion.getPublishedAt().toString()
+                ));
+
+        return skill;
     }
 
     /**

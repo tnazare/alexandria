@@ -1,6 +1,7 @@
 package com.alexandria.common.exception;
 
 import com.alexandria.common.dto.ErrorResponse;
+import com.alexandria.skill.PublishValidationException;
 import com.alexandria.skill.SkillAccessDeniedException;
 import com.alexandria.skill.SkillConflictException;
 import com.alexandria.skill.SkillNotFoundException;
@@ -14,6 +15,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Global exception handler for consistent API error responses.
@@ -55,6 +60,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of("CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PublishValidationException.class)
+    public ResponseEntity<Map<String, Object>> handlePublishValidation(PublishValidationException ex) {
+        Map<String, Object> body = Map.of(
+                "error", "PUBLISH_VALIDATION_FAILED",
+                "message", ex.getMessage(),
+                "missingFields", ex.getMissingFields(),
+                "timestamp", Instant.now()
+        );
+        return ResponseEntity
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(body);
     }
 
     @ExceptionHandler(TeamConflictException.class)

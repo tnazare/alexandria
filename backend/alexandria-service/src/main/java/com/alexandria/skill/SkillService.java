@@ -99,4 +99,21 @@ public interface SkillService {
      * @throws SkillConflictException      if the skill lifecycle status prevents editing
      */
     SkillEntity update(UUID skillId, UpdateParams params, AlexandriaUserDetails userDetails);
+
+    /**
+     * Publishes a skill by validating required metadata and transitioning lifecycle to "Published".
+     *
+     * <p>The skill must be in "Draft" status. Required metadata includes:
+     * at least one task_type tag, visibility set, at least one supported tool,
+     * risk_level set, applicability non-empty, and at least one example.</p>
+     *
+     * @param skillId     the skill's UUID
+     * @param userDetails the authenticated user's details
+     * @return the published SkillEntity
+     * @throws SkillNotFoundException         if the skill does not exist in the user's organization
+     * @throws SkillAccessDeniedException     if the user lacks edit authority
+     * @throws SkillConflictException         if the skill is not in Draft status
+     * @throws PublishValidationException     if required metadata is missing (HTTP 422)
+     */
+    SkillEntity publish(UUID skillId, AlexandriaUserDetails userDetails);
 }
