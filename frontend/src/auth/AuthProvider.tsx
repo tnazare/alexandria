@@ -102,10 +102,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Fetch role from /api/me as fallback when token doesn't include it
   const [apiRole, setApiRole] = useState<string | null>(null)
+  const [roleLoading, setRoleLoading] = useState(false)
 
   useEffect(() => {
     if (!user || user.expired) return
     if (userRole) return // Already have role from token
+
+    setRoleLoading(true)
 
     async function fetchRole() {
       try {
@@ -119,6 +122,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch {
         // Ignore — role will be null, user gets /catalog
+      } finally {
+        setRoleLoading(false)
       }
     }
 
@@ -131,13 +136,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user,
       isAuthenticated: !!user && !user.expired,
-      isLoading,
+      isLoading: isLoading || roleLoading,
       userRole: effectiveRole,
       login,
       logout,
       getAccessToken,
     }),
-    [user, isLoading, effectiveRole, login, logout, getAccessToken],
+    [user, isLoading, roleLoading, effectiveRole, login, logout, getAccessToken],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
