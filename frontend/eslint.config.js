@@ -12,11 +12,17 @@ export default defineConfig([
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
+      reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
     ],
     languageOptions: {
       globals: globals.browser,
+    },
+    rules: {
+      // Advisory HMR guidance: co-locating small constants/helpers with a
+      // component is acceptable in this codebase, so surface it as a warning
+      // rather than a build-breaking error.
+      'react-refresh/only-export-components': 'warn',
     },
   },
 ])
