@@ -1,5 +1,6 @@
 package com.alexandria.config;
 
+import com.alexandria.auth.AlexandriaAuthentication;
 import com.alexandria.auth.AlexandriaUserDetails;
 import com.alexandria.audit.AuditEventRepository;
 import com.alexandria.audit.entity.AuditEventEntity;
@@ -12,7 +13,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -78,8 +78,10 @@ public class UserProvisioningFilter extends OncePerRequestFilter {
                     user.getId(), orgId, role, user.getEmail()
             );
 
-            // Replace security context with enriched authentication
-            var enrichedAuth = new AlexandriaAuthentication(jwtAuth, userDetails);
+            // Replace security context with enriched authentication.
+            // Use the canonical com.alexandria.auth.AlexandriaAuthentication so that the
+            // controllers' `instanceof AlexandriaAuthentication` checks match at runtime.
+            var enrichedAuth = new AlexandriaAuthentication(userDetails);
             SecurityContextHolder.getContext().setAuthentication(enrichedAuth);
 
             filterChain.doFilter(request, response);
@@ -158,33 +160,4 @@ public class UserProvisioningFilter extends OncePerRequestFilter {
         return atIndex > 0 && atIndex < email.length() - 1;
     }
 
-    /**
-     * Custom authentication token wrapping the original JWT auth with Alexandria user details.
-     */
-    public static class AlexandriaAuthentication extends AbstractAuthenticationToken {
-
-        private final JwtAuthenticationToken jwtAuth;
-        private final AlexandriaUserDetails userDetails;
-
-        public AlexandriaAuthentication(JwtAuthenticationToken jwtAuth, AlexandriaUserDetails userDetails) {
-            super(userDetails.getAuthorities());
-            this.jwtAuth = jwtAuth;
-            this.userDetails = userDetails;
-            setAuthenticated(true);
-        }
-
-        @Override
-        public Object getCredentials() {
-            return jwtAuth.getToken();
-        }
-
-        @Override
-        public Object getPrincipal() {
-            return userDetails;
-        }
-
-        public JwtAuthenticationToken getJwtAuthentication() {
-            return jwtAuth;
-        }
-    }
 }
