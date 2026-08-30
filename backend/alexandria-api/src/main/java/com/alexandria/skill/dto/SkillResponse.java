@@ -15,6 +15,7 @@ public record SkillResponse(
         UUID ownerTeamId,
         String ownerTeamName,
         String lifecycleStatus,
+        String deprecationReason,
         String visibility,
         String riskLevel,
         int currentVersionNumber,
