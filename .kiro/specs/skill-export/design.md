@@ -85,16 +85,16 @@ sequenceDiagram
     participant Renderer as SkillExportRenderer
     participant Usage as UsageEventService
 
-    Client->>Resource: GET /api/skills/{id}/export?format=cursor_rule&tool=cursor&source=copy
-    Resource->>Service: export(skillId, format, version?, tool?, source, user)
-    Service->>SkillSvc: getById / getVersion (visibility enforced -> 404 if hidden)
-    Service->>Service: if lifecycle == Blocked -> 409
-    Service->>VarSvc: resolve(versionId, tool) -> variant or null (fallback to canonical)
+    Client->>Resource: GET /api/skills/:id/export [format, tool, source, version optional]
+    Resource->>Service: export(skillId, format, version, tool, source, user)
+    Service->>SkillSvc: getById then getVersion [visibility enforced, 404 if hidden]
+    Service->>Service: if lifecycle is Blocked then 409
+    Service->>VarSvc: resolve(versionId, tool) returns variant or null [fallback to canonical]
     Service->>Renderer: render(RenderModel)
     Renderer-->>Service: Rendered_Artifact (String)
-    Service->>Usage: record(copy|export, format, ...) [fire-and-forget]
+    Service->>Usage: record copy or export event [fire-and-forget]
     Service-->>Resource: Rendered_Artifact
-    Resource-->>Client: 200 text/plain (body = artifact)
+    Resource-->>Client: 200 text/plain body is artifact
 ```
 
 ## Components and Interfaces

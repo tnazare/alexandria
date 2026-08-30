@@ -59,12 +59,12 @@ graph TB
         end
     end
 
-    subgraph Infra
+    subgraph Infra["Infrastructure"]
         PG["PostgreSQL 16"]
     end
 
     DetailPage --> LifecycleControls
-    LifecycleControls -->|POST /api/skills/:id/{deprecate|block|archive|restore}| LifecycleResource
+    LifecycleControls -->|"POST /api/skills/:id/deprecate,block,archive,restore"| LifecycleResource
     LifecycleResource --> LifecycleService
     LifecycleService --> TransitionPolicy
     LifecycleService --> SkillService
@@ -84,13 +84,13 @@ sequenceDiagram
     participant Repo as SkillRepository
     participant Audit as AuditService
 
-    Client->>Resource: POST /api/skills/{id}/block  (Catalog_Admin JWT)
+    Client->>Resource: POST /api/skills/:id/block (Catalog_Admin JWT)
     Resource->>Service: block(skillId, user)
-    Service->>Repo: findByIdAndOrganizationId (404 if missing/other org)
-    Service->>Policy: canTransition(current -> Blocked)?  (409 if illegal)
-    Service->>Service: priorStatus = current; lifecycle = Blocked
+    Service->>Repo: findByIdAndOrganizationId [404 if missing or other org]
+    Service->>Policy: isAllowed current to Blocked [409 if illegal]
+    Service->>Service: set priorStatus = current, lifecycle = Blocked
     Service->>Repo: save
-    Service->>Audit: record("skill.blocked", metadata{priorStatus}) [fire-and-forget]
+    Service->>Audit: record skill.blocked with priorStatus [fire-and-forget]
     Service-->>Resource: updated skill
     Resource-->>Client: 200 SkillResponse
 ```
