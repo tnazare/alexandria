@@ -8,6 +8,7 @@ import com.alexandria.skill.entity.SkillEntity;
 import com.alexandria.skill.entity.SkillVersionEntity;
 import com.alexandria.skill.variant.SkillVariantService;
 import com.alexandria.skill.SkillVersionRepository;
+import com.alexandria.usage.UsageEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
