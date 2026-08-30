@@ -519,6 +519,80 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         }
     }
 
+    /**
+     * Property 5: Listing exclusion — a default catalog listing contains no Blocked and no
+     * Archived skills; an include-archived (or status=Archived) listing includes archived
+     * skills but still never contains blocked ones.
+     *
+     * <p>Validates: Requirements 6.1, 6.2 (skill-lifecycle)</p>
+     */
+    @Nested
+    @DisplayName("Listing exclusion of blocked and archived skills")
+    class ListingExclusion {
+
+        private SkillEntity orgSkill(String slug, String status) {
+            var skill = createSkill(teamAlpha.getId(), slug, slug, "desc", userA.getId());
+            skill.setVisibility("organization");
+            skill.setLifecycleStatus(status);
+            return skillRepository.saveAndFlush(skill);
+        }
+
+        @Test
+        @DisplayName("default listing excludes Blocked and Archived, keeps active/deprecated")
+        void defaultListingExcludesBlockedAndArchived() {
+            orgSkill("published-one", "Published");
+            orgSkill("deprecated-one", "Deprecated");
+            orgSkill("archived-one", "Archived");
+            orgSkill("blocked-one", "Blocked");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, false, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getSlug)
+                    .contains("published-one", "deprecated-one")
+                    .doesNotContain("archived-one", "blocked-one");
+        }
+
+        @Test
+        @DisplayName("includeArchived=true includes archived but never blocked")
+        void includeArchivedShowsArchivedNotBlocked() {
+            orgSkill("published-two", "Published");
+            orgSkill("archived-two", "Archived");
+            orgSkill("blocked-two", "Blocked");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getSlug)
+                    .contains("published-two", "archived-two")
+                    .doesNotContain("blocked-two");
+        }
+
+        @Test
+        @DisplayName("filtering by status=Archived returns archived skills")
+        void statusArchivedFilterReturnsArchived() {
+            orgSkill("archived-three", "Archived");
+            orgSkill("published-three", "Published");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, "Archived", null, null, false, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getSlug)
+                    .containsExactly("archived-three");
+        }
+
+        @Test
+        @DisplayName("Blocked skills stay excluded even when filtering by status=Blocked")
+        void blockedNeverAppearsInListing() {
+            orgSkill("blocked-three", "Blocked");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, "Blocked", null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).isEmpty();
+        }
+    }
+
     // --- Helper methods ---
 
     private UserEntity createUser(String subject, String email) {
