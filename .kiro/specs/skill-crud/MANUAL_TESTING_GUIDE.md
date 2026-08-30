@@ -281,11 +281,14 @@ Useful for the negative paths that are hard to reach through the admin UI.
 TOKEN=$(curl -s -X POST http://localhost:9000/alexandria/token \
   -d "grant_type=client_credentials" \
   -d "client_id=alexandria-client" \
+  -d "client_secret=secret" \
   -d "scope=openid" | jq -r .access_token)
 echo "$TOKEN"
 ```
 
 > The mock server issues an `Org_Admin` token for `dev@alexandria.local`.
+> The `client_secret` value is not validated by the mock server, but the request
+> must include one — omitting it returns `401 invalid_client`.
 
 ### 15.2 Confirm identity
 
