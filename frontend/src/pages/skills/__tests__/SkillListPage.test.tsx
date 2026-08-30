@@ -31,6 +31,7 @@ function summary(name: string): SkillSummaryResponse {
     description: `${name} description`,
     ownerTeamName: 'Team',
     lifecycleStatus: 'Published',
+    deprecationReason: null,
     visibility: 'organization',
     riskLevel: 'low',
     currentVersionNumber: 1,

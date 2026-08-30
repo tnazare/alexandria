@@ -31,6 +31,7 @@ function skill(): SkillResponse {
     ownerTeamId: 't1',
     ownerTeamName: 'Team',
     lifecycleStatus: 'Published',
+    deprecationReason: null,
     visibility: 'organization',
     riskLevel: 'low',
     currentVersionNumber: 2,

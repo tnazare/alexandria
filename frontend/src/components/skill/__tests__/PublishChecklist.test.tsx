@@ -13,6 +13,7 @@ function baseSkill(overrides: Partial<SkillResponse> = {}): SkillResponse {
     ownerTeamId: 't1',
     ownerTeamName: 'Team',
     lifecycleStatus: 'Draft',
+    deprecationReason: null,
     visibility: 'private',
     riskLevel: null,
     currentVersionNumber: 1,

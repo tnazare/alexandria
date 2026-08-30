@@ -73,6 +73,7 @@ export interface SkillResponse {
   ownerTeamId: string
   ownerTeamName: string | null
   lifecycleStatus: LifecycleStatus
+  deprecationReason: string | null
   visibility: Visibility
   riskLevel: RiskLevel | null
   currentVersionNumber: number
@@ -98,6 +99,7 @@ export interface SkillSummaryResponse {
   description: string
   ownerTeamName: string | null
   lifecycleStatus: LifecycleStatus
+  deprecationReason: string | null
   visibility: Visibility
   riskLevel: RiskLevel | null
   currentVersionNumber: number
@@ -174,4 +176,39 @@ export interface SkillListParams {
   teamId?: string
   search?: string
   slug?: string
+  includeArchived?: boolean
+}
+
+/**
+ * Governance lifecycle actions, mirroring the backend
+ * {@code com.alexandria.skill.lifecycle.LifecycleAction} enum.
+ */
+export type LifecycleAction = 'deprecate' | 'block' | 'archive' | 'restore'
+
+/**
+ * Frontend mirror of the backend {@code SkillLifecycleTransition} legality
+ * table. Given a skill's current lifecycle status, returns the set of
+ * governance actions permitted from that state. Kept in sync with the
+ * backend policy so the UI only offers valid transitions; the server remains
+ * the source of truth and rejects illegal transitions with HTTP 409.
+ */
+export function allowedLifecycleActions(
+  status: LifecycleStatus,
+): readonly LifecycleAction[] {
+  switch (status) {
+    // Active states (Draft, Published, Team_Approved, Company_Approved)
+    case 'Draft':
+    case 'Published':
+    case 'Team_Approved':
+    case 'Company_Approved':
+      return ['deprecate', 'block', 'archive']
+    case 'Deprecated':
+      return ['restore', 'block', 'archive']
+    case 'Archived':
+      return ['restore', 'block']
+    case 'Blocked':
+      return ['restore']
+    default:
+      return []
+  }
 }

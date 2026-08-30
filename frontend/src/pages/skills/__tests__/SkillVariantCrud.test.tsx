@@ -42,6 +42,7 @@ function skill(variants: VariantSummary[]): SkillResponse {
     ownerTeamId: 't1',
     ownerTeamName: 'Team',
     lifecycleStatus: 'Published', // Published so the only "Delete" button is the variant's.
+    deprecationReason: null,
     visibility: 'organization',
     riskLevel: 'low',
     currentVersionNumber: 1,

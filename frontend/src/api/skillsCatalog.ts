@@ -74,6 +74,40 @@ export async function changeVisibility(
   return response.data
 }
 
+// --- Lifecycle governance API functions (deprecate / block / archive / restore) ---
+
+export async function deprecateSkill(
+  skillId: string,
+  reason?: string,
+): Promise<SkillResponse> {
+  const response = await apiClient.post<SkillResponse>(
+    `/api/skills/${skillId}/deprecate`,
+    reason ? { reason } : undefined,
+  )
+  return response.data
+}
+
+export async function blockSkill(skillId: string): Promise<SkillResponse> {
+  const response = await apiClient.post<SkillResponse>(
+    `/api/skills/${skillId}/block`,
+  )
+  return response.data
+}
+
+export async function archiveSkill(skillId: string): Promise<SkillResponse> {
+  const response = await apiClient.post<SkillResponse>(
+    `/api/skills/${skillId}/archive`,
+  )
+  return response.data
+}
+
+export async function restoreSkill(skillId: string): Promise<SkillResponse> {
+  const response = await apiClient.post<SkillResponse>(
+    `/api/skills/${skillId}/restore`,
+  )
+  return response.data
+}
+
 export async function listSkillVersions(
   skillId: string,
   page = 0,
@@ -236,6 +270,50 @@ export function useChangeVisibility(skillId: string) {
       changeVisibility(skillId, request),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: skillKeys.detail(skillId) })
+    },
+  })
+}
+
+export function useDeprecateSkill(skillId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (reason?: string) => deprecateSkill(skillId, reason),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skillKeys.detail(skillId) })
+      void queryClient.invalidateQueries({ queryKey: skillKeys.lists() })
+    },
+  })
+}
+
+export function useBlockSkill(skillId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => blockSkill(skillId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skillKeys.detail(skillId) })
+      void queryClient.invalidateQueries({ queryKey: skillKeys.lists() })
+    },
+  })
+}
+
+export function useArchiveSkill(skillId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => archiveSkill(skillId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skillKeys.detail(skillId) })
+      void queryClient.invalidateQueries({ queryKey: skillKeys.lists() })
+    },
+  })
+}
+
+export function useRestoreSkill(skillId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => restoreSkill(skillId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: skillKeys.detail(skillId) })
+      void queryClient.invalidateQueries({ queryKey: skillKeys.lists() })
     },
   })
 }
