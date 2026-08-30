@@ -8,7 +8,13 @@ import { TeamDetailPage } from '@/admin/TeamDetailPage'
 import { UsersPage } from '@/admin/UsersPage'
 import { BrowserLayout } from '@/browser/BrowserLayout'
 import { CatalogPage } from '@/browser/CatalogPage'
-import { SkillDetailPage } from '@/browser/SkillDetailPage'
+import { TaxonomyManagementPage } from '@/admin/TaxonomyManagementPage'
+import { SkillListPage } from '@/pages/skills/SkillListPage'
+import { SkillCreatePage } from '@/pages/skills/SkillCreatePage'
+import { SkillDetailPage } from '@/pages/skills/SkillDetailPage'
+import { SkillEditPage } from '@/pages/skills/SkillEditPage'
+import { SkillVersionsPage } from '@/pages/skills/SkillVersionsPage'
+import { SkillVersionDetailPage } from '@/pages/skills/SkillVersionDetailPage'
 import { UnauthorizedPage } from '@/pages/UnauthorizedPage'
 
 const queryClient = new QueryClient({
@@ -67,6 +73,7 @@ function App() {
                 <Route path="teams" element={<TeamsPage />} />
                 <Route path="teams/:teamId" element={<TeamDetailPage />} />
                 <Route path="audit" element={<AuditLogsPage />} />
+                <Route path="taxonomy" element={<TaxonomyManagementPage />} />
               </Route>
             </Route>
 
@@ -74,7 +81,15 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/catalog" element={<BrowserLayout />}>
                 <Route index element={<CatalogPage />} />
+                <Route path="skills" element={<SkillListPage />} />
+                <Route path="skills/new" element={<SkillCreatePage />} />
                 <Route path="skills/:skillId" element={<SkillDetailPage />} />
+                <Route path="skills/:skillId/edit" element={<SkillEditPage />} />
+                <Route path="skills/:skillId/versions" element={<SkillVersionsPage />} />
+                <Route
+                  path="skills/:skillId/versions/:versionNumber"
+                  element={<SkillVersionDetailPage />}
+                />
               </Route>
             </Route>
 
