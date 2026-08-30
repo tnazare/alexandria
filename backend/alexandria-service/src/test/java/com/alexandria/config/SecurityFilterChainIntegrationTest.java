@@ -123,6 +123,41 @@ class SecurityFilterChainIntegrationTest {
     }
 
     @Test
+    @DisplayName("Write endpoint through the real provisioning filter resolves the user (no NPE/500)")
+    void writeEndpointThroughRealFilterResolvesCurrentUser() throws Exception {
+        // Regression: the controllers resolve the current user via
+        // `instanceof com.alexandria.auth.AlexandriaAuthentication`. This test drives a
+        // write endpoint through the REAL UserProvisioningFilter (via a mocked JWT) rather
+        // than injecting the authentication directly, so it verifies the filter installs the
+        // authentication type the controllers actually expect. Before the fix, the filter set
+        // a different inner-class type and this returned 500 (NPE, currentUser() == null).
+        String subject = "auth0|admin-writer";
+        String email = "adminwriter@example.com";
+
+        // Seed the user as Org_Admin so @PreAuthorize passes and the controller body runs.
+        var admin = new com.alexandria.user.entity.UserEntity();
+        admin.setOrganizationId(DEFAULT_ORG_ID);
+        admin.setExternalSubject(subject);
+        admin.setEmail(email);
+        admin.setRole(com.alexandria.user.entity.Role.Org_Admin.name());
+        admin.setEnabled(true);
+        userRepository.save(admin);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/teams")
+                        .with(jwt().jwt(builder -> builder
+                                .subject(subject)
+                                .claim("email", email)
+                                .issuer("https://issuer.example.com")
+                                .issuedAt(Instant.now())
+                                .expiresAt(Instant.now().plusSeconds(3600))))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"Filter Regression Team","description":"via real filter"}"""))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     @DisplayName("User provisioning occurs on first valid JWT request")
     void userProvisioningOnFirstValidJwtRequest() throws Exception {
         String subject = "auth0|user123";
