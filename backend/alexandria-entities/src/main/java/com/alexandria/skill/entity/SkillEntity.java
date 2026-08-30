@@ -45,6 +45,14 @@ public class SkillEntity extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
+    /** Optional note explaining why the skill was deprecated; set on deprecate, cleared on restore. */
+    @Column(name = "deprecation_reason")
+    private String deprecationReason;
+
+    /** The lifecycle status held before entering a governed state; used and cleared by restore. */
+    @Column(name = "prior_status")
+    private String priorStatus;
+
     @Column(name = "search_vector", insertable = false, updatable = false, columnDefinition = "tsvector")
     private String searchVector;
 }
