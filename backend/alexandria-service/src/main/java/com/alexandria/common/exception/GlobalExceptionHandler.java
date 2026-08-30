@@ -3,6 +3,7 @@ package com.alexandria.common.exception;
 import com.alexandria.common.dto.ErrorResponse;
 import com.alexandria.skill.PublishValidationException;
 import com.alexandria.skill.SkillAccessDeniedException;
+import com.alexandria.skill.SkillBlockedException;
 import com.alexandria.skill.SkillConflictException;
 import com.alexandria.skill.SkillNotFoundException;
 import com.alexandria.taxonomy.TaxonomyConflictException;
@@ -60,6 +61,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(ErrorResponse.of("CONFLICT", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SkillBlockedException.class)
+    public ResponseEntity<ErrorResponse> handleSkillBlocked(SkillBlockedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of("BLOCKED", ex.getMessage()));
     }
 
     @ExceptionHandler(PublishValidationException.class)
