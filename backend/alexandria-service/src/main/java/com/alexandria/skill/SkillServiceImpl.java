@@ -125,7 +125,7 @@ public class SkillServiceImpl implements SkillService {
         boolean isOrgAdmin = userDetails.role() == Role.Org_Admin;
 
         return skillRepository.findVisibleSkills(orgId, userId, isOrgAdmin,
-                status, teamId, searchQuery, pageable);
+                status, teamId, searchQuery, false, pageable);
     }
 
     @Override

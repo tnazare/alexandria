@@ -301,7 +301,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         @DisplayName("organization-visible skills are seen by all org members")
         void orgVisibilityForAllUsers() {
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userB.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userB.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -313,7 +313,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         void teamVisibilityForMember() {
             // userA is in teamAlpha — should see teamSkill
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -325,7 +325,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         void teamVisibilityHiddenFromNonMember() {
             // userB is NOT in teamAlpha — should not see teamSkill
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userB.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userB.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -337,14 +337,14 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         void privateVisibilityCreatorOnly() {
             // userA is creator — should see privateSkill
             var pageA = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, null, true, PageRequest.of(0, 50));
             assertThat(pageA.getContent())
                     .extracting(SkillEntity::getId)
                     .contains(privateSkill.getId());
 
             // userB is not creator — should not see privateSkill
             var pageB = skillRepository.findVisibleSkills(
-                    org.getId(), userB.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userB.getId(), false, null, null, null, true, PageRequest.of(0, 50));
             assertThat(pageB.getContent())
                     .extracting(SkillEntity::getId)
                     .doesNotContain(privateSkill.getId());
@@ -355,7 +355,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         void restrictedVisibilityGrantedUser() {
             // userB has been granted access
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userB.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userB.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -369,7 +369,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             var userC = createUser("user-c-subject", "userc@test.com");
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userC.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userC.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -381,7 +381,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         void restrictedVisibilityCreatorCanSee() {
             // userA created the restrictedSkill
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -394,7 +394,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             var userC = createUser("admin-user", "admin@test.com");
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userC.getId(), true, null, null, null, PageRequest.of(0, 50));
+                    org.getId(), userC.getId(), true, null, null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -408,7 +408,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             skillRepository.saveAndFlush(orgSkill);
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), true, "Published", null, null, PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), true, "Published", null, null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -426,7 +426,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             skillRepository.saveAndFlush(betaSkill);
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), true, null, teamBeta.getId(), null, PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), true, null, teamBeta.getId(), null, true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -448,7 +448,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             skillRepository.saveAndFlush(skillRepository.findByOrganizationIdAndSlug(org.getId(), "k8s-deploy").get());
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, "Kubernetes", PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, "Kubernetes", true, PageRequest.of(0, 50));
 
             assertThat(page.getContent()).isNotEmpty();
             assertThat(page.getContent().get(0).getSlug()).isEqualTo("k8s-deploy");
@@ -463,7 +463,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             skillRepository.saveAndFlush(skill);
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, "PostgreSQL", PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, "PostgreSQL", true, PageRequest.of(0, 50));
 
             assertThat(page.getContent()).isNotEmpty();
             assertThat(page.getContent())
@@ -479,7 +479,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
             skillRepository.saveAndFlush(skillRepository.findByOrganizationIdAndSlug(org.getId(), "java-skill").get());
 
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, "xyznonexistent", PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, "xyznonexistent", true, PageRequest.of(0, 50));
 
             assertThat(page.getContent()).isEmpty();
         }
@@ -494,7 +494,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
 
             // userB should not find this private skill even when searching by name
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userB.getId(), false, null, null, "Machine Learning", PageRequest.of(0, 50));
+                    org.getId(), userB.getId(), false, null, null, "Machine Learning", true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getId)
@@ -511,7 +511,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
 
             // Search with singular "review" should match "reviews" via stemming
             var page = skillRepository.findVisibleSkills(
-                    org.getId(), userA.getId(), false, null, null, "review", PageRequest.of(0, 50));
+                    org.getId(), userA.getId(), false, null, null, "review", true, PageRequest.of(0, 50));
 
             assertThat(page.getContent())
                     .extracting(SkillEntity::getSlug)

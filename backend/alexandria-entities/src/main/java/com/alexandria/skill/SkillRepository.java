@@ -41,6 +41,8 @@ public interface SkillRepository extends JpaRepository<SkillEntity, UUID> {
                            WHERE sag.skill_id = s.id AND sag.user_id = :userId)))
             OR :isOrgAdmin = true
           )
+          AND s.lifecycle_status <> 'Blocked'
+          AND (:includeArchived = true OR :status = 'Archived' OR s.lifecycle_status <> 'Archived')
           AND (:status IS NULL OR s.lifecycle_status = :status)
           AND (:teamId IS NULL OR s.owner_team_id = :teamId)
           AND (:searchQuery IS NULL OR s.search_vector @@ plainto_tsquery('english', :searchQuery))
@@ -53,6 +55,7 @@ public interface SkillRepository extends JpaRepository<SkillEntity, UUID> {
         @Param("status") String status,
         @Param("teamId") UUID teamId,
         @Param("searchQuery") String searchQuery,
+        @Param("includeArchived") boolean includeArchived,
         Pageable pageable
     );
 }
