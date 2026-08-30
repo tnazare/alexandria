@@ -2,25 +2,35 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { AxiosError } from 'axios'
 import {
+  useArchiveSkill,
+  useBlockSkill,
   useChangeVisibility,
   useCreateVariant,
   useDeleteSkill,
   useDeleteVariant,
+  useDeprecateSkill,
   usePublishSkill,
+  useRestoreSkill,
   useSkill,
   useUpdateVariant,
 } from '@/api/skillsCatalog'
+import { useAuth } from '@/auth'
 import { LifecycleStatusBadge } from '@/components/skill/LifecycleStatusBadge'
 import { RiskLevelBadge } from '@/components/skill/RiskLevelBadge'
 import { VisibilitySelector } from '@/components/skill/VisibilitySelector'
 import { VariantEditor } from '@/components/skill/VariantEditor'
 import { Button, LoadingSpinner, ToastContainer, useToast } from '@/shared/components'
-import type {
-  PublishValidationResponse,
-  SupportedTool,
-  VariantSummary,
-  Visibility,
+import {
+  allowedLifecycleActions,
+  type LifecycleAction,
+  type PublishValidationResponse,
+  type SupportedTool,
+  type VariantSummary,
+  type Visibility,
 } from '@/types/skill'
+
+/** Roles allowed to perform lifecycle governance transitions. */
+const GOVERNANCE_ROLES = ['Org_Admin', 'Catalog_Admin']
 
 /**
  * Full skill detail view for authoring. Route: /catalog/skills/:skillId
@@ -33,23 +43,35 @@ export function SkillDetailPage() {
   const { skillId } = useParams<{ skillId: string }>()
   const navigate = useNavigate()
   const { toasts, toast, dismissToast } = useToast()
+  const { userRole } = useAuth()
 
   const { data: skill, isLoading, isError } = useSkill(skillId)
   const currentVersion = skill?.currentVersionNumber ?? 0
   const publishMutation = usePublishSkill(skillId ?? '')
   const visibilityMutation = useChangeVisibility(skillId ?? '')
   const deleteMutation = useDeleteSkill()
+  const deprecateMutation = useDeprecateSkill(skillId ?? '')
+  const blockMutation = useBlockSkill(skillId ?? '')
+  const archiveMutation = useArchiveSkill(skillId ?? '')
+  const restoreMutation = useRestoreSkill(skillId ?? '')
   const createVariantMutation = useCreateVariant(skillId ?? '', currentVersion)
   const updateVariantMutation = useUpdateVariant(skillId ?? '', currentVersion)
   const deleteVariantMutation = useDeleteVariant(skillId ?? '', currentVersion)
 
   const [selectedTool, setSelectedTool] = useState<string>('canonical')
   const [showVariantEditor, setShowVariantEditor] = useState(false)
+  const [showDeprecateForm, setShowDeprecateForm] = useState(false)
+  const [deprecateReason, setDeprecateReason] = useState('')
 
   // Edit authority is enforced server-side. Team membership isn't present in the
   // token, so the UI optimistically shows edit controls (admins always qualify)
   // and lets the API reject unauthorized actions with 403.
   const canEdit = true
+
+  // Governance transitions (deprecate/block/archive/restore) are restricted to
+  // catalog/org admins. The UI mirrors the backend legality table; the server
+  // remains authoritative and rejects illegal transitions with 409.
+  const canGovern = Boolean(userRole && GOVERNANCE_ROLES.includes(userRole))
 
   const variantByTool = useMemo(() => {
     const map = new Map<string, VariantSummary>()
@@ -116,6 +138,55 @@ export function SkillDetailPage() {
     })
   }
 
+  function handleLifecycleError(action: LifecycleAction, error: unknown) {
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      toast.error('You do not have permission to change this skill\u2019s lifecycle')
+    } else if (error instanceof AxiosError && error.response?.status === 409) {
+      toast.error(`Cannot ${action} the skill from its current status`)
+    } else {
+      toast.error(`Failed to ${action} the skill`)
+    }
+  }
+
+  function handleDeprecate() {
+    const reason = deprecateReason.trim()
+    deprecateMutation.mutate(reason.length > 0 ? reason : undefined, {
+      onSuccess: () => {
+        toast.success('Skill deprecated')
+        setShowDeprecateForm(false)
+        setDeprecateReason('')
+      },
+      onError: (error: unknown) => handleLifecycleError('deprecate', error),
+    })
+  }
+
+  function handleBlock() {
+    if (!window.confirm('Block this skill? It will be hidden from search and listings.')) {
+      return
+    }
+    blockMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Skill blocked'),
+      onError: (error: unknown) => handleLifecycleError('block', error),
+    })
+  }
+
+  function handleArchive() {
+    if (!window.confirm('Archive this skill? It will be hidden from default listings.')) {
+      return
+    }
+    archiveMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Skill archived'),
+      onError: (error: unknown) => handleLifecycleError('archive', error),
+    })
+  }
+
+  function handleRestore() {
+    restoreMutation.mutate(undefined, {
+      onSuccess: () => toast.success('Skill restored'),
+      onError: (error: unknown) => handleLifecycleError('restore', error),
+    })
+  }
+
   function handleCreateVariant(tool: SupportedTool, instructions: string) {
     createVariantMutation.mutate(
       { tool, instructions },
@@ -148,6 +219,16 @@ export function SkillDetailPage() {
     updateVariantMutation.isPending ||
     deleteVariantMutation.isPending
 
+  const lifecycleActions = allowedLifecycleActions(skill.lifecycleStatus)
+  const lifecyclePending =
+    deprecateMutation.isPending ||
+    blockMutation.isPending ||
+    archiveMutation.isPending ||
+    restoreMutation.isPending
+  const isDeprecated = skill.lifecycleStatus === 'Deprecated'
+  const isBlocked = skill.lifecycleStatus === 'Blocked'
+  const isArchived = skill.lifecycleStatus === 'Archived'
+
   const activeInstructions =
     selectedTool === 'canonical'
       ? skill.canonicalInstructions
@@ -177,6 +258,135 @@ export function SkillDetailPage() {
           </Link>
         </div>
       </header>
+
+      {/* Lifecycle status banners */}
+      {isDeprecated && (
+        <div
+          role="alert"
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800"
+        >
+          <p className="font-semibold">This skill is deprecated.</p>
+          {skill.deprecationReason ? (
+            <p className="mt-1">{skill.deprecationReason}</p>
+          ) : (
+            <p className="mt-1 text-amber-700">
+              It is discouraged for new work and may be removed in the future.
+            </p>
+          )}
+        </div>
+      )}
+      {isBlocked && (
+        <div
+          role="alert"
+          className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800"
+        >
+          <p className="font-semibold">This skill is blocked.</p>
+          <p className="mt-1">
+            It is hidden from search and listings and cannot be used until restored.
+          </p>
+        </div>
+      )}
+      {isArchived && (
+        <div
+          role="alert"
+          className="rounded-md border border-neutral-300 bg-neutral-100 p-3 text-sm text-neutral-700"
+        >
+          <p className="font-semibold">This skill is archived.</p>
+          <p className="mt-1">It is hidden from default listings.</p>
+        </div>
+      )}
+
+      {/* Governance controls (catalog/org admins only) */}
+      {canGovern && lifecycleActions.length > 0 && (
+        <div className="space-y-3 rounded-md border border-neutral-200 bg-white p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-neutral-700">Governance:</span>
+            {lifecycleActions.includes('deprecate') && (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={lifecyclePending}
+                onClick={() => setShowDeprecateForm((s) => !s)}
+              >
+                Deprecate
+              </Button>
+            )}
+            {lifecycleActions.includes('block') && (
+              <Button
+                size="sm"
+                variant="danger"
+                loading={blockMutation.isPending}
+                disabled={lifecyclePending}
+                onClick={handleBlock}
+              >
+                Block
+              </Button>
+            )}
+            {lifecycleActions.includes('archive') && (
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={archiveMutation.isPending}
+                disabled={lifecyclePending}
+                onClick={handleArchive}
+              >
+                Archive
+              </Button>
+            )}
+            {lifecycleActions.includes('restore') && (
+              <Button
+                size="sm"
+                variant="primary"
+                loading={restoreMutation.isPending}
+                disabled={lifecyclePending}
+                onClick={handleRestore}
+              >
+                Restore
+              </Button>
+            )}
+          </div>
+          {showDeprecateForm && lifecycleActions.includes('deprecate') && (
+            <div className="space-y-2 border-t border-neutral-100 pt-3">
+              <label
+                htmlFor="deprecate-reason"
+                className="block text-sm font-medium text-neutral-700"
+              >
+                Deprecation reason (optional)
+              </label>
+              <textarea
+                id="deprecate-reason"
+                rows={3}
+                maxLength={1000}
+                value={deprecateReason}
+                onChange={(e) => setDeprecateReason(e.target.value)}
+                placeholder="Why is this skill being deprecated? What should be used instead?"
+                className="w-full rounded-md border border-neutral-300 p-2 text-sm focus:border-primary-500 focus:outline-none"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  loading={deprecateMutation.isPending}
+                  onClick={handleDeprecate}
+                >
+                  Confirm deprecation
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={deprecateMutation.isPending}
+                  onClick={() => {
+                    setShowDeprecateForm(false)
+                    setDeprecateReason('')
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Edit-authority controls */}
       {canEdit && (

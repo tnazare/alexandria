@@ -19,6 +19,10 @@ vi.mock('@/api/client', () => ({
   },
 }))
 
+vi.mock('@/auth', () => ({
+  useAuth: () => ({ userRole: 'Author' }),
+}))
+
 import { SkillDetailPage } from '../SkillDetailPage'
 
 const SKILL_ID = 'skill-1'
