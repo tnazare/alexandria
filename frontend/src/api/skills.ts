@@ -17,13 +17,14 @@ export type RiskLevel = 'low' | 'medium' | 'high' | 'restricted'
 export type ApprovalState = 'pending' | 'approved' | 'rejected'
 
 export type ExportFormat =
-  | 'generic'
+  | 'generic_markdown'
   | 'github_copilot'
   | 'codex'
-  | 'markdown'
   | 'agents_md'
   | 'cursor_rule'
   | 'kiro_steering'
+
+export type ExportSource = 'copy' | 'download'
 
 export interface SkillSummary {
   id: string
@@ -124,11 +125,17 @@ export async function getSkill(skillId: string): Promise<SkillDetail> {
 export async function exportSkill(
   skillId: string,
   format: ExportFormat,
+  options: { source?: ExportSource; tool?: string; version?: number } = {},
 ): Promise<string> {
   const response = await apiClient.get<string>(
     `/api/skills/${skillId}/export`,
     {
-      params: { format },
+      params: {
+        format,
+        ...(options.source && { source: options.source }),
+        ...(options.tool && { tool: options.tool }),
+        ...(options.version != null && { version: options.version }),
+      },
       responseType: 'text',
       transformResponse: [(data: string) => data],
     },

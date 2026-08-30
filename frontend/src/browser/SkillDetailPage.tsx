@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { getSkill, exportSkill } from '@/api/skills'
-import type { ExportFormat, SkillDetail, SkillExample, SkillVariant, SkillVersionSummary } from '@/api/skills'
+import type { ExportFormat, ExportSource, SkillDetail, SkillExample, SkillVariant, SkillVersionSummary } from '@/api/skills'
 import { Button } from '@/shared/components/Button'
 import { LoadingSpinner } from '@/shared/components/LoadingSpinner'
 import { LifecycleBadge } from './components/LifecycleBadge'
@@ -13,17 +13,18 @@ interface ExportOption {
   format: ExportFormat
   label: string
   action: 'copy' | 'download'
+  source: ExportSource
   filename?: string
 }
 
 const EXPORT_OPTIONS: ExportOption[] = [
-  { format: 'generic', label: 'Copy generic prompt', action: 'copy' },
-  { format: 'github_copilot', label: 'Copy for GitHub Copilot', action: 'copy' },
-  { format: 'codex', label: 'Copy for Codex', action: 'copy' },
-  { format: 'markdown', label: 'Export as Markdown', action: 'download', filename: 'skill.md' },
-  { format: 'agents_md', label: 'Export as AGENTS.md', action: 'download', filename: 'AGENTS.md' },
-  { format: 'cursor_rule', label: 'Export as Cursor rule', action: 'download', filename: '.cursorrules' },
-  { format: 'kiro_steering', label: 'Export as Kiro steering fragment', action: 'download', filename: 'steering.md' },
+  { format: 'generic_markdown', label: 'Copy generic prompt', action: 'copy', source: 'copy' },
+  { format: 'github_copilot', label: 'Copy for GitHub Copilot', action: 'copy', source: 'copy' },
+  { format: 'codex', label: 'Copy for Codex', action: 'copy', source: 'copy' },
+  { format: 'generic_markdown', label: 'Export as Markdown', action: 'download', source: 'download', filename: 'skill.md' },
+  { format: 'agents_md', label: 'Export as AGENTS.md', action: 'download', source: 'download', filename: 'AGENTS.md' },
+  { format: 'cursor_rule', label: 'Export as Cursor rule', action: 'download', source: 'download', filename: '.cursorrules' },
+  { format: 'kiro_steering', label: 'Export as Kiro steering', action: 'download', source: 'download', filename: 'steering.md' },
 ]
 
 // --- Helper functions ---
@@ -229,31 +230,54 @@ function ReviewStatusSection({ review }: { review: SkillDetail['reviewStatus'] }
 
 // --- Export Actions Component ---
 
-function ExportActions({ skillId, skillName }: { skillId: string; skillName: string }) {
-  const [loadingFormat, setLoadingFormat] = useState<ExportFormat | null>(null)
-  const [successFormat, setSuccessFormat] = useState<ExportFormat | null>(null)
+function ExportActions({
+  skillId,
+  skillName,
+  lifecycleStatus,
+}: {
+  skillId: string
+  skillName: string
+  lifecycleStatus: string
+}) {
+  const [loadingFormat, setLoadingFormat] = useState<string | null>(null)
+  const [successFormat, setSuccessFormat] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const isBlocked = lifecycleStatus === 'Blocked'
+  const isDeprecated = lifecycleStatus === 'Deprecated'
+
+  // Unique key per option to handle two options with the same format (copy vs download).
+  function optionKey(option: ExportOption) {
+    return `${option.format}:${option.source}`
+  }
 
   async function handleExport(option: ExportOption) {
-    setLoadingFormat(option.format)
+    const key = optionKey(option)
+    setLoadingFormat(key)
     setSuccessFormat(null)
+    setErrorMessage(null)
 
     try {
-      const content = await exportSkill(skillId, option.format)
+      const content = await exportSkill(skillId, option.format, { source: option.source })
 
       if (option.action === 'copy') {
         const success = await copyToClipboard(content)
         if (success) {
-          setSuccessFormat(option.format)
+          setSuccessFormat(key)
           setTimeout(() => setSuccessFormat(null), 2000)
         }
       } else {
         const filename = option.filename ?? `${skillName}.md`
         triggerFileDownload(content, filename)
-        setSuccessFormat(option.format)
+        setSuccessFormat(key)
         setTimeout(() => setSuccessFormat(null), 2000)
       }
-    } catch {
-      // Error is already handled by the API client interceptor
+    } catch (err: unknown) {
+      // Surface a user-readable message; the client interceptor also fires a CustomEvent
+      // for global error handling, so this is a belt-and-suspenders inline fallback.
+      const axiosMessage =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      setErrorMessage(axiosMessage ?? 'Export failed. Please try again.')
     } finally {
       setLoadingFormat(null)
     }
@@ -261,31 +285,60 @@ function ExportActions({ skillId, skillName }: { skillId: string; skillName: str
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-neutral-900">Export & Copy</h3>
-      <div className="flex flex-wrap gap-2">
-        {EXPORT_OPTIONS.map((option) => (
-          <Button
-            key={option.format}
-            variant="secondary"
-            size="sm"
-            loading={loadingFormat === option.format}
-            disabled={loadingFormat !== null}
-            onClick={() => handleExport(option)}
-          >
-            {successFormat === option.format ? (
-              <>
-                <CheckIcon />
-                {option.action === 'copy' ? 'Copied!' : 'Downloaded!'}
-              </>
-            ) : (
-              <>
-                {option.action === 'copy' ? <ClipboardIcon /> : <DownloadIcon />}
-                {option.label}
-              </>
-            )}
-          </Button>
-        ))}
-      </div>
+      <h3 className="text-lg font-semibold text-neutral-900">Export &amp; Copy</h3>
+
+      {/* Deprecated warning — shown but export still allowed */}
+      {isDeprecated && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          This skill is deprecated. Export is still available but the skill may be
+          outdated — check for a replacement before using it.
+        </div>
+      )}
+
+      {/* Blocked indicator — export disabled */}
+      {isBlocked ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          This skill is blocked and cannot be exported.
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {EXPORT_OPTIONS.map((option) => {
+            const key = optionKey(option)
+            return (
+              <Button
+                key={key}
+                variant="secondary"
+                size="sm"
+                loading={loadingFormat === key}
+                disabled={loadingFormat !== null}
+                onClick={() => handleExport(option)}
+              >
+                {successFormat === key ? (
+                  <>
+                    <CheckIcon />
+                    {option.action === 'copy' ? 'Copied!' : 'Downloaded!'}
+                  </>
+                ) : (
+                  <>
+                    {option.action === 'copy' ? <ClipboardIcon /> : <DownloadIcon />}
+                    {option.label}
+                  </>
+                )}
+              </Button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Inline error feedback */}
+      {errorMessage && (
+        <p role="alert" className="text-sm text-red-600">
+          {errorMessage}
+        </p>
+      )}
     </div>
   )
 }
@@ -438,7 +491,7 @@ export function SkillDetailPage() {
       </header>
 
       {/* Export Actions */}
-      <ExportActions skillId={skill.id} skillName={skill.name} />
+      <ExportActions skillId={skill.id} skillName={skill.name} lifecycleStatus={skill.lifecycleStatus} />
 
       {/* Overview */}
       {skill.overview && (
