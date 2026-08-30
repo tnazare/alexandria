@@ -70,6 +70,11 @@ class UserProvisioningIdempotencyPropertyTest {
         System.setProperty("spring.flyway.locations", "classpath:db/migration");
         System.setProperty("OIDC_ISSUER_URI", "https://issuer.example.com");
         System.setProperty("OIDC_CLIENT_ID", "test-client-id");
+        // Provide a JWK set URI so SecurityConfig builds a lazy NimbusJwtDecoder
+        // (withJwkSetUri) instead of eagerly resolving the OIDC issuer over the
+        // network at startup, which is unavailable in the test environment.
+        System.setProperty("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
+                "https://issuer.example.com/.well-known/jwks.json");
         System.setProperty("alexandria.organization.default-id", "00000000-0000-0000-0000-000000000001");
         System.setProperty("server.port", "0");
 

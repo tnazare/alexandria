@@ -82,8 +82,19 @@ class SecurityFilterChainIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up audit events referencing users, then users between tests
-        jdbcTemplate.update("DELETE FROM audit_events WHERE organization_id = ?", DEFAULT_ORG_ID);
+        // Clean up in FK-dependency order so leftover data from other integration
+        // tests (skills, teams, audit events) does not block user deletion.
+        // The shared Testcontainers database is reused across the whole suite, so
+        // this test must not assume it is the only writer.
+        jdbcTemplate.update("DELETE FROM skill_access_grants");
+        jdbcTemplate.update("DELETE FROM skill_tags");
+        jdbcTemplate.update("DELETE FROM skill_variants");
+        jdbcTemplate.update("UPDATE skills SET current_version_id = NULL");
+        jdbcTemplate.update("DELETE FROM skill_versions");
+        jdbcTemplate.update("DELETE FROM skills");
+        jdbcTemplate.update("DELETE FROM team_members");
+        jdbcTemplate.update("DELETE FROM teams");
+        jdbcTemplate.update("DELETE FROM audit_events");
         userRepository.deleteAll();
     }
 
