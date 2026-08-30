@@ -49,7 +49,7 @@ public interface SkillService {
      * @return a page of visible SkillEntity results
      */
     Page<SkillEntity> list(String status, UUID teamId, String searchQuery,
-                           AlexandriaUserDetails userDetails, Pageable pageable);
+                           boolean includeArchived, AlexandriaUserDetails userDetails, Pageable pageable);
 
     /**
      * Retrieves a skill by slug with visibility enforcement.

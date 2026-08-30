@@ -38,7 +38,8 @@ public interface SkillApi {
             @RequestParam(required = false) String visibility,
             @RequestParam(required = false) UUID teamId,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String slug
+            @RequestParam(required = false) String slug,
+            @RequestParam(defaultValue = "false") boolean includeArchived
     );
 
     @GetMapping("/{skillId}")

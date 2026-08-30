@@ -119,13 +119,13 @@ public class SkillServiceImpl implements SkillService {
     @Override
     @Transactional(readOnly = true)
     public Page<SkillEntity> list(String status, UUID teamId, String searchQuery,
-                                  AlexandriaUserDetails userDetails, Pageable pageable) {
+                                  boolean includeArchived, AlexandriaUserDetails userDetails, Pageable pageable) {
         UUID orgId = userDetails.organizationId();
         UUID userId = userDetails.userId();
         boolean isOrgAdmin = userDetails.role() == Role.Org_Admin;
 
         return skillRepository.findVisibleSkills(orgId, userId, isOrgAdmin,
-                status, teamId, searchQuery, false, pageable);
+                status, teamId, searchQuery, includeArchived, pageable);
     }
 
     @Override

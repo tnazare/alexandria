@@ -50,7 +50,8 @@ public class SkillResource implements SkillApi {
 
     @Override
     public ResponseEntity<PageResponse<SkillSummaryResponse>> listSkills(
-            int page, int size, String status, String visibility, UUID teamId, String search, String slug) {
+            int page, int size, String status, String visibility, UUID teamId, String search, String slug,
+            boolean includeArchived) {
         AlexandriaUserDetails user = currentUser();
 
         // Direct slug lookup returns a single-item page when found.
@@ -61,7 +62,7 @@ public class SkillResource implements SkillApi {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<SkillEntity> skills = skillService.list(status, teamId, blankToNull(search), user, pageable);
+        Page<SkillEntity> skills = skillService.list(status, teamId, blankToNull(search), includeArchived, user, pageable);
         Page<SkillSummaryResponse> mapped = skills.map(responseMapper::toSummaryResponse);
         return ResponseEntity.ok(toPageResponse(mapped));
     }
