@@ -66,13 +66,14 @@ for a faster path to a working endpoint.
       `rendererFor(format)` throws if a format is unmapped (guards against a missing renderer)
     - _Requirements: 1.1_
 
-  - [ ]* 3.4 Write property tests for renderers (Properties 1, 2, 3, 4, 8)
+  - [ ]* 3.4 Write property tests for renderers (Properties 1, 2, 3, 4, 8, 9)
     - **Property 1: Format coverage** — every ExportFormat has a renderer producing non-empty output
     - **Property 2: Determinism** — same model → identical output
     - **Property 3: Content inclusion** — output contains name + resolved instructions
     - **Property 4: Variant resolution** — model carrying variant instructions renders them
     - **Property 8: Fence safety** — content with long backtick runs cannot terminate a fence early
-    - jqwik, pure (no Spring). **Validates: Requirements 1.1, 1.6, 1.7, 2.6**
+    - **Property 9: Empty-instructions safety** — empty instructions still yield a well-formed artifact with the name
+    - jqwik, pure (no Spring). **Validates: Requirements 1.2, 1.7, 1.8, 1.9, 2.6**
 
 - [ ] 4. Checkpoint — entity + renderer layer compiles, migration applies, renderer tests pass
 
@@ -89,19 +90,23 @@ for a faster path to a working endpoint.
 
   - [ ] 5.3 Create SkillExportService and SkillExportServiceImpl
     - `export(skillId, format, versionNumber, tool, source, user)`:
+      validate `tool` against the supported set first (unknown → 400, before DB work),
       load skill via `SkillService.getById` (visibility → 404), block check (→ 409),
-      resolve version (given or current), resolve instructions via `SkillVariantService.resolve`
-      with canonical fallback, build model, render via registry, fire usage event on success, return artifact
-    - `filenameFor(skillId, format, user)` — used by the frontend for download naming
+      resolve target version (given or current), resolve instructions via
+      `SkillVariantService.resolve` with canonical fallback (empty instructions still render
+      per Req 1.8), build model, render via registry, fire usage event on success with the
+      resolved version id, return artifact
+    - No `filenameFor` method — download filename is derived on the frontend (Req 3.5)
     - Inject `SkillService`, `SkillVariantService`, `SkillVersionRepository`,
       `SkillExportRendererRegistry`, `UsageEventService`
-    - _Requirements: 1.1, 1.3, 1.4, 3.6, 4.1, 4.2, 5.1, 5.3_
+    - _Requirements: 1.1, 1.3, 1.4, 1.6, 1.8, 3.6, 4.1, 4.2, 5.1, 5.3_
 
-  - [ ]* 5.4 Write service tests (Properties 5, 6) + variant/version wiring
+  - [ ]* 5.4 Write service tests (Properties 5, 6, 10) + variant/version wiring
     - **Property 5: Blocked denial** — blocked skill export throws for any format/version/tool and records no usage event
-    - **Property 6: Usage event on success only** — success records exactly one matching event; rejection records none
+    - **Property 6: Usage event on success only** — success records exactly one matching event (with the resolved version id and source→event_type mapping); rejection records none
+    - **Property 10: Invalid-tool rejection** — an unsupported `tool` yields 400 and records no usage event
     - Verify variant resolution and version selection wiring with Mockito
-    - **Validates: Requirements 4.1, 4.3, 5.1, 5.3, 1.4**
+    - **Validates: Requirements 4.1, 4.3, 5.1, 5.3, 1.4, 1.6**
 
 - [ ] 6. REST layer
   - [ ] 6.1 Create SkillExportResource controller
@@ -112,9 +117,9 @@ for a faster path to a working endpoint.
 
   - [ ]* 6.2 Write integration tests for the export endpoint (Property 7)
     - `@SpringBootTest` + Testcontainers + JWT-bypass post-processor (as in skill-crud)
-    - Round-trip each of the 6 formats → 200 text/plain with expected content
-    - 400 (unknown format), 404 (hidden/missing skill or version), 409 (blocked)
-    - Usage event rows written on copy and export; none written on rejection
+    - Round-trip each of the 6 formats → 200 text/plain (charset UTF-8) with expected content
+    - 400 (unknown format), 400 (unknown tool), 404 (hidden/missing skill or version), 409 (blocked)
+    - Usage event rows written on copy (event_type=copy) and download (event_type=export); none written on rejection
     - **Property 7: Visibility parity** — export denied exactly when getById is denied (404, no leakage)
     - **Validates: Requirements 3.1, 3.6, 3.7, 4.1, 5.1, 5.3**
 

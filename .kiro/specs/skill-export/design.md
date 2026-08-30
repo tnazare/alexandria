@@ -2,9 +2,10 @@
 
 ## Overview
 
-This design covers Milestone 2b — **Skill Export** — which renders published skills
-into tool-specific formats for copy or download, and captures copy/export **usage
-events** as the first slice of usage tracking.
+This design covers Milestone 2b — **Skill Export** — which renders a skill's content
+(any version the requesting user is allowed to see, except `Blocked`) into tool-specific
+formats for copy or download, and captures copy/export **usage events** as the first slice
+of usage tracking.
 
 It builds on `skill-crud` (skills, versions, variants, visibility) and reuses the
 established modular-monolith architecture: Spring Boot 4 backend split into
@@ -96,7 +97,7 @@ sequenceDiagram
     Resource-->>Client: 200 text/plain (body = artifact)
 ```
 
-## Components
+## Components and Interfaces
 
 ### 1. `alexandria-api` — contract
 
@@ -114,6 +115,10 @@ sequenceDiagram
 - The enum maps case-insensitively from the wire value; an unknown value causes the
   controller/service to raise an `IllegalArgumentException` → 400 (handled by the
   existing `GlobalExceptionHandler`).
+- **Cursor filename convention:** the download filename is the legacy single-file
+  `.cursorrules` because a browser download cannot create the newer `.cursor/rules/`
+  directory. The rendered *content* still follows the current Cursor rule format; only the
+  suggested filename differs. Chosen deliberately to keep a one-click download usable.
 
 **`SkillExportApi`** interface: `@RequestMapping("/api/skills/{skillId}/export")`
 ```
@@ -143,8 +148,10 @@ public interface SkillExportRenderer {
   `instructions` is already variant-resolved (variant or canonical).
 
 **Renderer content rules** (deterministic, sanitized):
-- `GENERIC_MARKDOWN`: `# <name>` then `## Instructions`, and `## Applicability` /
-  `## When to use` / `## Limitations` / `## Examples` sections when present.
+- `GENERIC_MARKDOWN`: `# <name>` then an optional `> Risk: <riskLevel>` note when a risk
+  level is set, `## Instructions`, and `## Applicability` / `## When to use` /
+  `## Limitations` / `## Examples` sections when present. (This is the one renderer that
+  surfaces `riskLevel`, so the field on `ExportRenderModel` is used rather than dead.)
 - `AGENTS_MD`: `# <name>` framed as agent guidance; instructions as the body; metadata
   as a short "Applies when / Limitations" preamble.
 - `CURSOR_RULE`: a rule block with a description line and the instructions as the rule body.
@@ -162,24 +169,43 @@ public interface SkillExportRenderer {
 public interface SkillExportService {
     String export(UUID skillId, ExportFormat format, Integer versionNumber,
                   String tool, ExportSource source, AlexandriaUserDetails user);
-    String filenameFor(UUID skillId, ExportFormat format, AlexandriaUserDetails user);
 }
 ```
+Filename derivation is a **frontend** concern (Requirement 3.5): the browse UI already holds
+the skill's `slug` and knows the chosen format, so it builds the download filename locally
+(e.g. `AGENTS.md`, `.cursorrules`, `<slug>.md`). No backend `filenameFor` method is added —
+it would only re-load the skill to recompute something the client already has.
 - `export(...)`:
-  1. Load skill via `skillService.getById(skillId, user)` — visibility enforced (404 if hidden).
-  2. If `lifecycleStatus == "Blocked"` → throw `SkillBlockedException` (→ 409).
-  3. Resolve the target version: `versionNumber` if provided (via `skillService.getVersion`),
-     else the skill's current version.
-  4. Resolve instructions: `variantService.resolve(versionId, tool)`; if null, use canonical.
-  5. Build `ExportRenderModel`, select renderer via registry, render.
-  6. Fire-and-forget `usageEventService.record(...)` with `event_type = source == COPY ? "copy" : "export"`.
-  7. Return the artifact.
-- Deprecated skills are allowed; the service adds no gate for them (the frontend warns).
+  1. If `tool` is non-null, validate it against the supported tool set (the same
+     nine identifiers enforced by `SkillVariantServiceImpl`); an unknown tool →
+     `IllegalArgumentException` (→ 400) **before** any DB work. A supported tool with no
+     variant is not an error (it falls back to canonical in step 5).
+  2. Load skill via `skillService.getById(skillId, user)` — visibility enforced (404 if hidden).
+  3. If `lifecycleStatus == "Blocked"` → throw `SkillBlockedException` (→ 409).
+  4. Resolve the target `SkillVersionEntity`: when `versionNumber` is provided use
+     `skillService.getVersion(skillId, versionNumber, user)`, else load the skill's
+     `currentVersionId`. The resolved version's `id` is the `skillVersionId` recorded in
+     the usage event (this differs from `currentVersionId` when `?version=` is used).
+  5. Resolve instructions: `variantService.resolve(version.id, tool)`; if it returns null
+     (no variant for the tool, or `tool` is null), use the version's `canonicalInstructions`.
+  6. Build `ExportRenderModel`, select renderer via registry, render.
+  7. Fire-and-forget `usageEventService.record(...)` with
+     `event_type = source == COPY ? "copy" : "export"` and the resolved version id.
+  8. Return the artifact.
+- Deprecated skills are allowed; the service adds no gate for them (the frontend warns from
+  the lifecycle status it already holds).
+- **Note on redundant load:** `skillService.getVersion` internally re-invokes `getById`, so a
+  versioned export enforces visibility twice. This is acceptable for now (two indexed
+  point-reads); if it becomes hot, add a `getByIdAndVersion` that loads both in one pass.
 
 **`SkillExportResource`** implements `SkillExportApi`:
 - `@PreAuthorize` is not required beyond authentication — visibility is enforced in the
-  service via `getById`. (Any authenticated org user may attempt an export; hidden skills 404.)
-- Returns `ResponseEntity.ok().contentType(TEXT_PLAIN).body(artifact)`.
+  service via `getById`. Any authenticated org user (including `Read_Only_Auditor`, since
+  export is a read action) may attempt an export; hidden skills 404. (Requirement 3.6)
+- Parses `format` and `source` via the enums' case-insensitive `fromWire`; an unknown value
+  surfaces as `IllegalArgumentException` → 400.
+- Returns `ResponseEntity.ok().contentType(new MediaType("text","plain",StandardCharsets.UTF_8)).body(artifact)`
+  so non-ASCII instruction content is transmitted correctly.
 
 **`UsageEventService`** (mirrors `AuditService`):
 ```java
@@ -228,36 +254,132 @@ tests, `countBySkillIdAndEventType` and `findByOrganizationId`.
   show a deprecation warning when `Deprecated`.
 - Format list surfaced in the UI matches the six supported formats.
 
+## Data Models
+
+### `usage_events` (new table, V5)
+
+The one new persistent model this milestone introduces. Append-only; written on every
+successful copy/export.
+
+| Column             | Type          | Notes                                                        |
+| ------------------ | ------------- | ------------------------------------------------------------ |
+| `id`               | UUID PK       | `gen_random_uuid()`                                          |
+| `organization_id`  | UUID NOT NULL | FK → organizations (RESTRICT); scopes every query            |
+| `skill_id`         | UUID NOT NULL | FK → skills (CASCADE)                                        |
+| `skill_version_id` | UUID          | FK → skill_versions (SET NULL); the **resolved target** version |
+| `user_id`          | UUID          | FK → users (SET NULL); the acting user                       |
+| `event_type`       | TEXT NOT NULL | CHECK in (`view`,`copy`,`export`); this milestone writes only `copy`/`export` |
+| `source`           | TEXT          | `copy` or `download` as sent by the client                   |
+| `export_format`    | TEXT          | the `ExportFormat` wire value                                |
+| `created_at`       | TIMESTAMPTZ   | `NOW()`; set on insert, never updated                        |
+
+`event_type` is derived from `source`: `copy → copy`, `download → export`. The `view` value
+exists only for forward compatibility (parent Requirement 17) and is unused here.
+
+### Transient / contract models (not persisted)
+
+- **`ExportFormat`** (enum, api): six values, each carrying its wire value and download
+  filename pattern; case-insensitive `fromWire`.
+- **`ExportSource`** (enum, api): `COPY`, `DOWNLOAD`; `fromWire` defaults to `DOWNLOAD`.
+- **`ExportRenderModel`** (record, service): `{ name, slug, description, instructions,
+  applicability, whenToUse, limitations, examples, tool, riskLevel }` — assembled per request
+  from the skill + resolved version + resolved instructions; consumed by renderers. Not stored.
+
+No existing tables are altered.
+
 ## Error Handling
 
 | Condition                        | Exception                    | HTTP | Handler                    |
 | -------------------------------- | ---------------------------- | ---- | -------------------------- |
 | Unknown format                   | `IllegalArgumentException`   | 400  | existing GlobalExceptionHandler |
+| Unknown/unsupported `tool`       | `IllegalArgumentException`   | 400  | existing GlobalExceptionHandler |
 | Skill hidden / not found         | `SkillNotFoundException`     | 404  | existing                   |
 | Version not found                | `SkillNotFoundException`     | 404  | existing                   |
 | Blocked skill                    | `SkillBlockedException` (new)| 409  | add handler mapping        |
+
+Empty resolved instructions are **not** an error (Requirement 1.8): the renderer emits a
+well-formed artifact with the name/metadata and an empty instructions section.
 
 `SkillBlockedException` is a new `RuntimeException` in `com.alexandria.skill`; a handler
 method is added to the existing `GlobalExceptionHandler` mapping it to 409 with the standard
 `ErrorResponse` body (consistent with `SkillConflictException`).
 
-## Correctness Properties (for property-based tests)
+## Correctness Properties
 
-1. **Format coverage** — for every `ExportFormat` enum value, a renderer exists and produces
-   a non-empty artifact for any valid render model. (No format falls through to a default.)
-2. **Determinism** — rendering the same model twice yields identical output.
-3. **Content inclusion** — the rendered artifact contains the skill name and the resolved
-   instructions for every format.
-4. **Variant resolution** — when a variant exists for the requested tool, the artifact
-   contains the variant instructions; otherwise it contains the canonical instructions.
-5. **Blocked denial** — for any format/version/tool, exporting a Blocked skill is denied
-   and records no usage event.
-6. **Usage event on success only** — a successful export records exactly one usage event with
-   matching skill/version/format/source; a rejected export records none.
-7. **Visibility parity** — export access is granted/denied under exactly the same visibility
-   rules as `getById` (hidden → 404, no leakage).
-8. **Fence safety** — rendered output for delimited regions uses a fence longer than any
-   backtick run present in the content, so content cannot terminate the region early.
+### Property 1: Format coverage
+
+*For any* `ExportFormat` enum value and any valid render model, a renderer SHALL exist for
+that format and SHALL produce a non-empty artifact. No format SHALL fall through to a default.
+
+**Validates: Requirements 1.2**
+
+### Property 2: Determinism
+
+*For any* render model, rendering it twice with the same format SHALL produce byte-identical
+output. Renderers SHALL contain no timestamps, randomness, or environment-dependent state.
+
+**Validates: Requirements 1.9**
+
+### Property 3: Content inclusion
+
+*For any* render model and any format, the rendered artifact SHALL contain the skill name and
+the resolved instructions.
+
+**Validates: Requirements 1.7, 2.1, 2.2, 2.3, 2.4, 2.5**
+
+### Property 4: Variant resolution
+
+*For any* skill version and tool, when a variant exists for that tool the artifact SHALL
+contain the variant instructions; otherwise it SHALL contain the canonical instructions.
+
+**Validates: Requirements 1.4**
+
+### Property 5: Blocked denial
+
+*For any* format, version, and tool, exporting a skill whose `lifecycle_status` is `Blocked`
+SHALL be denied with HTTP 409 and SHALL record no usage event.
+
+**Validates: Requirements 4.1, 4.3, 5.3**
+
+### Property 6: Usage event on success only
+
+*For any* successful export, the system SHALL record exactly one usage event whose skill_id,
+skill_version_id (the resolved target version), export_format, and source match the request,
+with `event_type` derived as `copy→copy` / `download→export`. *For any* rejected export
+(invalid format, invalid tool, not found, hidden, or blocked), the system SHALL record no
+usage event.
+
+**Validates: Requirements 5.1, 5.3**
+
+### Property 7: Visibility parity
+
+*For any* skill and authenticated user, export SHALL be permitted if and only if `getById`
+would permit retrieval; otherwise the system SHALL return HTTP 404 with no skill metadata
+leaked.
+
+**Validates: Requirements 3.6**
+
+### Property 8: Fence safety
+
+*For any* instruction content rendered inside a delimited/fenced region, the region delimiter
+SHALL be longer than the longest backtick run present in the content, so the content cannot
+terminate the region early.
+
+**Validates: Requirements 2.6**
+
+### Property 9: Empty-instructions safety
+
+*For any* format, a render model with empty resolved instructions SHALL still produce a
+non-empty, well-formed artifact containing the skill name and an empty instructions section.
+
+**Validates: Requirements 1.8**
+
+### Property 10: Invalid-tool rejection
+
+*For any* format, an export request carrying a `tool` value not in the supported tool set
+SHALL be rejected with HTTP 400 and SHALL record no usage event.
+
+**Validates: Requirements 1.6**
 
 ## Testing Strategy
 
