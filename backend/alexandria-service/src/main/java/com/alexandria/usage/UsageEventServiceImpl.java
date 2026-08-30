@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -23,6 +25,7 @@ public class UsageEventServiceImpl implements UsageEventService {
     private final UsageEventRepository usageEventRepository;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(UUID orgId, UUID actorUserId, UUID skillId, UUID skillVersionId,
                        String eventType, String source, String exportFormat) {
         try {
