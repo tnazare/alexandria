@@ -58,7 +58,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
   const optionsFor = useCallback(
     (tagType: string): string[] =>
-      (taxonomy ?? [])
+      (Array.isArray(taxonomy) ? taxonomy : [])
         .find((g) => g.tagType === tagType)
         ?.entries.filter((e) => e.active)
         .map((e) => e.value) ?? [],

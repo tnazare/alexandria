@@ -18,7 +18,12 @@ function readFilters(params: URLSearchParams): SkillFilterValues {
     search: params.get('search') ?? '',
     status: params.get('status') ?? '',
     visibility: params.get('visibility') ?? '',
+    riskLevel: params.get('riskLevel') ?? '',
     teamId: params.get('teamId') ?? '',
+    taskType: params.get('taskType') ?? '',
+    language: params.get('language') ?? '',
+    framework: params.get('framework') ?? '',
+    tool: params.get('tool') ?? '',
   }
 }
 
@@ -45,7 +50,12 @@ export function SkillListPage() {
     search: debouncedSearch || undefined,
     status: filters.status || undefined,
     visibility: filters.visibility || undefined,
+    riskLevel: filters.riskLevel || undefined,
     teamId: filters.teamId || undefined,
+    taskType: filters.taskType || undefined,
+    language: filters.language || undefined,
+    framework: filters.framework || undefined,
+    tool: filters.tool || undefined,
   })
 
   function writeParams(next: SkillFilterValues, nextPage: number) {
@@ -53,7 +63,12 @@ export function SkillListPage() {
     if (next.search) params.set('search', next.search)
     if (next.status) params.set('status', next.status)
     if (next.visibility) params.set('visibility', next.visibility)
+    if (next.riskLevel) params.set('riskLevel', next.riskLevel)
     if (next.teamId) params.set('teamId', next.teamId)
+    if (next.taskType) params.set('taskType', next.taskType)
+    if (next.language) params.set('language', next.language)
+    if (next.framework) params.set('framework', next.framework)
+    if (next.tool) params.set('tool', next.tool)
     if (nextPage > 0) params.set('page', String(nextPage))
     setSearchParams(params, { replace: true })
   }
