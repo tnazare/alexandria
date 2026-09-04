@@ -11,58 +11,58 @@ working feature.
 
 ## Tasks
 
-- [ ] 1. Persistence — lifecycle fields and listing exclusion
-  - [ ] 1.1 Create V6 Flyway migration
+- [x] 1. Persistence — lifecycle fields and listing exclusion
+  - [x] 1.1 Create V6 Flyway migration
     - Create `backend/alexandria-entities/src/main/resources/db/migration/V6__skill_lifecycle_fields.sql`
     - `ALTER TABLE skills ADD COLUMN deprecation_reason TEXT;` and `ADD COLUMN prior_status TEXT;`
     - No CHECK change (V4 already permits all seven lifecycle statuses)
     - _Requirements: 1.2, 1.4, 2.3, 3.3_
 
-  - [ ] 1.2 Add fields to SkillEntity
+  - [x] 1.2 Add fields to SkillEntity
     - Add nullable `deprecationReason` (`deprecation_reason`) and `priorStatus` (`prior_status`)
       String fields with getters/setters
     - _Requirements: 1.2, 1.4_
 
-  - [ ] 1.3 Extend SkillRepository.findVisibleSkills for listing exclusion
+  - [x] 1.3 Extend SkillRepository.findVisibleSkills for listing exclusion
     - Add `boolean includeArchived` parameter
     - Add predicates: always exclude `Blocked`; exclude `Archived` unless `includeArchived` is true
       or `status = 'Archived'`
     - _Requirements: 6.1, 6.2_
 
-  - [ ]* 1.4 Write repository integration test for listing exclusion (Property 5)
+  - [x]* 1.4 Write repository integration test for listing exclusion (Property 5)
     - **Property 5: Listing exclusion** — default listing excludes Blocked always and Archived by
       default; include-archived / status=Archived includes archived but never blocked
     - Testcontainers; seed skills across statuses; assert membership
     - **Validates: Requirements 6.1, 6.2**
 
-- [ ] 2. Transition policy (state machine)
-  - [ ] 2.1 Create LifecycleAction enum and SkillLifecycleTransition policy
+- [x] 2. Transition policy (state machine)
+  - [x] 2.1 Create LifecycleAction enum and SkillLifecycleTransition policy
     - `com.alexandria.skill.lifecycle.LifecycleAction` (DEPRECATE, BLOCK, ARCHIVE, RESTORE)
     - `SkillLifecycleTransition.isAllowed(currentStatus, action)` per the design legality table;
       `targetStatus(action)` for the non-restore actions
     - _Requirements: 1.3, 2.2, 3.2, 4.2, 5.4_
 
-  - [ ]* 2.2 Write property test for transition legality (Property 1)
+  - [x]* 2.2 Write property test for transition legality (Property 1)
     - **Property 1: Transition legality is total and matches the table** — for every
       (status, action) pair, `isAllowed` returns exactly the table value; no pair is undefined
     - jqwik, pure. **Validates: Requirements 1.3, 2.2, 3.2, 4.2, 5.4**
 
-- [ ] 3. API contract
-  - [ ] 3.1 Create SkillLifecycleApi interface and DeprecateRequest DTO
+- [x] 3. API contract
+  - [x] 3.1 Create SkillLifecycleApi interface and DeprecateRequest DTO
     - `com.alexandria.skill.lifecycle.SkillLifecycleApi`, `@RequestMapping("/api/skills/{skillId}")`
     - `POST /deprecate` (body `DeprecateRequest`), `POST /block`, `POST /archive`, `POST /restore`,
       all returning `ResponseEntity<SkillResponse>`
     - `DeprecateRequest` record `{ @Size(max = 1000) String reason }` in `...lifecycle.dto`
     - _Requirements: 1.1, 1.2, 2.1, 3.1, 4.1_
 
-  - [ ] 3.2 Add nullable deprecationReason to SkillResponse and SkillSummaryResponse
+  - [x] 3.2 Add nullable deprecationReason to SkillResponse and SkillSummaryResponse
     - Additive field; mapper populates it from the entity
     - _Requirements: 6.5_
 
-- [ ] 4. Checkpoint — entity + policy + API compile; migration applies; policy/listing tests pass
+- [x] 4. Checkpoint — entity + policy + API compile; migration applies; policy/listing tests pass
 
-- [ ] 5. Service layer
-  - [ ] 5.1 Create SkillLifecycleService and SkillLifecycleServiceImpl
+- [x] 5. Service layer
+  - [x] 5.1 Create SkillLifecycleService and SkillLifecycleServiceImpl
     - Methods `deprecate(skillId, reason, user)`, `block`, `archive`, `restore`
     - Each: load via `findByIdAndOrganizationId` (404), `isAllowed` check (409), apply transition,
       save, fire-and-forget audit
@@ -74,10 +74,10 @@ working feature.
     - Audit actions: `skill.deprecated|blocked|archived|restored` with `{fromStatus,toStatus,priorStatus,(reason)}`
     - _Requirements: 1.1, 1.4, 1.5, 1.6, 2.1, 2.3, 2.6, 3.1, 3.3, 3.5, 4.1, 4.3, 4.4, 4.5, 5.5_
 
-  - [ ] 5.2 Update SkillResponseMapper to populate deprecationReason
+  - [x] 5.2 Update SkillResponseMapper to populate deprecationReason
     - _Requirements: 6.5_
 
-  - [ ]* 5.3 Write service property/behavior tests (Properties 2, 3, 4, 6, 8)
+  - [x]* 5.3 Write service property/behavior tests (Properties 2, 3, 4, 6, 8)
     - **Property 2:** deprecate/block/archive set target + record prior status
     - **Property 3:** restore round-trip returns to original active state; clears reason + prior
     - **Property 4:** version neutrality (currentVersionId + version count + content unchanged)
@@ -85,18 +85,18 @@ working feature.
     - **Property 8:** exactly one audit event per transition with correct action + metadata
     - Mockito; **Validates: Requirements 1.1,1.4,2.1,2.3,3.1,3.3,4.1,4.3,4.4,5.5,1.6,2.6,3.5,4.5**
 
-- [ ] 6. REST layer
-  - [ ] 6.1 Create SkillLifecycleResource controller
+- [x] 6. REST layer
+  - [x] 6.1 Create SkillLifecycleResource controller
     - Implements `SkillLifecycleApi`; `@PreAuthorize("hasAnyRole('Catalog_Admin','Org_Admin')")` on
       every method; resolve current user; delegate to service; map via `SkillResponseMapper`
     - _Requirements: 5.1, 1.1, 2.1, 3.1, 4.1_
 
-  - [ ] 6.2 Thread includeArchived through the skill list endpoint
+  - [x] 6.2 Thread includeArchived through the skill list endpoint
     - Add optional `includeArchived` (default false) to `SkillApi.listSkills`, `SkillService.list`,
       and the `findVisibleSkills` call; existing callers default to false
     - _Requirements: 6.2_
 
-  - [ ]* 6.3 Write REST integration tests (Property 7 + endpoint behavior)
+  - [x]* 6.3 Write REST integration tests (Property 7 + endpoint behavior)
     - `@SpringBootTest` + Testcontainers + JWT-bypass post-processor (per skill-crud)
     - Happy path per transition (200) with status/reason assertions
     - 409 for illegal transitions (e.g. block already-blocked, restore an active skill)
@@ -105,17 +105,17 @@ working feature.
     - Verify blocked/deprecated skills interact correctly with the export endpoint (blocked→409)
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 1.6, 2.4, 6.4**
 
-- [ ] 7. Checkpoint — backend `./mvnw verify` green
+- [x] 7. Checkpoint — backend `./mvnw verify` green
 
-- [ ] 8. Frontend
-  - [ ] 8.1 Add lifecycle API client + hooks
+- [x] 8. Frontend
+  - [x] 8.1 Add lifecycle API client + hooks
     - `deprecateSkill(id, reason)`, `blockSkill(id)`, `archiveSkill(id)`, `restoreSkill(id)` in the
       catalog API module + TanStack Query mutation hooks invalidating skill detail + list
     - Add `deprecationReason` to the SkillResponse/summary TS types; add `includeArchived` to the
       list params
     - _Requirements: 7.1, 6.5_
 
-  - [ ] 8.2 Add governance controls to the skill detail page
+  - [x] 8.2 Add governance controls to the skill detail page
     - Render Deprecate / Block / Archive / Restore controls only for Catalog_Admin/Org_Admin,
       showing only transitions valid from the current status (TS mirror of the legality table)
     - Deprecate opens an optional-reason form
@@ -124,12 +124,12 @@ working feature.
     - User-readable error on failure
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ]* 8.3 Write frontend tests
+  - [x]* 8.3 Write frontend tests
     - Controls render per status/role; deprecate reason form; deprecation warning + blocked
       indicator; error path
     - _Requirements: 7.1, 7.3, 7.4, 7.5_
 
-- [ ] 9. Final checkpoint — backend `./mvnw verify` and frontend `npm run build && npm run test` green
+- [x] 9. Final checkpoint — backend `./mvnw verify` and frontend `npm run build && npm run test` green
 
 ## Notes
 

@@ -9,8 +9,8 @@ search endpoint.
 
 ## Tasks
 
-- [ ] 1. Extended search vector — backend
-  - [ ] 1.1 Add `rebuildSearchVector` to `SkillRepository`
+- [x] 1. Extended search vector — backend
+  - [x] 1.1 Add `rebuildSearchVector` to `SkillRepository`
     - Add a `@Modifying @Transactional @Query(nativeQuery=true)` method that sets
       `search_vector` to the concatenation of name(A), description(B), tag values(C),
       instructions(D) for a given skill ID. Parameters: `skillId` (UUID), `tagValues`
@@ -20,7 +20,7 @@ search endpoint.
     - *File:* `backend/alexandria-entities/src/main/java/com/alexandria/skill/SkillRepository.java`
     - *Requirements: 1.1, 1.2, 1.5*
 
-  - [ ] 1.2 Add V7 migration to bulk-rebuild existing search vectors
+  - [x] 1.2 Add V7 migration to bulk-rebuild existing search vectors
     - Create `V7__rebuild_search_vectors.sql`. The migration runs a single `UPDATE skills`
       that sets `search_vector` for every existing skill using the same A/B/C/D weight formula,
       sourcing tag values via a correlated subquery to `skill_tags`/`taxonomy_entries` and
@@ -30,7 +30,7 @@ search endpoint.
     - *File:* `backend/alexandria-entities/src/main/resources/db/migration/V7__rebuild_search_vectors.sql`
     - *Requirements: 1.1, 1.2*
 
-  - [ ] 1.3 Add `rebuildSearchVector` helper to `SkillServiceImpl`
+  - [x] 1.3 Add `rebuildSearchVector` helper to `SkillServiceImpl`
     - Add a private `rebuildSearchVector(SkillEntity skill)` method that:
       1. Loads all `SkillTagEntity` rows for the skill via `skillTagRepository.findBySkillId`.
       2. Loads the corresponding `TaxonomyEntryEntity` rows via
@@ -49,7 +49,7 @@ search endpoint.
     - *File:* `backend/alexandria-service/src/main/java/com/alexandria/skill/SkillServiceImpl.java`
     - *Requirements: 1.1, 1.2, 1.3, 1.5*
 
-  - [ ]* 1.4 Repository integration tests for extended index
+  - [x]* 1.4 Repository integration tests for extended index
     - Extend `V4MigrationAndSkillRepositoryIntegrationTest` with a `SearchVectorRebuild` nested
       test class. Tests:
       - Tag values become searchable after `rebuildSearchVector` is called; search returns
@@ -62,8 +62,8 @@ search endpoint.
         only in instructions (weight A > D).
     - *Requirements: 1.1, 1.2, 1.4*
 
-- [ ] 2. Full filter wiring — backend
-  - [ ] 2.1 Add new filter params and relevance ordering to `findVisibleSkills` in `SkillRepository`
+- [x] 2. Full filter wiring — backend
+  - [x] 2.1 Add new filter params and relevance ordering to `findVisibleSkills` in `SkillRepository`
     - Extend the `findVisibleSkills` method signature with six new parameters:
       `visibility` (String), `riskLevel` (String), `taskType` (String), `language` (String),
       `framework` (String), `tool` (String). All are nullable/optional (null means no filter).
@@ -85,14 +85,14 @@ search endpoint.
     - *File:* `backend/alexandria-entities/src/main/java/com/alexandria/skill/SkillRepository.java`
     - *Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2*
 
-  - [ ] 2.2 Update `SkillApi.listSkills` to expose new query params
+  - [x] 2.2 Update `SkillApi.listSkills` to expose new query params
     - Add to the `@GetMapping` method signature (all `required = false`):
       `String riskLevel`, `String taskType`, `String language`, `String framework`, `String tool`.
     - `visibility` is already declared on the interface — verify it is present and leave it as-is.
     - *File:* `backend/alexandria-api/src/main/java/com/alexandria/skill/SkillApi.java`
     - *Requirements: 3.1, 3.5*
 
-  - [ ] 2.3 Update `SkillService.list` and `SkillServiceImpl.list` to pass all new params
+  - [x] 2.3 Update `SkillService.list` and `SkillServiceImpl.list` to pass all new params
     - Extend the `SkillService.list` interface signature to:
       `list(String status, String visibility, String riskLevel, UUID teamId, String taskType,
       String language, String framework, String tool, String searchQuery, boolean includeArchived,
@@ -111,7 +111,7 @@ search endpoint.
       `backend/alexandria-service/src/main/java/com/alexandria/skill/SkillResource.java`
     - *Requirements: 3.1, 3.2, 3.5, 3.6*
 
-  - [ ]* 2.4 Repository integration tests for new filter dimensions and relevance ordering
+  - [x]* 2.4 Repository integration tests for new filter dimensions and relevance ordering
     - Extend `V4MigrationAndSkillRepositoryIntegrationTest` with three nested test classes:
     - `TaxonomyFilters`: create skills with different tag combinations; assert `taskType=X`
       returns only skills with a `task_type` tag matching X (case-insensitive); assert two
@@ -126,13 +126,13 @@ search endpoint.
       several different filter combinations, including taxonomy filters.
     - *Requirements: 2.1, 2.2, 3.2, 3.3, 3.4, 3.6, 4.1, 4.2*
 
-- [ ] 3. Checkpoint — backend compiles, all migrations apply, all existing tests pass
+- [x] 3. Checkpoint — backend compiles, all migrations apply, all existing tests pass
   - Run `./mvnw verify` and confirm BUILD SUCCESS. Confirm V7 runs cleanly after V6 in a
     fresh Testcontainers boot. This is a validation step; no new commit needed unless fixes
     are required.
 
-- [ ] 4. Frontend — unified search params type
-  - [ ] 4.1 Extend `SkillListParams` in `src/types/skill.ts`
+- [x] 4. Frontend — unified search params type
+  - [x] 4.1 Extend `SkillListParams` in `src/types/skill.ts`
     - Add `riskLevel?: string`, `taskType?: string`, `language?: string`, `framework?: string`,
       `tool?: string` to the existing `SkillListParams` interface.
     - No logic changes needed — `listSkills(params)` in `skillsCatalog.ts` already passes the
@@ -140,15 +140,15 @@ search endpoint.
     - *File:* `frontend/src/types/skill.ts`
     - *Requirements: 5.2*
 
-  - [ ] 4.2 Verify `listSkills` / `useSkills` in `skillsCatalog.ts` forward all params
+  - [x] 4.2 Verify `listSkills` / `useSkills` in `skillsCatalog.ts` forward all params
     - Confirm that `listSkills(params: SkillListParams)` passes `{ params }` to `apiClient.get`
       with no field filtering (all `SkillListParams` fields forwarded as query params).
     - If any explicit field allowlist exists, remove it so new fields are forwarded automatically.
     - *File:* `frontend/src/api/skillsCatalog.ts`
     - *Requirements: 5.1, 5.2*
 
-- [ ] 5. Frontend — migrate browse catalog to unified API
-  - [ ] 5.1 Replace `searchSkills` in `CatalogPage` with `useSkills`
+- [x] 5. Frontend — migrate browse catalog to unified API
+  - [x] 5.1 Replace `searchSkills` in `CatalogPage` with `useSkills`
     - Replace the `useQuery({ queryFn: () => searchSkills(apiParams) })` call in
       `src/browser/CatalogPage.tsx` with `useSkills(params)` imported from
       `@/api/skillsCatalog`.
@@ -164,8 +164,8 @@ search endpoint.
       `frontend/src/api/skills.ts`
     - *Requirements: 5.1, 5.3, 5.4, 7.1*
 
-- [ ] 6. Frontend — live taxonomy in filter dropdowns
-  - [ ] 6.1 Add `getAllTaxonomy` function and taxonomy types
+- [x] 6. Frontend — live taxonomy in filter dropdowns
+  - [x] 6.1 Add `getAllTaxonomy` function and taxonomy types
     - Check whether `TaxonomyGroupResponse` and `TaxonomyEntryResponse` types already exist in
       `src/api/taxonomy.ts` or elsewhere; reuse if so, otherwise add them.
     - Add `async function getAllTaxonomy(): Promise<TaxonomyGroupResponse[]>` calling
@@ -174,7 +174,7 @@ search endpoint.
       `src/api/taxonomy.ts` — wherever the existing taxonomy types live.
     - *Requirements: 6.1, 6.3*
 
-  - [ ] 6.2 Hydrate `FilterPanel` (`src/browser/components/FilterPanel.tsx`) from taxonomy API
+  - [x] 6.2 Hydrate `FilterPanel` (`src/browser/components/FilterPanel.tsx`) from taxonomy API
     - Remove the hardcoded `TASK_TYPE_OPTIONS`, `LANGUAGE_OPTIONS`, `FRAMEWORK_OPTIONS`, and
       `TOOL_OPTIONS` arrays. Replace with `useAllTaxonomy()` and an `optionsFor(tagType)` helper
       that filters to active entries and maps to their `value` strings.
@@ -183,7 +183,7 @@ search endpoint.
     - *File:* `frontend/src/browser/components/FilterPanel.tsx`
     - *Requirements: 6.1, 6.2, 6.3, 6.4, 6.5*
 
-  - [ ] 6.3 Add taxonomy dimension filters to `SkillSearchFilters`
+  - [x] 6.3 Add taxonomy dimension filters to `SkillSearchFilters`
     (`src/components/skill/SkillSearchFilters.tsx`)
     - The authoring filter bar currently exposes: search, status, visibility, teamId.
     - Add four new `<select>` controls for taskType, language, framework, tool, populated
@@ -193,15 +193,15 @@ search endpoint.
     - *File:* `frontend/src/components/skill/SkillSearchFilters.tsx`
     - *Requirements: 6.1, 6.3, 7.1*
 
-- [ ] 7. Frontend — URL persistence for new filter dimensions
-  - [ ] 7.1 Extend URL serialization in `CatalogPage` / `urlState.ts`
+- [x] 7. Frontend — URL persistence for new filter dimensions
+  - [x] 7.1 Extend URL serialization in `CatalogPage` / `urlState.ts`
     - In `src/browser/utils/urlState.ts`, add `riskLevel`, `taskType`, `language`, `framework`,
       `tool` to both `parseCatalogState` (read from `URLSearchParams`) and `serializeCatalogState`
       (write to `URLSearchParams`). Empty/undefined values should be omitted from the URL.
     - *File:* `frontend/src/browser/utils/urlState.ts`
     - *Requirements: 7.2*
 
-  - [ ] 7.2 Extend URL serialization in `SkillListPage`
+  - [x] 7.2 Extend URL serialization in `SkillListPage`
     - In `src/pages/skills/SkillListPage.tsx`, extend `readFilters` and `writeParams` to
       include `riskLevel`, `taskType`, `language`, `framework`, `tool`. Mirror the existing
       pattern: read from `URLSearchParams` via `params.get('X') ?? ''`, set via
@@ -209,39 +209,39 @@ search endpoint.
     - *File:* `frontend/src/pages/skills/SkillListPage.tsx`
     - *Requirements: 7.2*
 
-- [ ]* 8. Frontend tests
-  - [ ]* 8.1 Test filter params are forwarded to the API
+- [x]* 8. Frontend tests
+  - [x]* 8.1 Test filter params are forwarded to the API
     - Mock `GET /api/skills` (via `vi.mock('@/api/client')`) and `GET /api/taxonomy`. Set a
       `taskType` filter value in the filter UI. Assert the mocked `apiClient.get` was called
       with `taskType` present in the `params` object. Repeat for `riskLevel`.
     - *Requirements: 3.1, 5.2*
 
-  - [ ]* 8.2 Test live taxonomy populates filter dropdowns
+  - [x]* 8.2 Test live taxonomy populates filter dropdowns
     - Mock `GET /api/taxonomy` returning two `task_type` entries (A active, B inactive).
       Render `FilterPanel`. Assert the task-type dropdown contains option A but not B. Assert
       it does not contain any previously hardcoded values.
     - *Requirements: 6.1, 6.3*
 
-  - [ ]* 8.3 Test taxonomy loading and failure states
+  - [x]* 8.3 Test taxonomy loading and failure states
     - Loading: mock `useAllTaxonomy` in a pending state; assert the four taxonomy dropdowns are
       disabled.
     - Failure: mock `GET /api/taxonomy` returning HTTP 500; assert `FilterPanel` renders
       without throwing and the taxonomy dropdowns are empty.
     - *Requirements: 6.2, 6.5*
 
-  - [ ]* 8.4 Test search debounce
+  - [x]* 8.4 Test search debounce
     - Render `SkillListPage`. Type a search term one character at a time (fire multiple
       `onChange` events). Assert `apiClient.get` is called only once (after the 300ms debounce
       window elapses), not once per keystroke.
     - *Requirements: 7.2, 8.2*
 
-  - [ ]* 8.5 Test URL state round-trip
+  - [x]* 8.5 Test URL state round-trip
     - Set a filter combination (search + taskType + riskLevel). Assert the URL params update to
       include all three. Call `parseCatalogState`/`readFilters` on those URL params. Assert the
       reconstructed filter state matches the original exactly.
     - *Requirements: 7.2*
 
-- [ ] 9. Final checkpoint — `./mvnw verify` and `npm run build && npm run test` green
+- [x] 9. Final checkpoint — `./mvnw verify` and `npm run build && npm run test` green
   - Run the full backend verify and frontend build/test. Fix any failures introduced by this
     milestone. No commit needed if all passing already.
 
