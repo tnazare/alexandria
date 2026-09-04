@@ -1,4 +1,7 @@
 import { useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useTaxonomy } from '@/api/taxonomy'
+import { listTeams } from '@/api/teams'
 
 /**
  * Active filter selections for the skill catalog.
@@ -31,13 +34,9 @@ interface FilterPanelProps {
 }
 
 /**
- * Filter options for each dimension.
- * In a real app, these could be fetched from the taxonomy API.
+ * Static, non-taxonomy filter options. Taxonomy dimensions (task type, language,
+ * framework, tool) are fetched live from the taxonomy API; owner team from the teams API.
  */
-const TASK_TYPE_OPTIONS = ['Generation', 'Refactoring', 'Testing', 'Review', 'Documentation', 'Debugging']
-const LANGUAGE_OPTIONS = ['TypeScript', 'JavaScript', 'Java', 'Python', 'Go', 'Rust', 'C#', 'Ruby']
-const FRAMEWORK_OPTIONS = ['React', 'Angular', 'Vue', 'Spring Boot', 'Django', 'Express', 'Next.js']
-const TOOL_OPTIONS = ['GitHub Copilot', 'Codex', 'Cursor', 'Kiro', 'Claude Code', 'Cody']
 const APPROVAL_STATE_OPTIONS = ['Draft', 'Published', 'Team_Approved', 'Company_Approved', 'Deprecated', 'Archived', 'Blocked']
 const RISK_LEVEL_OPTIONS = ['low', 'medium', 'high', 'restricted']
 const VISIBILITY_OPTIONS = ['private', 'team', 'organization', 'restricted']
@@ -46,8 +45,28 @@ const VISIBILITY_OPTIONS = ['private', 'team', 'organization', 'restricted']
  * Filter panel for the skill catalog.
  * Provides select dropdowns for: task type, language, framework, tool,
  * approval state, risk level, owner team, and visibility.
+ *
+ * Taxonomy dimensions are populated from the live taxonomy API (active entries only);
+ * owner team is a team dropdown keyed by team UUID.
  */
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
+  const { data: taxonomy, isLoading: taxonomyLoading } = useTaxonomy()
+  const { data: teamsPage } = useQuery({
+    queryKey: ['teams', 'all-for-filter'],
+    queryFn: () => listTeams(0, 100),
+  })
+
+  const optionsFor = useCallback(
+    (tagType: string): string[] =>
+      (taxonomy ?? [])
+        .find((g) => g.tagType === tagType)
+        ?.entries.filter((e) => e.active)
+        .map((e) => e.value) ?? [],
+    [taxonomy],
+  )
+
+  const teamOptions = (teamsPage?.content ?? []).map((t) => ({ value: t.id, label: t.name }))
+
   const updateFilter = useCallback(
     (key: keyof FilterValues, value: string) => {
       onChange({ ...filters, [key]: value })
@@ -80,25 +99,29 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         <FilterSelect
           label="Task Type"
           value={filters.taskType}
-          options={TASK_TYPE_OPTIONS}
+          options={optionsFor('task_type')}
+          disabled={taxonomyLoading}
           onChange={(v) => updateFilter('taskType', v)}
         />
         <FilterSelect
           label="Language"
           value={filters.language}
-          options={LANGUAGE_OPTIONS}
+          options={optionsFor('language')}
+          disabled={taxonomyLoading}
           onChange={(v) => updateFilter('language', v)}
         />
         <FilterSelect
           label="Framework"
           value={filters.framework}
-          options={FRAMEWORK_OPTIONS}
+          options={optionsFor('framework')}
+          disabled={taxonomyLoading}
           onChange={(v) => updateFilter('framework', v)}
         />
         <FilterSelect
           label="Tool"
           value={filters.tool}
-          options={TOOL_OPTIONS}
+          options={optionsFor('tool')}
+          disabled={taxonomyLoading}
           onChange={(v) => updateFilter('tool', v)}
         />
         <FilterSelect
@@ -113,10 +136,10 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           options={RISK_LEVEL_OPTIONS}
           onChange={(v) => updateFilter('riskLevel', v)}
         />
-        <FilterInput
+        <FilterSelect
           label="Owner Team"
           value={filters.ownerTeam}
-          placeholder="Team name..."
+          options={teamOptions}
           onChange={(v) => updateFilter('ownerTeam', v)}
         />
         <FilterSelect
@@ -132,14 +155,17 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
 /* Internal components */
 
+type FilterOption = string | { value: string; label: string }
+
 interface FilterSelectProps {
   label: string
   value: string
-  options: string[]
+  options: FilterOption[]
+  disabled?: boolean
   onChange: (value: string) => void
 }
 
-function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
+function FilterSelect({ label, value, options, disabled, onChange }: FilterSelectProps) {
   return (
     <div>
       <label className="mb-1 block text-xs font-medium text-neutral-500">
@@ -147,40 +173,21 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
       </label>
       <select
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400"
       >
         <option value="">All</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
+        {options.map((opt) => {
+          const optValue = typeof opt === 'string' ? opt : opt.value
+          const optLabel = typeof opt === 'string' ? opt : opt.label
+          return (
+            <option key={optValue} value={optValue}>
+              {optLabel}
+            </option>
+          )
+        })}
       </select>
-    </div>
-  )
-}
-
-interface FilterInputProps {
-  label: string
-  value: string
-  placeholder: string
-  onChange: (value: string) => void
-}
-
-function FilterInput({ label, value, placeholder, onChange }: FilterInputProps) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500">
-        {label}
-      </label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-      />
     </div>
   )
 }
