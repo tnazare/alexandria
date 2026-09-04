@@ -26,8 +26,16 @@ public interface SkillRepository extends JpaRepository<SkillEntity, UUID> {
     boolean existsByOrganizationIdAndSlug(UUID organizationId, String slug);
 
     /**
-     * Paginated skill list with visibility enforcement.
-     * Uses a native query with visibility predicates so unauthorized skills are never loaded.
+     * Paginated skill list with visibility enforcement, full-text search, and faceted filters.
+     *
+     * <p>Results are ordered by {@code ts_rank} descending when a {@code searchQuery} is
+     * present (relevance-first), falling back to {@code updated_at DESC} as a tiebreaker
+     * or as the sole ordering when browsing without a query. The {@code CASE WHEN} expression
+     * uses {@code 0.0} (not {@code NULL}) so PostgreSQL can infer a concrete {@code float4}
+     * type for the expression.</p>
+     *
+     * <p>The explicit {@code countQuery} runs a lean {@code COUNT(*)} with the same predicates,
+     * avoiding a full projection during page-count computation.</p>
      */
     @Query(value = """
         SELECT s.* FROM skills s
@@ -46,16 +54,99 @@ public interface SkillRepository extends JpaRepository<SkillEntity, UUID> {
           AND s.lifecycle_status <> 'Blocked'
           AND (:includeArchived = true OR :status = 'Archived' OR s.lifecycle_status <> 'Archived')
           AND (:status IS NULL OR s.lifecycle_status = :status)
+          AND (:visibility IS NULL OR s.visibility = :visibility)
+          AND (:riskLevel IS NULL OR s.risk_level = :riskLevel)
           AND (:teamId IS NULL OR s.owner_team_id = :teamId)
+          AND (:taskType IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id
+                  AND te.tag_type = 'task_type'
+                  AND LOWER(te.value) = LOWER(:taskType)
+                  AND te.active = true))
+          AND (:language IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id
+                  AND te.tag_type = 'language'
+                  AND LOWER(te.value) = LOWER(:language)
+                  AND te.active = true))
+          AND (:framework IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id
+                  AND te.tag_type = 'framework'
+                  AND LOWER(te.value) = LOWER(:framework)
+                  AND te.active = true))
+          AND (:tool IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id
+                  AND te.tag_type = 'tool'
+                  AND LOWER(te.value) = LOWER(:tool)
+                  AND te.active = true))
           AND (:searchQuery IS NULL OR s.search_vector @@ plainto_tsquery('english', :searchQuery))
-        ORDER BY s.updated_at DESC
-        """, nativeQuery = true)
+        ORDER BY
+          CASE WHEN :searchQuery IS NULL THEN 0.0
+               ELSE ts_rank(s.search_vector, plainto_tsquery('english', :searchQuery), 1)
+          END DESC,
+          s.updated_at DESC
+        """,
+        countQuery = """
+        SELECT COUNT(*) FROM skills s
+        WHERE s.organization_id = :orgId
+          AND (
+            s.visibility = 'organization'
+            OR (s.visibility = 'team' AND s.owner_team_id IN (
+                SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
+            OR (s.visibility = 'private' AND s.created_by = :userId)
+            OR (s.visibility = 'restricted' AND (
+                s.created_by = :userId
+                OR EXISTS (SELECT 1 FROM skill_access_grants sag
+                           WHERE sag.skill_id = s.id AND sag.user_id = :userId)))
+            OR :isOrgAdmin = true
+          )
+          AND s.lifecycle_status <> 'Blocked'
+          AND (:includeArchived = true OR :status = 'Archived' OR s.lifecycle_status <> 'Archived')
+          AND (:status IS NULL OR s.lifecycle_status = :status)
+          AND (:visibility IS NULL OR s.visibility = :visibility)
+          AND (:riskLevel IS NULL OR s.risk_level = :riskLevel)
+          AND (:teamId IS NULL OR s.owner_team_id = :teamId)
+          AND (:taskType IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id AND te.tag_type = 'task_type'
+                  AND LOWER(te.value) = LOWER(:taskType) AND te.active = true))
+          AND (:language IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id AND te.tag_type = 'language'
+                  AND LOWER(te.value) = LOWER(:language) AND te.active = true))
+          AND (:framework IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id AND te.tag_type = 'framework'
+                  AND LOWER(te.value) = LOWER(:framework) AND te.active = true))
+          AND (:tool IS NULL OR EXISTS (
+                SELECT 1 FROM skill_tags st
+                JOIN taxonomy_entries te ON te.id = st.taxonomy_entry_id
+                WHERE st.skill_id = s.id AND te.tag_type = 'tool'
+                  AND LOWER(te.value) = LOWER(:tool) AND te.active = true))
+          AND (:searchQuery IS NULL OR s.search_vector @@ plainto_tsquery('english', :searchQuery))
+        """,
+        nativeQuery = true)
     Page<SkillEntity> findVisibleSkills(
         @Param("orgId") UUID orgId,
         @Param("userId") UUID userId,
         @Param("isOrgAdmin") boolean isOrgAdmin,
         @Param("status") String status,
+        @Param("visibility") String visibility,
+        @Param("riskLevel") String riskLevel,
         @Param("teamId") UUID teamId,
+        @Param("taskType") String taskType,
+        @Param("language") String language,
+        @Param("framework") String framework,
+        @Param("tool") String tool,
         @Param("searchQuery") String searchQuery,
         @Param("includeArchived") boolean includeArchived,
         Pageable pageable
