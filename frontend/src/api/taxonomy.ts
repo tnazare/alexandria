@@ -73,6 +73,9 @@ export function useTaxonomy() {
   return useQuery({
     queryKey: taxonomyKeys.grouped(),
     queryFn: getTaxonomyGrouped,
+    // Taxonomy changes rarely; cache for 5 minutes so filter panels don't refetch
+    // on every mount/navigation.
+    staleTime: 5 * 60 * 1000,
   })
 }
 
