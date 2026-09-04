@@ -173,7 +173,12 @@ export interface SkillListParams {
   size?: number
   status?: string
   visibility?: string
+  riskLevel?: string
   teamId?: string
+  taskType?: string
+  language?: string
+  framework?: string
+  tool?: string
   search?: string
   slug?: string
   includeArchived?: boolean
