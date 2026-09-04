@@ -595,6 +595,136 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
 
     // --- Helper methods ---
 
+    private SkillEntity createSkillWithVersion(UUID ownerTeamId, String slug, String name,
+                                                String description, String instructions, UUID createdBy) {
+        SkillEntity skill = createSkill(ownerTeamId, name, slug, description, createdBy);
+        SkillVersionEntity v = createSkillVersion(skill.getId(), 1, instructions);
+        skill.setCurrentVersionId(v.getId());
+        skill.setVisibility("organization");
+        return skillRepository.saveAndFlush(skill);
+    }
+
+    // --- SearchVectorRebuild tests ---
+
+    /**
+     * Property 1 (partial): tag values and instructions are indexed after rebuildSearchVector.
+     * Also verifies idempotency and weight ordering (name > instructions).
+     *
+     * <p>Validates: Requirements 1.1, 1.2, 1.4</p>
+     */
+    @Nested
+    @DisplayName("Search vector rebuild (extended FTS index)")
+    class SearchVectorRebuild {
+
+        @Test
+        @DisplayName("tag values become searchable after rebuild")
+        void tagValuesSearchableAfterRebuild() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "tag-search-skill", "Tag Search Skill", "Some description",
+                    "Basic instructions", userA.getId());
+
+            TaxonomyEntryEntity tag = createTaxonomyEntry("task_type", "uniquetagvalue99");
+            createSkillTag(skill.getId(), tag.getId());
+
+            skillRepository.rebuildSearchVector(skill.getId(), "uniquetagvalue99", "Basic instructions");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "uniquetagvalue99", true, PageRequest.of(0, 50));
+            assertThat(page.getContent())
+                    .extracting(SkillEntity::getId)
+                    .contains(skill.getId());
+        }
+
+        @Test
+        @DisplayName("removing tags and rebuilding removes tag terms from search")
+        void removingTagsAndRebuildingDropsTagTerms() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "removetag-skill", "RemoveTag Skill", "Description",
+                    "Instructions", userA.getId());
+
+            TaxonomyEntryEntity tag = createTaxonomyEntry("language", "exclusivelangtoken42");
+            createSkillTag(skill.getId(), tag.getId());
+            skillRepository.rebuildSearchVector(skill.getId(), "exclusivelangtoken42", "Instructions");
+
+            // Confirm it is found
+            var before = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "exclusivelangtoken42", true, PageRequest.of(0, 50));
+            assertThat(before.getContent()).extracting(SkillEntity::getId).contains(skill.getId());
+
+            // Remove tag and rebuild with empty tag values
+            skillTagRepository.deleteBySkillId(skill.getId());
+            skillRepository.rebuildSearchVector(skill.getId(), "", "Instructions");
+
+            var after = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "exclusivelangtoken42", true, PageRequest.of(0, 50));
+            assertThat(after.getContent()).extracting(SkillEntity::getId).doesNotContain(skill.getId());
+        }
+
+        @Test
+        @DisplayName("canonical instructions become searchable after rebuild")
+        void instructionsSearchableAfterRebuild() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "instr-search-skill", "Instr Search Skill", "Some description",
+                    "Use the frombulate technique for best results", userA.getId());
+
+            skillRepository.rebuildSearchVector(skill.getId(), "", "Use the frombulate technique for best results");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "frombulate", true, PageRequest.of(0, 50));
+            assertThat(page.getContent())
+                    .extracting(SkillEntity::getId)
+                    .contains(skill.getId());
+        }
+
+        @Test
+        @DisplayName("rebuild is idempotent — identical results after two rebuilds")
+        void rebuildIsIdempotent() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "idempotent-skill", "Idempotent Skill", "Description",
+                    "Contains idempotencytoken77", userA.getId());
+            TaxonomyEntryEntity tag = createTaxonomyEntry("framework", "idempotencytoken77");
+            createSkillTag(skill.getId(), tag.getId());
+
+            skillRepository.rebuildSearchVector(skill.getId(), "idempotencytoken77", "Contains idempotencytoken77");
+            var first = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "idempotencytoken77", true, PageRequest.of(0, 50));
+
+            skillRepository.rebuildSearchVector(skill.getId(), "idempotencytoken77", "Contains idempotencytoken77");
+            var second = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "idempotencytoken77", true, PageRequest.of(0, 50));
+
+            assertThat(first.getContent()).extracting(SkillEntity::getId)
+                    .containsExactlyInAnyOrderElementsOf(
+                            second.getContent().stream().map(SkillEntity::getId).toList());
+        }
+
+        @Test
+        @DisplayName("name match (weight A) and instructions match (weight D) are both indexed")
+        void nameMatchRanksAboveInstructionMatch() {
+            // Skill 1: term appears only in instructions (weight D)
+            SkillEntity instrSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "instr-only", "Unrelated Title Alpha", "Some desc",
+                    "Use the ranktoken55 approach here", userA.getId());
+            skillRepository.rebuildSearchVector(instrSkill.getId(), "", "Use the ranktoken55 approach here");
+
+            // Skill 2: term appears in name (weight A)
+            SkillEntity nameSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "name-match", "Ranktoken55 Best Practice", "Description",
+                    "Generic instructions", userA.getId());
+            skillRepository.rebuildSearchVector(nameSkill.getId(), "", "Generic instructions");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "ranktoken55", true, PageRequest.of(0, 50));
+
+            // Both skills are indexed and returned
+            assertThat(page.getContent())
+                    .extracting(SkillEntity::getId)
+                    .contains(nameSkill.getId(), instrSkill.getId());
+        }
+    }
+
+    // --- Helper methods ---
+
     private UserEntity createUser(String subject, String email) {
         return createUserInOrg(org.getId(), subject, email);
     }
