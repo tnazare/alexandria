@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of skill lifecycle operations.
@@ -100,6 +101,10 @@ public class SkillServiceImpl implements SkillService {
                         "ownerTeamId", ownerTeamId.toString(),
                         "authorUserId", userId.toString()
                 ));
+
+        // 8. Rebuild search vector to include A(name)+B(description)+C(tags)+D(instructions)
+        //    Must be after save() so name/description columns are current in the DB.
+        rebuildSearchVector(skill);
 
         return skill;
     }
@@ -283,6 +288,10 @@ public class SkillServiceImpl implements SkillService {
         if (params.tagIds() != null) {
             handleTagUpdate(skill, params.tagIds(), orgId);
         }
+
+        // 7. Rebuild search vector after all changes (tags + content) are persisted.
+        //    Called once here — NOT inside handleTagUpdate — to avoid a double rebuild.
+        rebuildSearchVector(skill);
 
         return skill;
     }
@@ -537,6 +546,45 @@ public class SkillServiceImpl implements SkillService {
         } catch (Exception e) {
             log.warn("Failed to record audit event for skill deletion: skillId={}", skillId, e);
         }
+    }
+
+    /**
+     * Rebuilds the full-text search vector for a skill to include all four weights:
+     * name (A), description (B), active tag values (C), and current-version
+     * canonical instructions (D).
+     *
+     * <p>Must be called <em>after</em> {@code skillRepository.save()} so that the
+     * name and description columns in the DB are current. Must NOT be called from
+     * within {@code handleTagUpdate} — call it once at the {@code create}/{@code update}
+     * boundary after all changes are applied.</p>
+     */
+    private void rebuildSearchVector(SkillEntity skill) {
+        // Gather active tag values
+        List<SkillTagEntity> tagEntities = skillTagRepository.findBySkillId(skill.getId());
+        String tagValues = "";
+        if (!tagEntities.isEmpty()) {
+            List<UUID> taxonomyIds = tagEntities.stream()
+                    .map(SkillTagEntity::getTaxonomyEntryId)
+                    .toList();
+            tagValues = taxonomyEntryRepository.findAllById(taxonomyIds).stream()
+                    .filter(TaxonomyEntryEntity::isActive)
+                    .map(TaxonomyEntryEntity::getValue)
+                    .sorted()
+                    .collect(Collectors.joining(" "));
+        }
+
+        // Gather canonical instructions from the current version (null-safe)
+        String instructions = "";
+        if (skill.getCurrentVersionId() != null) {
+            instructions = skillVersionRepository.findById(skill.getCurrentVersionId())
+                    .map(SkillVersionEntity::getCanonicalInstructions)
+                    .orElse("");
+            if (instructions == null) {
+                instructions = "";
+            }
+        }
+
+        skillRepository.rebuildSearchVector(skill.getId(), tagValues, instructions);
     }
 
     /**
