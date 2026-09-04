@@ -723,6 +723,289 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         }
     }
 
+    /**
+     * Taxonomy dimension filters (taskType/language/framework/tool) applied via EXISTS join.
+     *
+     * <p>Validates: Requirements 3.2, 3.4, 3.6</p>
+     */
+    @Nested
+    @DisplayName("Taxonomy dimension filters")
+    class TaxonomyFilters {
+
+        private void tag(SkillEntity skill, String tagType, String value) {
+            TaxonomyEntryEntity entry = createTaxonomyEntry(tagType, value);
+            createSkillTag(skill.getId(), entry.getId());
+        }
+
+        @Test
+        @DisplayName("taskType filter returns only skills with the matching task_type tag")
+        void taskTypeFilter() {
+            SkillEntity reviewSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "tt-review", "Review Skill", "d", "i", userA.getId());
+            tag(reviewSkill, "task_type", "code-review");
+            SkillEntity genSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "tt-gen", "Gen Skill", "d", "i", userA.getId());
+            tag(genSkill, "task_type", "generation");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    "code-review", null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId)
+                    .contains(reviewSkill.getId())
+                    .doesNotContain(genSkill.getId());
+        }
+
+        @Test
+        @DisplayName("taskType filter is case-insensitive (Property 5)")
+        void taskTypeCaseInsensitive() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "tt-ci", "CI Skill", "d", "i", userA.getId());
+            tag(skill, "task_type", "Refactoring");
+
+            var lower = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    "refactoring", null, null, null, null, true, PageRequest.of(0, 50));
+            var upper = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    "REFACTORING", null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(lower.getContent()).extracting(SkillEntity::getId).contains(skill.getId());
+            assertThat(upper.getContent()).extracting(SkillEntity::getId).contains(skill.getId());
+        }
+
+        @Test
+        @DisplayName("two taxonomy filters combine with AND")
+        void twoTaxonomyFiltersAnd() {
+            // Shared taxonomy entries (unique per org+type+value).
+            TaxonomyEntryEntity pythonEntry = createTaxonomyEntry("language", "python");
+            TaxonomyEntryEntity djangoEntry = createTaxonomyEntry("framework", "django");
+
+            SkillEntity both = createSkillWithVersion(teamAlpha.getId(),
+                    "tx-both", "Both Skill", "d", "i", userA.getId());
+            createSkillTag(both.getId(), pythonEntry.getId());
+            createSkillTag(both.getId(), djangoEntry.getId());
+
+            SkillEntity onlyLang = createSkillWithVersion(teamAlpha.getId(),
+                    "tx-lang", "Lang Skill", "d", "i", userA.getId());
+            createSkillTag(onlyLang.getId(), pythonEntry.getId());
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    null, "python", "django", null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId)
+                    .contains(both.getId())
+                    .doesNotContain(onlyLang.getId());
+        }
+
+        @Test
+        @DisplayName("non-existent taxonomy value returns empty page, not an error")
+        void nonExistentValueReturnsEmpty() {
+            createSkillWithVersion(teamAlpha.getId(), "tx-none", "None", "d", "i", userA.getId());
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    "does-not-exist-tag", null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("inactive taxonomy entry does not match the filter")
+        void inactiveTagDoesNotMatch() {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(),
+                    "tx-inactive", "Inactive Tag Skill", "d", "i", userA.getId());
+            TaxonomyEntryEntity entry = createTaxonomyEntry("tool", "legacy-tool");
+            entry.setActive(false);
+            taxonomyEntryRepository.saveAndFlush(entry);
+            createSkillTag(skill.getId(), entry.getId());
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    null, null, null, "legacy-tool", null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId).doesNotContain(skill.getId());
+        }
+    }
+
+    /**
+     * Exact-value filters (visibility, riskLevel) and their combination with existing filters.
+     *
+     * <p>Validates: Requirements 3.2, 3.3, 3.6</p>
+     */
+    @Nested
+    @DisplayName("Exact-value filters (visibility, riskLevel)")
+    class ExactFilters {
+
+        @Test
+        @DisplayName("visibility filter returns only matching skills")
+        void visibilityFilter() {
+            SkillEntity orgVis = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-org", "Org Vis", "d", "i", userA.getId());
+            // orgVis is already 'organization' via helper
+
+            SkillEntity teamVis = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-team", "Team Vis", "d", "i", userA.getId());
+            teamVis.setVisibility("team");
+            skillRepository.saveAndFlush(teamVis);
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, "organization", null, null,
+                    null, null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId)
+                    .contains(orgVis.getId())
+                    .doesNotContain(teamVis.getId());
+        }
+
+        @Test
+        @DisplayName("riskLevel filter returns only matching skills")
+        void riskLevelFilter() {
+            SkillEntity low = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-low", "Low Risk", "d", "i", userA.getId());
+            low.setRiskLevel("low");
+            skillRepository.saveAndFlush(low);
+
+            SkillEntity high = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-high", "High Risk", "d", "i", userA.getId());
+            high.setRiskLevel("high");
+            skillRepository.saveAndFlush(high);
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "high", null,
+                    null, null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId)
+                    .contains(high.getId())
+                    .doesNotContain(low.getId());
+        }
+
+        @Test
+        @DisplayName("status + riskLevel combine with AND")
+        void statusAndRiskLevel() {
+            SkillEntity match = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-match", "Match", "d", "i", userA.getId());
+            match.setLifecycleStatus("Published");
+            match.setRiskLevel("medium");
+            skillRepository.saveAndFlush(match);
+
+            SkillEntity wrongRisk = createSkillWithVersion(teamAlpha.getId(),
+                    "ex-wrongrisk", "Wrong Risk", "d", "i", userA.getId());
+            wrongRisk.setLifecycleStatus("Published");
+            wrongRisk.setRiskLevel("low");
+            skillRepository.saveAndFlush(wrongRisk);
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, "Published", null, "medium", null,
+                    null, null, null, null, null, true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).extracting(SkillEntity::getId)
+                    .contains(match.getId())
+                    .doesNotContain(wrongRisk.getId());
+        }
+    }
+
+    /**
+     * Relevance ordering: ts_rank-first when a query is present, recency when absent.
+     *
+     * <p>Validates: Requirements 2.1, 2.2</p>
+     */
+    @Nested
+    @DisplayName("Relevance ordering")
+    class RelevanceOrdering {
+
+        @Test
+        @DisplayName("name match ranks above description-only match for the same query")
+        void nameMatchRanksFirst() {
+            SkillEntity descSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "ro-desc", "Totally Unrelated Title", "orchestration pipeline tooling", "i", userA.getId());
+            skillRepository.rebuildSearchVector(descSkill.getId(), "", "i");
+
+            SkillEntity nameSkill = createSkillWithVersion(teamAlpha.getId(),
+                    "ro-name", "Orchestration Manager", "some description", "i", userA.getId());
+            skillRepository.rebuildSearchVector(nameSkill.getId(), "", "i");
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    null, null, null, null, "orchestration", true, PageRequest.of(0, 50));
+
+            assertThat(page.getContent()).hasSizeGreaterThanOrEqualTo(2);
+            assertThat(page.getContent().get(0).getId()).isEqualTo(nameSkill.getId());
+        }
+
+        @Test
+        @DisplayName("filter-only request (no search) is ordered by updated_at DESC")
+        void filterOnlyOrderedByRecency() {
+            SkillEntity older = createSkillWithVersion(teamAlpha.getId(),
+                    "ro-older", "Older", "d", "i", userA.getId());
+            SkillEntity newer = createSkillWithVersion(teamAlpha.getId(),
+                    "ro-newer", "Newer", "d", "i", userA.getId());
+            // Touch newer so its updated_at is later
+            newer.setDescription("touched");
+            skillRepository.saveAndFlush(newer);
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, teamAlpha.getId(),
+                    null, null, null, null, null, true, PageRequest.of(0, 50));
+
+            var ids = page.getContent().stream().map(SkillEntity::getId).toList();
+            assertThat(ids).contains(older.getId(), newer.getId());
+            // newer should appear before older (updated_at DESC)
+            assertThat(ids.indexOf(newer.getId())).isLessThan(ids.indexOf(older.getId()));
+        }
+    }
+
+    /**
+     * Count query accuracy: totalElements matches the number of skills passing all predicates.
+     *
+     * <p>Validates: Requirements 4.1, 4.2</p>
+     */
+    @Nested
+    @DisplayName("Count query accuracy")
+    class CountAccuracy {
+
+        @Test
+        @DisplayName("totalElements matches the filtered result count with a taxonomy filter")
+        void countMatchesTaxonomyFilter() {
+            // One shared taxonomy entry that all three matching skills reference.
+            TaxonomyEntryEntity entry = createTaxonomyEntry("language", "countpython");
+            for (int i = 0; i < 3; i++) {
+                SkillEntity s = createSkillWithVersion(teamAlpha.getId(),
+                        "cnt-py-" + i, "Py Skill " + i, "d", "i", userA.getId());
+                createSkillTag(s.getId(), entry.getId());
+            }
+            // A skill that should NOT match
+            createSkillWithVersion(teamAlpha.getId(), "cnt-other", "Other", "d", "i", userA.getId());
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, null, null,
+                    null, "countpython", null, null, null, true, PageRequest.of(0, 2));
+
+            // 3 skills match; page size 2 → totalElements=3, totalPages=2
+            assertThat(page.getTotalElements()).isEqualTo(3);
+            assertThat(page.getContent()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("totalElements matches an exact-value filter count")
+        void countMatchesRiskLevelFilter() {
+            for (int i = 0; i < 4; i++) {
+                SkillEntity s = createSkillWithVersion(teamAlpha.getId(),
+                        "cnt-risk-" + i, "Risk " + i, "d", "i", userA.getId());
+                s.setRiskLevel("restricted");
+                skillRepository.saveAndFlush(s);
+            }
+            createSkillWithVersion(teamAlpha.getId(), "cnt-lowrisk", "Low", "d", "i", userA.getId());
+
+            var page = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), true, null, null, "restricted", null,
+                    null, null, null, null, null, true, PageRequest.of(0, 10));
+
+            assertThat(page.getTotalElements()).isEqualTo(4);
+        }
+    }
+
     // --- Helper methods ---
 
     private UserEntity createUser(String subject, String email) {
