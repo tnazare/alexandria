@@ -39,17 +39,26 @@ public interface SkillService {
     SkillEntity getById(UUID skillId, AlexandriaUserDetails userDetails);
 
     /**
-     * Lists skills visible to the user with optional filters.
+     * Lists skills visible to the user with optional filters and full-text search.
      *
      * @param status      optional lifecycle status filter
+     * @param visibility  optional visibility filter
+     * @param riskLevel   optional risk level filter
      * @param teamId      optional owner team filter
+     * @param taskType    optional taxonomy task_type tag value filter
+     * @param language    optional taxonomy language tag value filter
+     * @param framework   optional taxonomy framework tag value filter
+     * @param tool        optional taxonomy tool tag value filter
      * @param searchQuery optional full-text search query
+     * @param includeArchived whether to include archived skills
      * @param userDetails the authenticated user's details
      * @param pageable    pagination parameters
      * @return a page of visible SkillEntity results
      */
-    Page<SkillEntity> list(String status, UUID teamId, String searchQuery,
-                           boolean includeArchived, AlexandriaUserDetails userDetails, Pageable pageable);
+    Page<SkillEntity> list(String status, String visibility, String riskLevel, UUID teamId,
+                           String taskType, String language, String framework, String tool,
+                           String searchQuery, boolean includeArchived,
+                           AlexandriaUserDetails userDetails, Pageable pageable);
 
     /**
      * Retrieves a skill by slug with visibility enforcement.

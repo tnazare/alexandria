@@ -36,7 +36,12 @@ public interface SkillApi {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String visibility,
+            @RequestParam(required = false) String riskLevel,
             @RequestParam(required = false) UUID teamId,
+            @RequestParam(required = false) String taskType,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String framework,
+            @RequestParam(required = false) String tool,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String slug,
             @RequestParam(defaultValue = "false") boolean includeArchived

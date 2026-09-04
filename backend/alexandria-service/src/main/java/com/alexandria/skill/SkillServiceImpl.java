@@ -123,14 +123,19 @@ public class SkillServiceImpl implements SkillService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<SkillEntity> list(String status, UUID teamId, String searchQuery,
-                                  boolean includeArchived, AlexandriaUserDetails userDetails, Pageable pageable) {
+    public Page<SkillEntity> list(String status, String visibility, String riskLevel, UUID teamId,
+                                  String taskType, String language, String framework, String tool,
+                                  String searchQuery, boolean includeArchived,
+                                  AlexandriaUserDetails userDetails, Pageable pageable) {
         UUID orgId = userDetails.organizationId();
         UUID userId = userDetails.userId();
+        // Only Org_Admin bypasses visibility restrictions for listing (deliberate — Catalog_Admin
+        // governs skills but is subject to the same visibility rules for listing).
         boolean isOrgAdmin = userDetails.role() == Role.Org_Admin;
 
         return skillRepository.findVisibleSkills(orgId, userId, isOrgAdmin,
-                status, null, null, teamId, null, null, null, null, searchQuery, includeArchived, pageable);
+                status, visibility, riskLevel, teamId, taskType, language, framework, tool,
+                searchQuery, includeArchived, pageable);
     }
 
     @Override
