@@ -3,7 +3,7 @@ export { getMe, listUsers, changeRole } from './users'
 export { createTeam, listTeams, getTeam, addMember, removeMember } from './teams'
 export { listAuditEvents } from './audit'
 export type { AuditEventFilters } from './audit'
-export { searchSkills, getSkill, exportSkill } from './skills'
+export { getSkill, exportSkill } from './skills'
 export type {
   SkillSummary,
   SkillDetail,
@@ -12,7 +12,6 @@ export type {
   SkillVersionSummary,
   FeedbackSummary,
   ReviewStatus,
-  SkillSearchParams,
   LifecycleStatus,
   RiskLevel,
   ApprovalState,

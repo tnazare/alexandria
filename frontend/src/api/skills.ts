@@ -1,5 +1,4 @@
 import { apiClient } from './client'
-import type { PageResponse } from '@/shared/types'
 
 // --- Skill Types ---
 
@@ -93,29 +92,8 @@ export interface SkillDetail {
 
 // --- API Functions ---
 
-export interface SkillSearchParams {
-  query?: string
-  taskType?: string
-  language?: string
-  framework?: string
-  tool?: string
-  approvalState?: string
-  riskLevel?: string
-  ownerTeam?: string
-  visibility?: string
-  page?: number
-  size?: number
-}
-
-export async function searchSkills(
-  params: SkillSearchParams,
-): Promise<PageResponse<SkillSummary>> {
-  const response = await apiClient.get<PageResponse<SkillSummary>>(
-    '/api/skills',
-    { params },
-  )
-  return response.data
-}
+// NOTE: skill search/listing is unified in `@/api/skillsCatalog` (listSkills / useSkills).
+// The browse catalog imports that shared module; there is no separate searchSkills here.
 
 export async function getSkill(skillId: string): Promise<SkillDetail> {
   const response = await apiClient.get<SkillDetail>(`/api/skills/${skillId}`)

@@ -1,7 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
-import { searchSkills } from '@/api/skills'
+import { useSkills } from '@/api/skillsCatalog'
+import type { SkillListParams, SkillSummaryResponse } from '@/types/skill'
+import type { SkillSummary } from '@/api/skills'
 import { LoadingSpinner, Pagination } from '@/shared/components'
 import { SearchBar } from './components/SearchBar'
 import { FilterPanel } from './components/FilterPanel'
@@ -10,6 +11,33 @@ import { SkillCard } from './components/SkillCard'
 import { parseCatalogState, serializeCatalogState } from './utils/urlState'
 
 const PAGE_SIZE = 12
+
+/**
+ * Maps a backend {@link SkillSummaryResponse} to the browse-layer {@link SkillSummary}
+ * shape that {@link SkillCard} consumes. The catalog list endpoint is the single
+ * source of truth; this adapter bridges the two summary shapes.
+ */
+function toCardSummary(s: SkillSummaryResponse): SkillSummary {
+  // Derive a coarse approval state from the lifecycle status for display.
+  const approvalState =
+    s.lifecycleStatus === 'Team_Approved' || s.lifecycleStatus === 'Company_Approved'
+      ? 'approved'
+      : s.lifecycleStatus === 'Blocked'
+        ? 'rejected'
+        : 'pending'
+
+  return {
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    ownerTeam: s.ownerTeamName,
+    lifecycleStatus: s.lifecycleStatus,
+    approvalState,
+    tools: s.tags.filter((t) => t.type === 'tool').map((t) => t.value),
+    riskLevel: s.riskLevel ?? 'low',
+    lastUpdated: s.updatedAt,
+  }
+}
 
 /**
  * Catalog page with search input, filter panel, and paginated skill results.
@@ -26,28 +54,27 @@ export function CatalogPage() {
     [searchParams],
   )
 
-  // Build API query params from URL-derived state
-  const apiParams = useMemo(
+  // Build unified API query params from URL-derived state.
+  // NOTE: the `tool` filter is a taxonomy tool tag (e.g. "GitHub Copilot"), not a
+  // variant tool identifier; `ownerTeam` carries a team UUID that maps to teamId.
+  const apiParams = useMemo<SkillListParams>(
     () => ({
-      query: query || undefined,
+      search: query || undefined,
       page,
       size: PAGE_SIZE,
       taskType: filters.taskType || undefined,
       language: filters.language || undefined,
       framework: filters.framework || undefined,
       tool: filters.tool || undefined,
-      approvalState: filters.approvalState || undefined,
+      status: filters.approvalState || undefined,
       riskLevel: filters.riskLevel || undefined,
-      ownerTeam: filters.ownerTeam || undefined,
+      teamId: filters.ownerTeam || undefined,
       visibility: filters.visibility || undefined,
     }),
     [query, page, filters],
   )
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['skills', apiParams],
-    queryFn: () => searchSkills(apiParams),
-  })
+  const { data, isLoading, isError, error } = useSkills(apiParams)
 
   const updateUrl = useCallback(
     (newQuery: string, newFilters: FilterValues, newPage: number) => {
@@ -138,7 +165,7 @@ export function CatalogPage() {
                 {data.content.map((skill) => (
                   <SkillCard
                     key={skill.id}
-                    skill={skill}
+                    skill={toCardSummary(skill)}
                     onClick={handleSkillClick}
                   />
                 ))}
