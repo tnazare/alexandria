@@ -52,7 +52,8 @@ import static org.mockito.Mockito.when;
 class ResolverFetchServiceTest {
 
     private static final ResolverProperties PROPS =
-            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved");
+            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved",
+                    8192, 12, true);
 
     private SkillResolverRepository resolverRepository;
     private TeamRepository teamRepository;

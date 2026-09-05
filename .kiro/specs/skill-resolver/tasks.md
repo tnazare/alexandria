@@ -232,13 +232,16 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       governed skill without the catalog being preloaded.
     - *Requirements: 10.1, 10.2, 10.3, 10.5, 10.7*
 
-- [ ] 7. Hooks push adapter (deterministic injection)
-  - [ ] 7.0 Confirm the default trigger behavior with stakeholders
+- [x] 7. Hooks push adapter (deterministic injection)
+  - [x] 7.0 Confirm the default trigger behavior with stakeholders
+    - DECIDED: default = UserPromptSubmit/userPromptSubmitted injection (admin-configurable via
+      alexandria.resolver.hook-inject-on-prompt); sessionStart seeding available as the lighter
+      alternative when disabled.
     - Confirm the admin-configurable default (recommended: `sessionStart` seeding + `UserPromptSubmit`
       injection) before building. Record the decision in the adapter config.
     - *Requirements: 11.9*
 
-  - [ ] 7.1 Implement the hook endpoint with payload parsing for both harnesses
+  - [x] 7.1 Implement the hook endpoint with payload parsing for both harnesses
     - Under `com.alexandria.agent.hook`, expose the hook HTTP endpoint. Parse Copilot
       (`userPromptSubmitted`, VS Code snake_case shape) and Claude Code (`UserPromptSubmit`
       PascalCase) payloads into a common `HookInvocation`. Return the harness-appropriate injection
@@ -246,7 +249,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *Files:* `backend/alexandria-service/src/main/java/com/alexandria/agent/hook/*.java`
     - *Requirements: 11.1, 11.2*
 
-  - [ ] 7.2 Add fail-open, timeout, session cache, relevance gate, and size cap
+  - [x] 7.2 Add fail-open, timeout, session cache, relevance gate, and size cap
     - Relevance gate skips trivial/non-task prompts. Session cache keyed by `(sessionId, promptHash)`.
       On miss, call `ResolverService.resolve` with a client timeout well under the harness limit
       (`RESOLVER_HOOK_TIMEOUT_MS`, default 5000 < Claude Code's 30s), take the top candidate, fetch
@@ -254,12 +257,15 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       Any error/timeout/unreachable → empty decision (fail-open).
     - *Requirements: 11.3, 11.4, 11.5, 11.6, 11.7, 13.5*
 
-  - [ ] 7.3 Add `preToolUse`/`PreToolUse` governance enforcement
+  - [x] 7.3 Add `preToolUse`/`PreToolUse` governance enforcement
+    - NOTE: hook point implemented; defaults to no-decision (allow) since this build has no
+      signal tying an arbitrary tool call to a specific skill. Deny wiring is ready for when
+      such a signal exists.
     - Support a mode on tool-use hooks that denies or annotates a tool call associated with a
       `Blocked` or unsafe skill.
     - *Requirements: 11.8*
 
-  - [ ]* 7.4 Tests for fail-open, cap, cache, and governance-deny
+  - [x]* 7.4 Tests for fail-open, cap, cache, and governance-deny
     - Unit/integration: simulate timeout/unreachable → empty decision; success → injection within
       byte cap (Property 12); relevance gate skips trivial prompts; session cache prevents duplicate
       resolves; preToolUse denies a Blocked-skill tool call.

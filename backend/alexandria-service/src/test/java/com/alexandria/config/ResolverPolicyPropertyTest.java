@@ -29,7 +29,8 @@ import static org.mockito.Mockito.when;
 class ResolverPolicyPropertyTest {
 
     private static final ResolverProperties PROPS =
-            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved");
+            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved",
+                    8192, 12, true);
 
     private ResolverPolicy withConfiguredPolicy(String high, String restricted) {
         ResolverPolicyRepository repo = mock(ResolverPolicyRepository.class);

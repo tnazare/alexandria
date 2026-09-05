@@ -50,7 +50,8 @@ import static org.mockito.Mockito.when;
 class ResolverServicePropertyTest {
 
     private static final ResolverProperties PROPS =
-            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved");
+            new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved",
+                    8192, 12, true);
 
     private ResolverServiceImpl newService(SkillResolverRepository repo, TeamRepository teams) {
         // resolve() does not touch the fetch collaborators; pass mocks to satisfy the constructor.

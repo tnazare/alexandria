@@ -19,7 +19,10 @@ public record ResolverProperties(
         String instanceUrl,
         Integer maxLimit,
         Integer defaultLimit,
-        String defaultReferenceMode
+        String defaultReferenceMode,
+        Integer hookMaxInjectBytes,
+        Integer hookMinPromptChars,
+        Boolean hookInjectOnPrompt
 ) {
 
     public ResolverProperties {
@@ -34,6 +37,17 @@ public record ResolverProperties(
         }
         if (defaultReferenceMode == null || defaultReferenceMode.isBlank()) {
             defaultReferenceMode = "floating_latest_approved";
+        }
+        if (hookMaxInjectBytes == null || hookMaxInjectBytes < 1) {
+            hookMaxInjectBytes = 8192;
+        }
+        if (hookMinPromptChars == null || hookMinPromptChars < 0) {
+            hookMinPromptChars = 12;
+        }
+        if (hookInjectOnPrompt == null) {
+            // Default trigger (Task 7.0): inject the resolved skill on prompt submission. Deployers
+            // can disable to fall back to a lighter sessionStart-seeding-only posture.
+            hookInjectOnPrompt = true;
         }
     }
 }
