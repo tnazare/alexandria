@@ -207,8 +207,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     and a service token. Validation step; no new commit unless fixes are required.
   - *Requirements: (all of 1–4, 13.4)*
 
-- [ ] 6. MCP server adapter (pull mode) — MVP integration
-  - [ ] 6.1 Implement the MCP server with `resolve_skill` + `fetch_skill`
+- [x] 6. MCP server adapter (pull mode) — MVP integration
+  - [x] 6.1 Implement the MCP server with `resolve_skill` + `fetch_skill`
     - Under `com.alexandria.agent.mcp`, expose two MCP tools backed by `ResolverService`. Inputs for
       `resolve_skill` mirror `ResolveRequest`; `fetch_skill` takes `skillVersionId` + optional
       `tool`/`format`. Write detailed, keyword-rich tool descriptions. Pass the caller credential
@@ -217,12 +217,15 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *Files:* `backend/alexandria-service/src/main/java/com/alexandria/agent/mcp/*.java`
     - *Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.7*
 
-  - [ ] 6.2 Package the MCP server for a deployed instance
+  - [x] 6.2 Package the MCP server for a deployed instance
     - Make the MCP server runnable against a configurable Alexandria instance URL + credential
       (env-var driven), consistent with the self-hosted model. Document the config.
     - *Requirements: 10.6, 13.5*
 
-  - [ ]* 6.3 MCP round-trip integration test + manual harness validation
+  - [x]* 6.3 MCP round-trip integration test + manual harness validation
+    - NOTE: automated round-trip integration test done (McpEndpointIntegrationTest). Manual
+      validation in a live Claude Code / Copilot session is pending a running instance +
+      those clients (cannot be automated here).
     - Integration: `resolve_skill` then `fetch_skill` end-to-end with identity passthrough; assert
       governance gates observed (Blocked denied, not-visible 404) and no bodies in resolve.
     - Manual: validate in Claude Code and Copilot/VS Code that the agent resolves then fetches a
