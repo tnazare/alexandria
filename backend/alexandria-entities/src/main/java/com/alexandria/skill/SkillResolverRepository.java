@@ -85,4 +85,39 @@ public interface SkillResolverRepository extends JpaRepository<SkillEntity, UUID
     java.util.Optional<com.alexandria.skill.entity.SkillVersionEntity> loadVersionForFetch(
             @Param("skillVersionId") UUID skillVersionId,
             @Param("orgId") UUID orgId);
+
+    /**
+     * Resolves the latest approved version id for a skill (Requirement 5.2). Eligible only when the
+     * skill's lifecycle is an approved state (Company_Approved or Team_Approved); returns the most
+     * recently published version. Returns empty when the skill is not approved or has no published
+     * version, so the caller excludes it rather than surfacing an unapproved version.
+     */
+    @Query(value = """
+        SELECT v.id
+        FROM skill_versions v
+        JOIN skills s ON s.id = v.skill_id
+        WHERE s.id = :skillId
+          AND s.lifecycle_status IN ('Company_Approved', 'Team_Approved')
+          AND v.published_at IS NOT NULL
+        ORDER BY v.version_number DESC
+        LIMIT 1
+        """, nativeQuery = true)
+    java.util.Optional<UUID> findLatestApprovedVersionId(@Param("skillId") UUID skillId);
+
+    /**
+     * Resolves the latest published-or-higher version id for a skill (Requirement 5.3): the most
+     * recently published version, regardless of approval state, excluding Blocked skills. Returns
+     * empty when the skill has no published version.
+     */
+    @Query(value = """
+        SELECT v.id
+        FROM skill_versions v
+        JOIN skills s ON s.id = v.skill_id
+        WHERE s.id = :skillId
+          AND s.lifecycle_status <> 'Blocked'
+          AND v.published_at IS NOT NULL
+        ORDER BY v.version_number DESC
+        LIMIT 1
+        """, nativeQuery = true)
+    java.util.Optional<UUID> findLatestPublishedVersionId(@Param("skillId") UUID skillId);
 }

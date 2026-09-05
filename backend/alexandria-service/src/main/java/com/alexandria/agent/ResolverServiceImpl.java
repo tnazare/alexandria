@@ -15,6 +15,7 @@ import com.alexandria.agent.render.FetchResult;
 import com.alexandria.agent.render.SkillFetchRendererRegistry;
 import com.alexandria.audit.AuditService;
 import com.alexandria.auth.AlexandriaUserDetails;
+import com.alexandria.config.ResolverPolicy;
 import com.alexandria.config.ResolverProperties;
 import com.alexandria.skill.CandidateProjection;
 import com.alexandria.skill.SkillResolverRepository;
@@ -62,6 +63,7 @@ public class ResolverServiceImpl implements ResolverService {
     private final SkillFetchRendererRegistry rendererRegistry;
     private final UsageEventService usageEventService;
     private final AuditService auditService;
+    private final ResolverPolicy resolverPolicy;
 
     @Override
     public ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity) {
@@ -82,7 +84,13 @@ public class ResolverServiceImpl implements ResolverService {
 
         List<ResolveResult> results = new ArrayList<>(candidates.size());
         for (CandidateProjection c : candidates) {
-            results.add(toResult(c, request.context(), referenceMode, identity.organizationId()));
+            // Resolve the reference mode to a concrete version. Under a floating mode with no
+            // eligible version, exclude the candidate rather than surface an unapproved version.
+            ResolvedRef resolved = resolveVersion(c, referenceMode);
+            if (resolved == null) {
+                continue;
+            }
+            results.add(toResult(c, request.context(), resolved, identity.organizationId()));
         }
 
         Capabilities capabilities = new Capabilities(true, true, false, false);
@@ -128,9 +136,11 @@ public class ResolverServiceImpl implements ResolverService {
                 skill.getLifecycleStatus(), skill.getRiskLevel(), skill.getVisibility(),
                 ownerTeamName(skill.getOwnerTeamId(), identity.organizationId()),
                 deprecated, deprecated ? skill.getDeprecationReason() : null);
-        Resolution resolution = new Resolution(
-                properties.defaultReferenceMode(), String.valueOf(version.getVersionNumber()),
-                true, false, revalidateHint(version.getId()));
+        // Risk-aware resolution: an explicit fetch of a specific version is inherently pinned;
+        // the policy may still force revalidation / block commit for high/restricted risk.
+        Resolution resolution = resolverPolicy.resolve(
+                identity.organizationId(), skill.getRiskLevel(), "pinned",
+                String.valueOf(version.getVersionNumber()), revalidateHint(version.getId()));
         SkillRef ref = new SkillRef(skill.getId(), version.getId(), properties.instanceUrl());
 
         FetchContext ctx = new FetchContext(
@@ -150,7 +160,7 @@ public class ResolverServiceImpl implements ResolverService {
     }
 
     private ResolveResult toResult(CandidateProjection c, ResolveContext context,
-                                   String referenceMode, UUID orgId) {
+                                   ResolvedRef resolved, UUID orgId) {
         boolean deprecated = "Deprecated".equals(c.getLifecycleStatus());
         Governance governance = new Governance(
                 c.getLifecycleStatus(),
@@ -160,19 +170,17 @@ public class ResolverServiceImpl implements ResolverService {
                 deprecated,
                 deprecated ? c.getDeprecationReason() : null);
 
-        // Placeholder resolution — Task 3 replaces this with risk-aware ResolverPolicy output.
-        Resolution resolution = new Resolution(
-                referenceMode,
-                null,
-                true,
-                false,
-                revalidateHint(c.getSkillVersionId()));
+        // Risk-aware resolution via policy (Requirement 7): forces pinned+revalidate or block-commit
+        // for high/restricted risk, else honors the resolved reference mode.
+        Resolution resolution = resolverPolicy.resolve(
+                orgId, c.getRiskLevel(), resolved.mode(), resolved.versionNumber(),
+                revalidateHint(resolved.versionId()));
 
         Delivery delivery = new Delivery(
-                fetchHref(c.getSkillVersionId()),
+                fetchHref(resolved.versionId()),
                 List.of("agent_skill", "alexandria_native"));
 
-        SkillRef ref = new SkillRef(c.getSkillId(), c.getSkillVersionId(), properties.instanceUrl());
+        SkillRef ref = new SkillRef(c.getSkillId(), resolved.versionId(), properties.instanceUrl());
 
         return new ResolveResult(
                 "skill",
@@ -186,6 +194,32 @@ public class ResolverServiceImpl implements ResolverService {
                 delivery,
                 null,
                 List.of());
+    }
+
+    /** Resolved version identity + effective reference mode for a candidate. */
+    private record ResolvedRef(UUID versionId, String versionNumber, String mode) {
+    }
+
+    /**
+     * Resolves a candidate's reference mode to a concrete version. For pinned, uses the candidate's
+     * current version. For floating modes, resolves the latest approved / latest published version;
+     * returns null when no eligible version exists (Requirement 5.6), so the caller excludes it.
+     */
+    private ResolvedRef resolveVersion(CandidateProjection c, String mode) {
+        switch (mode) {
+            case "floating_latest_approved" -> {
+                Optional<UUID> v = resolverRepository.findLatestApprovedVersionId(c.getSkillId());
+                return v.map(id -> new ResolvedRef(id, null, mode)).orElse(null);
+            }
+            case "floating_latest_published" -> {
+                Optional<UUID> v = resolverRepository.findLatestPublishedVersionId(c.getSkillId());
+                return v.map(id -> new ResolvedRef(id, null, mode)).orElse(null);
+            }
+            default -> {
+                // pinned: the candidate's current published version.
+                return new ResolvedRef(c.getSkillVersionId(), null, "pinned");
+            }
+        }
     }
 
     /**

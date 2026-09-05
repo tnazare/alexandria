@@ -139,8 +139,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       Deprecated warns; not-visible 404; usage event written.
     - *Requirements: 3.3, 3.5, 3.7, 4.1, 4.2, 4.3, 4.4, 4.5, 6.1, 6.2*
 
-- [ ] 3. Reference modes + embedded identity + admin commit policy
-  - [ ] 3.1 Add version-resolution queries for floating modes
+- [x] 3. Reference modes + embedded identity + admin commit policy
+  - [x] 3.1 Add version-resolution queries for floating modes
     - Add `findLatestApprovedVersionId(skillId)` (latest Company_Approved else Team_Approved) and
       `findLatestPublishedVersionId(skillId)` (latest Published-or-higher) to
       `SkillResolverRepository`, deriving approval state from lifecycle status + version publish
@@ -148,7 +148,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *File:* `SkillResolverRepository.java`
     - *Requirements: 5.1, 5.2, 5.3, 5.4, 5.6*
 
-  - [ ] 3.2 Add `resolver_policies` + `service_tokens` migration and entities
+  - [x] 3.2 Add `resolver_policies` + `service_tokens` migration and entities
     - Create `V8__skill_resolver.sql` (after V7) with the `service_tokens` and `resolver_policies`
       tables exactly as specified in the design (org-scoped, CHECK constraints, unique indexes).
       Add `ServiceTokenEntity` and `ResolverPolicyEntity` (both extend `BaseEntity`) and their
@@ -159,7 +159,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       `.../agent/ServiceTokenRepository.java`, `.../agent/ResolverPolicyRepository.java`
     - *Requirements: 7.1, 9.5*
 
-  - [ ] 3.3 Add `ResolverPolicy` component and wire the `Resolution` block
+  - [x] 3.3 Add `ResolverPolicy` component and wire the `Resolution` block
     - Create `com.alexandria.config.ResolverPolicy` (`@Component`, mirroring `SkillSecurity`): given
       risk level, requested reference mode, and the org's `ResolverPolicyEntity` (or code default —
       permissive low/medium, pin-and-revalidate high/restricted), compute the effective `Resolution`
@@ -172,7 +172,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       `ResolverServiceImpl.java`
     - *Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.4, 7.2, 7.3, 7.4, 7.5*
 
-  - [ ]* 3.4 Tests for reference-mode resolution and risk policy
+  - [x]* 3.4 Tests for reference-mode resolution and risk policy
     - Integration: seed a skill with Draft/Published/Team_Approved/Company_Approved versions; assert
       each mode resolves to the correct version and that a skill with no approved version is excluded
       under floating_latest_approved (Property 8).

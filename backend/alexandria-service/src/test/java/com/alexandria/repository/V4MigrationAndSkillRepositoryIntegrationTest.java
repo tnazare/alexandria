@@ -1119,6 +1119,75 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
         }
     }
 
+    /**
+     * Reference-mode version resolution: latest approved / latest published, and exclusion when no
+     * eligible version exists.
+     *
+     * <p>Validates: skill-resolver Requirements 5.2, 5.3, 5.6 (Property 8)</p>
+     */
+    @Nested
+    @DisplayName("Skill Resolver reference-mode version resolution")
+    class ReferenceModeResolution {
+
+        private SkillVersionEntity publishedVersion(UUID skillId, int number) {
+            SkillVersionEntity v = createSkillVersion(skillId, number, "instructions v" + number);
+            v.setPublishedAt(java.time.Instant.now());
+            return skillVersionRepository.saveAndFlush(v);
+        }
+
+        @Test
+        @DisplayName("latest approved resolves to newest published version when skill is approved")
+        void latestApprovedResolvesForApprovedSkill() {
+            SkillEntity skill = createSkill(teamAlpha.getId(), "Approved Skill", "rm-approved",
+                    "desc", userA.getId());
+            skill.setLifecycleStatus("Company_Approved");
+            skill = skillRepository.saveAndFlush(skill);
+            publishedVersion(skill.getId(), 1);
+            SkillVersionEntity v2 = publishedVersion(skill.getId(), 2);
+
+            var resolved = skillResolverRepository.findLatestApprovedVersionId(skill.getId());
+
+            assertThat(resolved).contains(v2.getId());
+        }
+
+        @Test
+        @DisplayName("latest approved returns empty for a non-approved (Published-only) skill")
+        void latestApprovedEmptyForUnapprovedSkill() {
+            SkillEntity skill = createSkill(teamAlpha.getId(), "Draft-ish Skill", "rm-pub-only",
+                    "desc", userA.getId());
+            skill.setLifecycleStatus("Published");
+            skill = skillRepository.saveAndFlush(skill);
+            publishedVersion(skill.getId(), 1);
+
+            var resolved = skillResolverRepository.findLatestApprovedVersionId(skill.getId());
+
+            assertThat(resolved).isEmpty();
+        }
+
+        @Test
+        @DisplayName("latest published resolves regardless of approval, excludes blocked")
+        void latestPublishedResolves() {
+            SkillEntity published = createSkill(teamAlpha.getId(), "Pub Skill", "rm-published",
+                    "desc", userA.getId());
+            published.setLifecycleStatus("Published");
+            published = skillRepository.saveAndFlush(published);
+            publishedVersion(published.getId(), 1);
+            SkillVersionEntity latest = publishedVersion(published.getId(), 2);
+
+            var resolved = skillResolverRepository.findLatestPublishedVersionId(published.getId());
+            assertThat(resolved).contains(latest.getId());
+
+            // Blocked skill yields no published version for resolution.
+            SkillEntity blocked = createSkill(teamAlpha.getId(), "Blk Skill", "rm-blocked",
+                    "desc", userA.getId());
+            blocked.setLifecycleStatus("Blocked");
+            blocked = skillRepository.saveAndFlush(blocked);
+            publishedVersion(blocked.getId(), 1);
+
+            assertThat(skillResolverRepository.findLatestPublishedVersionId(blocked.getId())).isEmpty();
+        }
+    }
+
     // --- Helper methods ---
 
     private UserEntity createUser(String subject, String email) {

@@ -64,7 +64,14 @@ class ResolverServicePropertyTest {
                         new com.alexandria.agent.render.AgentSkillRenderer(),
                         new com.alexandria.agent.render.NativeRenderer())),
                 mock(com.alexandria.usage.UsageEventService.class),
-                mock(com.alexandria.audit.AuditService.class));
+                mock(com.alexandria.audit.AuditService.class),
+                permissivePolicy());
+    }
+
+    private com.alexandria.config.ResolverPolicy permissivePolicy() {
+        var policyRepo = mock(com.alexandria.agent.ResolverPolicyRepository.class);
+        when(policyRepo.findByOrganizationId(any())).thenReturn(Optional.empty());
+        return new com.alexandria.config.ResolverPolicy(policyRepo, PROPS);
     }
 
     private AlexandriaUserDetails identity(Role role) {
@@ -90,8 +97,9 @@ class ResolverServicePropertyTest {
         when(repo.findVisibleCandidates(any(), any(), anyBoolean(), anyBoolean(), anyString(), anyInt()))
                 .thenReturn(candidates(count));
 
+        // Use pinned mode so resolution uses each candidate's own version (no floating lookup).
         ResolveResponse response = newService(repo, teams)
-                .resolve(new ResolveRequest("integration tests", null, null, null, null),
+                .resolve(new ResolveRequest("integration tests", null, null, "pinned", null),
                         identity(Role.Skill_Consumer));
 
         assertThat(response.schemaVersion()).isEqualTo("1.0");

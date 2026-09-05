@@ -78,8 +78,12 @@ class ResolverFetchServiceTest {
         auditService = mock(AuditService.class);
         SkillFetchRendererRegistry registry = new SkillFetchRendererRegistry(
                 List.of(new AgentSkillRenderer(), new NativeRenderer()));
+        var policyRepo = mock(com.alexandria.agent.ResolverPolicyRepository.class);
+        when(policyRepo.findByOrganizationId(any())).thenReturn(Optional.empty());
+        com.alexandria.config.ResolverPolicy resolverPolicy =
+                new com.alexandria.config.ResolverPolicy(policyRepo, PROPS);
         service = new ResolverServiceImpl(resolverRepository, teamRepository, PROPS,
-                skillService, variantService, registry, usageEventService, auditService);
+                skillService, variantService, registry, usageEventService, auditService, resolverPolicy);
         identity = new AlexandriaUserDetails(userId, orgId, Role.Skill_Consumer, "agent@test.com");
         when(teamRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
     }
