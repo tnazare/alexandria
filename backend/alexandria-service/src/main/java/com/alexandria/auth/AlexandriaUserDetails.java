@@ -20,8 +20,17 @@ public record AlexandriaUserDetails(
         UUID userId,
         UUID organizationId,
         Role role,
-        String email
+        String email,
+        boolean serviceToken
 ) {
+
+    /**
+     * Convenience constructor for interactive (user) principals. Defaults {@code serviceToken} to
+     * false so existing OIDC/user call sites are unchanged.
+     */
+    public AlexandriaUserDetails(UUID userId, UUID organizationId, Role role, String email) {
+        this(userId, organizationId, role, email, false);
+    }
 
     /**
      * Returns the authorities for this user — a single GrantedAuthority
@@ -29,5 +38,13 @@ public record AlexandriaUserDetails(
      */
     public Collection<GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    /**
+     * Returns the user id to attribute usage/audit events to, or null for a service-token principal
+     * (whose id references no {@code users} row and would violate the actor foreign key).
+     */
+    public UUID actorUserId() {
+        return serviceToken ? null : userId;
     }
 }

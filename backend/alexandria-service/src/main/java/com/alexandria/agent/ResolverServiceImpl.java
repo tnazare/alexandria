@@ -111,7 +111,7 @@ public class ResolverServiceImpl implements ResolverService {
 
         // 3. Blocked (but visible) -> 403 for the agent surface (distinct from human export's 409).
         if ("Blocked".equals(skill.getLifecycleStatus())) {
-            auditService.record(identity.organizationId(), identity.userId(),
+            auditService.record(identity.organizationId(), identity.actorUserId(),
                     "skill.resolver_fetch_denied", "skill", skill.getId(),
                     Map.of("skillVersionId", skillVersionId.toString(), "reason", "Blocked"));
             throw new ResolverBlockedException("Skill is blocked and cannot be fetched");
@@ -152,8 +152,9 @@ public class ResolverServiceImpl implements ResolverService {
 
         FetchResult result = rendererRegistry.rendererFor(format).render(ctx);
 
-        // 6. Record a view usage event on success (fire-and-forget).
-        usageEventService.record(identity.organizationId(), identity.userId(),
+        // 6. Record a view usage event on success (fire-and-forget). Actor is null for service
+        //    tokens, whose id references no users row.
+        usageEventService.record(identity.organizationId(), identity.actorUserId(),
                 skill.getId(), version.getId(), "view", source, null);
 
         return result;

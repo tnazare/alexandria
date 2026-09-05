@@ -41,6 +41,7 @@ public class SecurityConfig {
     private final OrganizationProperties organizationProperties;
     private final UserRepository userRepository;
     private final AuditEventRepository auditEventRepository;
+    private final com.alexandria.agent.ServiceTokenRepository serviceTokenRepository;
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
     private String jwkSetUri;
@@ -56,8 +57,16 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
+                        // Ignore Alexandria service tokens here so the JWT decoder never sees them;
+                        // they are handled by ServiceTokenAuthFilter. Other bearer tokens resolve
+                        // normally as JWTs.
+                        .bearerTokenResolver(serviceTokenAwareBearerResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 )
+                // Service-token auth runs before the JWT bearer filter so a non-JWT agent token is
+                // recognized and short-circuited before the JWT decoder would reject it. Non-service
+                // tokens pass through untouched, preserving the existing OIDC flow.
+                .addFilterBefore(serviceTokenAuthFilter(), BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(userProvisioningFilter(), BearerTokenAuthenticationFilter.class);
 
         return http.build();
@@ -80,6 +89,28 @@ public class SecurityConfig {
     @Bean
     public UserProvisioningFilter userProvisioningFilter() {
         return new UserProvisioningFilter(userRepository, auditEventRepository, organizationProperties);
+    }
+
+    @Bean
+    public ServiceTokenAuthFilter serviceTokenAuthFilter() {
+        return new ServiceTokenAuthFilter(serviceTokenRepository);
+    }
+
+    /**
+     * Bearer-token resolver that hides Alexandria service tokens ({@code alx_} prefix) from the JWT
+     * resource server, so the JWT decoder is never invoked on them. All other bearer tokens are
+     * resolved by the default resolver and validated as JWTs as before.
+     */
+    @Bean
+    public org.springframework.security.oauth2.server.resource.web.BearerTokenResolver serviceTokenAwareBearerResolver() {
+        var delegate = new org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver();
+        return request -> {
+            String token = delegate.resolve(request);
+            if (token != null && token.startsWith(ServiceTokenAuthFilter.TOKEN_PREFIX)) {
+                return null;
+            }
+            return token;
+        };
     }
 
     @Bean

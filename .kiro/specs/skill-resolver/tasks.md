@@ -181,8 +181,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       present with `source_instance` from config.
     - *Requirements: 5.1–5.6, 6.4, 7.2, 7.3, 7.4*
 
-- [ ] 4. Agent authentication (user OIDC + service tokens)
-  - [ ] 4.1 Add `ServiceTokenAuthFilter` and register it in `SecurityConfig`
+- [x] 4. Agent authentication (user OIDC + service tokens)
+  - [x] 4.1 Add `ServiceTokenAuthFilter` and register it in `SecurityConfig`
     - Create `com.alexandria.config.ServiceTokenAuthFilter` (`OncePerRequestFilter`): if the
       `Authorization: Bearer` value matches the service-token format (e.g. `alx_` prefix), SHA-256
       hash it, look up by `token_hash`, reject if `revoked_at`/`expires_at` fail, update
@@ -194,7 +194,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       `.../config/SecurityConfig.java`
     - *Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6*
 
-  - [ ]* 4.2 Security tests for scoping, revocation, and non-leakage
+  - [x]* 4.2 Security tests for scoping, revocation, and non-leakage
     - `@SpringBootTest` + spring-security-test: service token for org A cannot resolve/fetch org B
       skills (Property 11); revoked/expired tokens → 401; agent principal cannot reach
       authoring/review endpoints; resolve as non-member returns no other team's private/team skills;
