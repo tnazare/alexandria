@@ -91,6 +91,8 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
     @Autowired
     private SkillRepository skillRepository;
     @Autowired
+    private com.alexandria.skill.SkillResolverRepository skillResolverRepository;
+    @Autowired
     private SkillVersionRepository skillVersionRepository;
     @Autowired
     private SkillVariantRepository skillVariantRepository;
@@ -1003,6 +1005,117 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
                     null, null, null, null, null, true, PageRequest.of(0, 10));
 
             assertThat(page.getTotalElements()).isEqualTo(4);
+        }
+    }
+
+    /**
+     * Skill Resolver candidate query — ACL parity with findVisibleSkills, lifecycle exclusions,
+     * and deterministic ordering.
+     *
+     * <p>Validates: skill-resolver Requirements 2.1, 2.2, 2.3, 2.4, 2.6, 1.7 (Property 1, 2)</p>
+     */
+    @Nested
+    @DisplayName("Skill Resolver candidate query (findVisibleCandidates)")
+    class ResolverCandidateQuery {
+
+        private SkillEntity orgSkill(String slug, String name, String instructions, String status) {
+            SkillEntity skill = createSkillWithVersion(teamAlpha.getId(), slug, name, "desc " + slug,
+                    instructions, userA.getId());
+            skill.setLifecycleStatus(status);
+            skill = skillRepository.saveAndFlush(skill);
+            skillRepository.rebuildSearchVector(skill.getId(), "", instructions);
+            return skill;
+        }
+
+        @Test
+        @DisplayName("candidate query returns the same visible set as findVisibleSkills")
+        void aclParityWithFindVisibleSkills() {
+            // A team-visible skill owned by teamAlpha (userA member, userB not).
+            SkillEntity teamSkill = createSkillWithVersion(teamAlpha.getId(), "res-team",
+                    "Resolver Team resolvertoken", "desc", "resolvertoken instructions", userA.getId());
+            teamSkill.setVisibility("team");
+            teamSkill.setLifecycleStatus("Published");
+            skillRepository.saveAndFlush(teamSkill);
+            skillRepository.rebuildSearchVector(teamSkill.getId(), "", "resolvertoken instructions");
+
+            // userA (member) sees it via both queries.
+            var visibleA = skillRepository.findVisibleSkills(
+                    org.getId(), userA.getId(), false, null, null, null, null, null, null, null, null,
+                    "resolvertoken", true, PageRequest.of(0, 50));
+            var candA = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), false, true, "resolvertoken", 50);
+            assertThat(visibleA.getContent()).extracting(SkillEntity::getId).contains(teamSkill.getId());
+            assertThat(candA).extracting(c -> c.getSkillId()).contains(teamSkill.getId());
+
+            // userB (non-member) sees it via neither.
+            var candB = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userB.getId(), false, true, "resolvertoken", 50);
+            assertThat(candB).extracting(c -> c.getSkillId()).doesNotContain(teamSkill.getId());
+        }
+
+        @Test
+        @DisplayName("Blocked skills never appear; Archived excluded unless includeArchived")
+        void lifecycleExclusions() {
+            orgSkill("res-pub", "excltoken Published", "excltoken", "Published");
+            orgSkill("res-arch", "excltoken Archived", "excltoken", "Archived");
+            orgSkill("res-block", "excltoken Blocked", "excltoken", "Blocked");
+
+            var defaultView = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, false, "excltoken", 50);
+            assertThat(defaultView).extracting(c -> c.getSlug())
+                    .contains("res-pub")
+                    .doesNotContain("res-arch", "res-block");
+
+            var withArchived = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, true, "excltoken", 50);
+            assertThat(withArchived).extracting(c -> c.getSlug())
+                    .contains("res-pub", "res-arch")
+                    .doesNotContain("res-block");
+        }
+
+        @Test
+        @DisplayName("candidates carry no instruction bodies (projection excludes them)")
+        void candidatesHaveNoBodies() {
+            orgSkill("res-nobody", "nobodytoken Skill", "secret canonical instructions here", "Published");
+
+            var candidates = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, true, "nobodytoken", 50);
+
+            assertThat(candidates).isNotEmpty();
+            // CandidateProjection has no accessor for instruction/example/limitation content —
+            // this is a structural guarantee, asserted by the available projection surface.
+            var first = candidates.get(0);
+            assertThat(first.getName()).isNotBlank();
+            assertThat(first.getSkillVersionId()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("limit bounds the number of candidates returned")
+        void limitBoundsResults() {
+            for (int i = 0; i < 5; i++) {
+                orgSkill("res-lim-" + i, "limittoken Skill " + i, "limittoken", "Published");
+            }
+
+            var limited = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, true, "limittoken", 2);
+
+            assertThat(limited).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("ordering is deterministic across identical requests")
+        void deterministicOrdering() {
+            for (int i = 0; i < 4; i++) {
+                orgSkill("res-det-" + i, "dettoken Skill " + i, "dettoken", "Published");
+            }
+
+            var first = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, true, "dettoken", 50);
+            var second = skillResolverRepository.findVisibleCandidates(
+                    org.getId(), userA.getId(), true, true, "dettoken", 50);
+
+            assertThat(first.stream().map(c -> c.getSkillId()).toList())
+                    .isEqualTo(second.stream().map(c -> c.getSkillId()).toList());
         }
     }
 

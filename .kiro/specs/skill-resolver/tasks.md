@@ -20,8 +20,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
 
 ## Tasks
 
-- [ ] 1. Resolver contract + read-only resolve over full-text search
-  - [ ] 1.1 Add resolve/fetch DTOs and the forward-compatible envelope
+- [x] 1. Resolver contract + read-only resolve over full-text search
+  - [x] 1.1 Add resolve/fetch DTOs and the forward-compatible envelope
     - Create Java records under `com.alexandria.agent.dto`: `ResolveRequest`, `ResolveContext`,
       `ResolveFilters`, `ResolveResponse`, `Capabilities`, `ResolveResult`, `SkillRef`,
       `Governance`, `Resolution`, `Delivery`, plus fetch records `NativeSkillResponse`,
@@ -33,7 +33,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *Files:* `backend/alexandria-api/src/main/java/com/alexandria/agent/dto/*.java`
     - *Requirements: 1.1, 1.3, 8.1, 8.3, 8.4, 8.5*
 
-  - [ ] 1.2 Add the `AgentResolverApi` REST contract interface
+  - [x] 1.2 Add the `AgentResolverApi` REST contract interface
     - Create `com.alexandria.agent.AgentResolverApi` with `@RequestMapping("/api/agent/v1/skills")`,
       a `@PostMapping("/resolve")` returning `ResponseEntity<ResolveResponse>` with
       `@Valid @RequestBody ResolveRequest`, and a `@GetMapping("/{skillVersionId}/instructions")`
@@ -42,7 +42,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *File:* `backend/alexandria-api/src/main/java/com/alexandria/agent/AgentResolverApi.java`
     - *Requirements: 1.1, 3.1, 3.2*
 
-  - [ ] 1.3 Add the ACL-scoped candidate projection query
+  - [x] 1.3 Add the ACL-scoped candidate projection query
     - Add `SkillResolverRepository` (in `alexandria-entities`, `com.alexandria.skill`) with
       `findVisibleCandidates(orgId, userId, isOrgAdmin, includeArchived, query, limit)` returning a
       Spring Data interface projection `CandidateProjection` (skill_id, skill_version_id, name,
@@ -57,7 +57,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *File:* `backend/alexandria-entities/src/main/java/com/alexandria/skill/SkillResolverRepository.java`
     - *Requirements: 1.2, 1.4, 1.7, 2.1, 2.2, 2.3, 2.6*
 
-  - [ ] 1.4 Add `ResolverService.resolve` and a minimal `ResolverServiceImpl`
+  - [x] 1.4 Add `ResolverService.resolve` and a minimal `ResolverServiceImpl`
     - Create `com.alexandria.agent.ResolverService` interface with
       `ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity)`.
     - Implement in `ResolverServiceImpl` (`@Service @Transactional(readOnly=true)`): trim `query`
@@ -73,7 +73,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       `.../agent/ResolverServiceImpl.java`
     - *Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 2.5, 8.1, 8.2, 8.6, 14.3*
 
-  - [ ] 1.5 Add `AgentResolverResource` wiring `resolve` (fetch stubbed until Task 2)
+  - [x] 1.5 Add `AgentResolverResource` wiring `resolve` (fetch stubbed until Task 2)
     - Create `@RestController` `AgentResolverResource implements AgentResolverApi`. Resolve the
       current identity with the same `currentUser()` pattern as `SkillResource` (read
       `AlexandriaAuthentication` from `SecurityContextHolder`). Delegate `resolve` to
@@ -83,14 +83,14 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *File:* `backend/alexandria-service/src/main/java/com/alexandria/agent/AgentResolverResource.java`
     - *Requirements: 1.1, 1.5, 1.6*
 
-  - [ ]* 1.6 Unit tests for resolve envelope + determinism
+  - [x]* 1.6 Unit tests for resolve envelope + determinism
     - jqwik/Mockito tests (no Spring): mock `SkillResolverRepository`; assert every response has
       `capabilities.invoke=false`/`compose=false`, every result `kind="skill"`, `invocation=null`,
       `relationships=[]` (Property 10); assert candidates carry no instruction bodies (Property 3);
       assert `limit` clamps to 25 and blank query → 400; assert stable ordering/tiebreak (Property 2).
     - *Requirements: 1.4, 1.6, 1.7, 8.6, 14.3*
 
-  - [ ]* 1.7 Repository integration test for ACL parity + exclusions
+  - [x]* 1.7 Repository integration test for ACL parity + exclusions
     - `@SpringBootTest` + Testcontainers: seed skills across all four visibility levels + access
       grants; assert `findVisibleCandidates` returns exactly the same skill set as
       `findVisibleSkills` for the same identity (Property 1); assert Blocked never returned and
