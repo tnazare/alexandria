@@ -2,8 +2,17 @@ spring:
   main:
     allow-bean-definition-overriding: true
   datasource:
-    url: jdbc:tc:postgresql:16:///alexandria
+    # TC_REUSABLE reuses a single PostgreSQL container across all test contexts (paired with
+    # testcontainers.reuse.enable=true), avoiding a per-context container startup that can time out
+    # under Docker resource contention.
+    url: jdbc:tc:postgresql:16:///alexandria?TC_REUSABLE=true
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    hikari:
+      # The suite loads many @SpringBootTest contexts, each with its own pool, all sharing one
+      # reused PostgreSQL container. Cap each pool small so their combined connections stay well
+      # under Postgres max_connections (100) — otherwise contexts fail with "too many clients".
+      maximum-pool-size: 4
+      minimum-idle: 0
 
   jpa:
     hibernate:

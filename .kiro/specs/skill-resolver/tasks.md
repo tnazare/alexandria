@@ -271,14 +271,14 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       resolves; preToolUse denies a Blocked-skill tool call.
     - *Requirements: 11.3, 11.4, 11.5, 11.6, 11.7, 11.8*
 
-- [ ] 8. Claude-native tool_reference backend (fast follow)
-  - [ ] 8.1 Implement the tool-search adapter
+- [x] 8. Claude-native tool_reference backend (fast follow)
+  - [x] 8.1 Implement the tool-search adapter
     - Under `com.alexandria.agent.toolsearch`, return Claude `tool_reference`-style discovery results
       from a resolve query, enforcing the same ACL/governance/org scoping as the core.
     - *Files:* `backend/alexandria-service/src/main/java/com/alexandria/agent/toolsearch/*.java`
     - *Requirements: 12.1, 12.2*
 
-  - [ ]* 8.2 Integration test for deferred-load discovery
+  - [x]* 8.2 Integration test for deferred-load discovery
     - Assert an SDK-style discovery query returns references only for ACL-visible, non-Blocked
       skills, and that fetch of a discovered reference obeys the gates.
     - *Requirements: 12.1, 12.2*
