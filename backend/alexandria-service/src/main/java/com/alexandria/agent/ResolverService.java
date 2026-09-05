@@ -20,4 +20,23 @@ public interface ResolverService {
      * @throws IllegalArgumentException if the query is blank after trimming
      */
     ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity);
+
+    /**
+     * Fetches the full instructions for one chosen skill version, applying governance gates.
+     *
+     * <p>Gate ladder: not visible to the identity → {@link com.alexandria.skill.SkillNotFoundException}
+     * (404, anti-enumeration); skill Blocked → {@link ResolverBlockedException} (403); Deprecated →
+     * returned with a warning; otherwise returned normally. A {@code view} usage event is recorded
+     * on success.</p>
+     *
+     * @param skillVersionId the version to fetch
+     * @param tool           optional preferred variant tool (falls back to canonical)
+     * @param format         output format ({@code agent_skill} default, or {@code alexandria_native})
+     * @param source         the adapter recording the usage event (e.g. {@code rest}, {@code mcp})
+     * @param identity       the authenticated agent identity
+     * @return the rendered result (media type + body)
+     */
+    com.alexandria.agent.render.FetchResult fetch(
+            java.util.UUID skillVersionId, String tool, String format, String source,
+            AlexandriaUserDetails identity);
 }

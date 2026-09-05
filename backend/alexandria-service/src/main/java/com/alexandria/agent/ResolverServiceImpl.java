@@ -10,12 +10,21 @@ import com.alexandria.agent.dto.ResolveRequest;
 import com.alexandria.agent.dto.ResolveResponse;
 import com.alexandria.agent.dto.ResolveResult;
 import com.alexandria.agent.dto.SkillRef;
+import com.alexandria.agent.render.FetchContext;
+import com.alexandria.agent.render.FetchResult;
+import com.alexandria.agent.render.SkillFetchRendererRegistry;
+import com.alexandria.audit.AuditService;
 import com.alexandria.auth.AlexandriaUserDetails;
 import com.alexandria.config.ResolverProperties;
 import com.alexandria.skill.CandidateProjection;
 import com.alexandria.skill.SkillResolverRepository;
+import com.alexandria.skill.SkillService;
+import com.alexandria.skill.entity.SkillEntity;
+import com.alexandria.skill.entity.SkillVersionEntity;
+import com.alexandria.skill.variant.SkillVariantService;
 import com.alexandria.team.entity.TeamEntity;
 import com.alexandria.team.TeamRepository;
+import com.alexandria.usage.UsageEventService;
 import com.alexandria.user.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +57,11 @@ public class ResolverServiceImpl implements ResolverService {
     private final SkillResolverRepository resolverRepository;
     private final TeamRepository teamRepository;
     private final ResolverProperties properties;
+    private final SkillService skillService;
+    private final SkillVariantService variantService;
+    private final SkillFetchRendererRegistry rendererRegistry;
+    private final UsageEventService usageEventService;
+    private final AuditService auditService;
 
     @Override
     public ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity) {
@@ -73,6 +87,66 @@ public class ResolverServiceImpl implements ResolverService {
 
         Capabilities capabilities = new Capabilities(true, true, false, false);
         return new ResolveResponse(UUID.randomUUID().toString(), SCHEMA_VERSION, capabilities, results);
+    }
+
+    @Override
+    public FetchResult fetch(UUID skillVersionId, String tool, String format, String source,
+                             AlexandriaUserDetails identity) {
+        // 1. Load the version org-scoped. Missing/other-org -> 404 (anti-enumeration).
+        SkillVersionEntity version = resolverRepository
+                .loadVersionForFetch(skillVersionId, identity.organizationId())
+                .orElseThrow(() -> new com.alexandria.skill.SkillNotFoundException("Skill version not found"));
+
+        // 2. Load the parent skill with per-user visibility enforcement.
+        //    getById throws SkillNotFoundException (404) when hidden — the anti-enumeration path.
+        SkillEntity skill = skillService.getById(version.getSkillId(), identity);
+
+        // 3. Blocked (but visible) -> 403 for the agent surface (distinct from human export's 409).
+        if ("Blocked".equals(skill.getLifecycleStatus())) {
+            auditService.record(identity.organizationId(), identity.userId(),
+                    "skill.resolver_fetch_denied", "skill", skill.getId(),
+                    Map.of("skillVersionId", skillVersionId.toString(), "reason", "Blocked"));
+            throw new ResolverBlockedException("Skill is blocked and cannot be fetched");
+        }
+
+        // 4. Resolve instructions: variant for the tool, else canonical fallback.
+        boolean canonicalFallback = true;
+        String selectedTool = "generic";
+        String instructions = version.getCanonicalInstructions();
+        if (tool != null && !tool.isBlank()) {
+            String variantInstructions = variantService.resolve(version.getId(), tool);
+            if (variantInstructions != null) {
+                instructions = variantInstructions;
+                selectedTool = tool;
+                canonicalFallback = false;
+            }
+        }
+
+        // 5. Build governance + placeholder resolution (Task 3 wires risk-aware ResolverPolicy).
+        boolean deprecated = "Deprecated".equals(skill.getLifecycleStatus());
+        Governance governance = new Governance(
+                skill.getLifecycleStatus(), skill.getRiskLevel(), skill.getVisibility(),
+                ownerTeamName(skill.getOwnerTeamId(), identity.organizationId()),
+                deprecated, deprecated ? skill.getDeprecationReason() : null);
+        Resolution resolution = new Resolution(
+                properties.defaultReferenceMode(), String.valueOf(version.getVersionNumber()),
+                true, false, revalidateHint(version.getId()));
+        SkillRef ref = new SkillRef(skill.getId(), version.getId(), properties.instanceUrl());
+
+        FetchContext ctx = new FetchContext(
+                ref, skill.getName(), skill.getSlug(), skill.getDescription(),
+                version.getVersionNumber(), governance, resolution,
+                version.getWhenToUse(), version.getCanonicalInstructions(),
+                version.getApplicability(), version.getLimitations(), version.getExamples(),
+                selectedTool, instructions, canonicalFallback, version.getSupportedTools());
+
+        FetchResult result = rendererRegistry.rendererFor(format).render(ctx);
+
+        // 6. Record a view usage event on success (fire-and-forget).
+        usageEventService.record(identity.organizationId(), identity.userId(),
+                skill.getId(), version.getId(), "view", source, null);
+
+        return result;
     }
 
     private ResolveResult toResult(CandidateProjection c, ResolveContext context,

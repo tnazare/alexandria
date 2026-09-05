@@ -71,4 +71,18 @@ public interface SkillResolverRepository extends JpaRepository<SkillEntity, UUID
             @Param("query") String query,
             @Param("limit") int limit
     );
+
+    /**
+     * Loads a skill version by id, scoped to an organization via its parent skill, for fetch.
+     * Returns empty when the version does not exist or belongs to another organization. The caller
+     * still re-checks per-user visibility via the application layer before rendering.
+     */
+    @Query("""
+        SELECT v FROM SkillVersionEntity v
+        WHERE v.id = :skillVersionId
+          AND v.skillId IN (SELECT s.id FROM SkillEntity s WHERE s.organizationId = :orgId)
+        """)
+    java.util.Optional<com.alexandria.skill.entity.SkillVersionEntity> loadVersionForFetch(
+            @Param("skillVersionId") UUID skillVersionId,
+            @Param("orgId") UUID orgId);
 }

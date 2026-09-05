@@ -97,8 +97,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       Archived excluded unless requested; assert deterministic order.
     - *Requirements: 2.1, 2.2, 2.3, 2.4, 2.6, 1.7*
 
-- [ ] 2. Fetch with Agent Skills + native formats and governance gates
-  - [ ] 2.1 Add `loadVersionForFetch` and the fetch service method
+- [x] 2. Fetch with Agent Skills + native formats and governance gates
+  - [x] 2.1 Add `loadVersionForFetch` and the fetch service method
     - Add `loadVersionForFetch(skillVersionId, orgId)` to `SkillResolverRepository` returning the
       `skill_versions` row joined to its `skills` row (org-scoped), exposing governance fields.
     - Add `FetchResult fetch(UUID skillVersionId, String tool, String format,
@@ -109,7 +109,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *Files:* `SkillResolverRepository.java`, `ResolverServiceImpl.java`
     - *Requirements: 3.5, 4.1, 4.2, 4.3, 4.4*
 
-  - [ ] 2.2 Add the renderer strategy: `agent_skill` (default) + `alexandria_native`
+  - [x] 2.2 Add the renderer strategy: `agent_skill` (default) + `alexandria_native`
     - Create `com.alexandria.agent.render.SkillFetchRenderer` interface (`format()`, `render(ctx)`).
       Implement `AgentSkillRenderer` (SKILL.md: only the six portable frontmatter fields, Alexandria
       governance + identity inside `metadata`, Markdown body from when-to-use/instructions/
@@ -120,7 +120,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *Files:* `backend/alexandria-service/src/main/java/com/alexandria/agent/render/*.java`
     - *Requirements: 3.2, 3.3, 3.4, 3.5, 3.7, 4.2, 6.2, 6.3*
 
-  - [ ] 2.3 Wire fetch through `AgentResolverResource` with content negotiation + usage event
+  - [x] 2.3 Wire fetch through `AgentResolverResource` with content negotiation + usage event
     - Implement `fetch` in the resource: `agent_skill` → `text/markdown`, `alexandria_native` →
       JSON. On success, record a `view` usage event via `UsageEventService.record(orgId, actorId,
       skillId, skillVersionId, "view", source, null)` with source `"rest"`; never fail the request
@@ -129,7 +129,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
     - *File:* `AgentResolverResource.java`, `ResolverServiceImpl.java`
     - *Requirements: 4.1, 4.5, 13.2, 13.3*
 
-  - [ ]* 2.4 Unit + integration tests for fetch gates and formats
+  - [x]* 2.4 Unit + integration tests for fetch gates and formats
     - Unit (jqwik/Mockito): gate ladder matrix {not-visible→404, Blocked→403, Deprecated→200+warning,
       OK→200} (Property 4); variant fallback with/without a matching variant (Property 5);
       frontmatter compliance — parse rendered SKILL.md, assert only the six portable keys at top

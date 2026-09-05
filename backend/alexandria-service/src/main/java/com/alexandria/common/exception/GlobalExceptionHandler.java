@@ -70,6 +70,15 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("BLOCKED", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.alexandria.agent.ResolverBlockedException.class)
+    public ResponseEntity<ErrorResponse> handleResolverBlocked(com.alexandria.agent.ResolverBlockedException ex) {
+        // Agent fetch of a visible blocked skill is 403 (skill-resolver Req 4.1), distinct from the
+        // human export path which maps blocked to 409.
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of("BLOCKED", ex.getMessage()));
+    }
+
     @ExceptionHandler(PublishValidationException.class)
     public ResponseEntity<Map<String, Object>> handlePublishValidation(PublishValidationException ex) {
         Map<String, Object> body = Map.of(

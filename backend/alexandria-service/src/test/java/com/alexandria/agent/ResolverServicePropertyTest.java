@@ -53,7 +53,18 @@ class ResolverServicePropertyTest {
             new ResolverProperties("https://alx.example.com", 25, 5, "floating_latest_approved");
 
     private ResolverServiceImpl newService(SkillResolverRepository repo, TeamRepository teams) {
-        return new ResolverServiceImpl(repo, teams, PROPS);
+        // resolve() does not touch the fetch collaborators; pass mocks to satisfy the constructor.
+        return new ResolverServiceImpl(
+                repo,
+                teams,
+                PROPS,
+                mock(com.alexandria.skill.SkillService.class),
+                mock(com.alexandria.skill.variant.SkillVariantService.class),
+                new com.alexandria.agent.render.SkillFetchRendererRegistry(java.util.List.of(
+                        new com.alexandria.agent.render.AgentSkillRenderer(),
+                        new com.alexandria.agent.render.NativeRenderer())),
+                mock(com.alexandria.usage.UsageEventService.class),
+                mock(com.alexandria.audit.AuditService.class));
     }
 
     private AlexandriaUserDetails identity(Role role) {

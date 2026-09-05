@@ -2,9 +2,11 @@ package com.alexandria.agent;
 
 import com.alexandria.agent.dto.ResolveRequest;
 import com.alexandria.agent.dto.ResolveResponse;
+import com.alexandria.agent.render.FetchResult;
 import com.alexandria.auth.AlexandriaAuthentication;
 import com.alexandria.auth.AlexandriaUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,8 +32,11 @@ public class AgentResolverResource implements AgentResolverApi {
 
     @Override
     public ResponseEntity<?> fetch(UUID skillVersionId, String tool, String format) {
-        // Implemented in Task 2 (fetch + Agent Skills / native formats + governance gates).
-        throw new UnsupportedOperationException("fetch is implemented in Task 2");
+        AlexandriaUserDetails identity = currentIdentity();
+        FetchResult result = resolverService.fetch(skillVersionId, tool, format, "rest", identity);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.mediaType()))
+                .body(result.body());
     }
 
     private AlexandriaUserDetails currentIdentity() {
