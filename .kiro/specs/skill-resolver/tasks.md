@@ -201,7 +201,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       fetch of a non-visible skill → 404.
     - *Requirements: 9.2, 9.4, 9.5, 9.6, 2.4, 4.3*
 
-- [ ] 5. Checkpoint — core + auth compiles, migrations apply, tests green
+- [x] 5. Checkpoint — core + auth compiles, migrations apply, tests green
   - Run `./mvnw verify`; confirm BUILD SUCCESS and that V8 applies cleanly after V7 in a fresh
     Testcontainers boot. Confirm resolve + fetch work end-to-end via MockMvc under both a user JWT
     and a service token. Validation step; no new commit unless fixes are required.
