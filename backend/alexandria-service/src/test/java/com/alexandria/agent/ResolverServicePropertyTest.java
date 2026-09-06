@@ -66,7 +66,8 @@ class ResolverServicePropertyTest {
                         new com.alexandria.agent.render.NativeRenderer())),
                 mock(com.alexandria.usage.UsageEventService.class),
                 mock(com.alexandria.audit.AuditService.class),
-                permissivePolicy());
+                permissivePolicy(),
+                io.micrometer.observation.ObservationRegistry.NOOP);
     }
 
     private com.alexandria.config.ResolverPolicy permissivePolicy() {

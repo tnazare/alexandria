@@ -84,7 +84,8 @@ class ResolverFetchServiceTest {
         com.alexandria.config.ResolverPolicy resolverPolicy =
                 new com.alexandria.config.ResolverPolicy(policyRepo, PROPS);
         service = new ResolverServiceImpl(resolverRepository, teamRepository, PROPS,
-                skillService, variantService, registry, usageEventService, auditService, resolverPolicy);
+                skillService, variantService, registry, usageEventService, auditService, resolverPolicy,
+                io.micrometer.observation.ObservationRegistry.NOOP);
         identity = new AlexandriaUserDetails(userId, orgId, Role.Skill_Consumer, "agent@test.com");
         when(teamRepository.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
     }

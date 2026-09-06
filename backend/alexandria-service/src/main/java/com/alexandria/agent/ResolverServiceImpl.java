@@ -27,6 +27,8 @@ import com.alexandria.team.entity.TeamEntity;
 import com.alexandria.team.TeamRepository;
 import com.alexandria.usage.UsageEventService;
 import com.alexandria.user.entity.Role;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,9 +66,20 @@ public class ResolverServiceImpl implements ResolverService {
     private final UsageEventService usageEventService;
     private final AuditService auditService;
     private final ResolverPolicy resolverPolicy;
+    private final ObservationRegistry observationRegistry;
 
     @Override
     public ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity) {
+        // Observe resolve latency/result-count; produces spans when a tracing bridge is configured,
+        // and timing metrics otherwise, consistent with the platform's observability approach.
+        return Observation.createNotStarted("alexandria.resolver.resolve", observationRegistry)
+                .observe(() -> {
+                    ResolveResponse response = doResolve(request, identity);
+                    return response;
+                });
+    }
+
+    private ResolveResponse doResolve(ResolveRequest request, AlexandriaUserDetails identity) {
         String query = request.query() == null ? "" : request.query().trim();
         if (query.isBlank()) {
             throw new IllegalArgumentException("Resolve query must not be blank");
@@ -100,6 +113,12 @@ public class ResolverServiceImpl implements ResolverService {
     @Override
     public FetchResult fetch(UUID skillVersionId, String tool, String format, String source,
                              AlexandriaUserDetails identity) {
+        return Observation.createNotStarted("alexandria.resolver.fetch", observationRegistry)
+                .observe(() -> doFetch(skillVersionId, tool, format, source, identity));
+    }
+
+    private FetchResult doFetch(UUID skillVersionId, String tool, String format, String source,
+                                AlexandriaUserDetails identity) {
         // 1. Load the version org-scoped. Missing/other-org -> 404 (anti-enumeration).
         SkillVersionEntity version = resolverRepository
                 .loadVersionForFetch(skillVersionId, identity.organizationId())

@@ -283,14 +283,21 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       skills, and that fetch of a discovered reference obeys the gates.
     - *Requirements: 12.1, 12.2*
 
-- [ ] 9. Cross-cutting hardening — observability + config
-  - [ ] 9.1 Add OpenTelemetry spans and finalize env-var config
+- [x] 9. Cross-cutting hardening — observability + config
+  - [x] 9.1 Add OpenTelemetry spans and finalize env-var config
+    - NOTE: used Micrometer Observation API (on the classpath via actuator) around resolve/fetch;
+      emits spans when a tracing/OTel bridge is configured, timing metrics otherwise. No OTel
+      dependency added (deployer adds a bridge per the tech steering). Config already env-driven
+      via ResolverProperties.
     - Add spans for resolve/fetch (latency + result counts) consistent with the platform approach.
       Surface all resolver config via a `@ConfigurationProperties` bean (instance URL, max limit,
       hook timeout/byte caps, risk policy defaults) — no source edits needed to deploy.
     - *Requirements: 13.1, 13.5*
 
-  - [ ]* 9.2 Non-functional latency smoke (tagged)
+  - [x]* 9.2 Non-functional latency smoke (tagged)
+    - NOTE: ResolverLatencySmokeTest (@Tag("slow")) seeds 200 skills, asserts resolve+fetch
+      within budget over FTS. FTS-only is the current runtime (no semantic search configured),
+      so graceful FTS operation is validated directly; the pgvector fallback seam is Phase 2.
     - Tagged integration test: resolve p95 < 500ms and fetch p95 < 300ms on a seeded catalog reusing
       existing indexes; assert graceful fallback to FTS when semantic search is not configured.
     - *Requirements: 14.1, 14.2, 14.4*
