@@ -302,7 +302,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker f
       existing indexes; assert graceful fallback to FTS when semantic search is not configured.
     - *Requirements: 14.1, 14.2, 14.4*
 
-- [ ] 10. Final checkpoint — `./mvnw verify` green, adapters validated
+- [x] 10. Final checkpoint — `./mvnw verify` green, adapters validated
   - Run the full backend verify. Confirm resolve/fetch, both auth paths, the MCP round trip, and the
     hook fail-open path all pass. Fix any failures introduced by this milestone.
   - *Requirements: (all)*
