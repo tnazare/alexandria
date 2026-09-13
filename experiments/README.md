@@ -60,6 +60,8 @@ pip install -r requirements.txt
 
 > The deterministic modules (`models.py`, task-set validation, corpus building) import fine on older
 > Pythons because the `tiktoken` import is lazy — but token counting and the full run need 3.11+.
+> To run just the deterministic unit tests on an older interpreter, a compatible pytest works:
+> `python3 -m venv .venv && . .venv/bin/activate && pip install "pytest==7.4.4" && pytest tests/test_tasks.py`.
 
 ## Running
 

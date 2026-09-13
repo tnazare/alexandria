@@ -36,8 +36,8 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/harness/models.py`, `experiments/harness/tokenizer.py`
     - *Requirements: 3.1, 7.3*
 
-- [ ] 2. Task set + validation
-  - [ ] 2.1 Task-set schema, loader, and completeness validation
+- [x] 2. Task set + validation
+  - [x] 2.1 Task-set schema, loader, and completeness validation
     - Define `tasks/task_set.v1.json` schema (id, prompt, gold_skill|null, rationale) and a loader
       that rejects a set missing `version`, stored path, or `LABELING.md` (halt before any run).
     - Stub `tasks/LABELING.md` describing the labeling rationale.
@@ -45,7 +45,7 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       `experiments/tasks/task_set.v1.json` (skeleton)
     - *Requirements: 5.1, 5.6, 9.9*
 
-  - [ ]* 2.2 Unit test task-set validation
+  - [x]* 2.2 Unit test task-set validation
     - Reject sets missing version/path/labeling; accept a well-formed set; assert every `gold_skill`
       is either `null` or a Real_Tier slug (enforced once the corpus exists).
     - *Requirements: 5.6, 9.4*

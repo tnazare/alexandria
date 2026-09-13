@@ -1,0 +1,27 @@
+{
+  "version": "v1-skeleton",
+  "labeling_doc": "LABELING.md",
+  "notes": "Skeleton set demonstrating the three task categories. The full >=50-task v1 set is authored in task 9 (Requirement 9.9). gold_skill must be a Real_Tier slug or null.",
+  "tasks": [
+    {
+      "id": "t001",
+      "prompt": "Extract all tables from a scanned PDF and save each one as a separate CSV file.",
+      "gold_skill": "pdf",
+      "rationale": "Explicit PDF table extraction; the canonical 'pdf' skill is the intended match.",
+      "distractor_notes": "A 'pdf-processing-<lang>' padding variant must NOT be accepted."
+    },
+    {
+      "id": "t002",
+      "prompt": "Generate a multi-sheet Excel workbook with formulas and a pivot table from this CSV.",
+      "gold_skill": "xlsx",
+      "rationale": "Spreadsheet generation with Excel-specific features; 'xlsx' is the match.",
+      "distractor_notes": "Do not accept a generic spreadsheet padding variant."
+    },
+    {
+      "id": "t003",
+      "prompt": "Rename the local variable `tmp` to `buffer` in this one function.",
+      "gold_skill": null,
+      "rationale": "Trivial edit; no skill should be invoked (no-skill-applies control)."
+    }
+  ]
+}
