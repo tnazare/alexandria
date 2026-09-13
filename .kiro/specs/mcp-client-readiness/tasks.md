@@ -118,7 +118,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     - *File:* `backend/alexandria-service/src/test/java/com/alexandria/integration/ServiceTokenAdminIntegrationTest.java`
     - *Requirements: 6.1, 6.2, 6.3, 7.1-7.6, 8.4, 9.1*
 
-- [ ] 5. Checkpoint — `./mvnw verify` green
+- [x] 5. Checkpoint — `./mvnw verify` green
   - Run `./mvnw verify`; confirm BUILD SUCCESS and that the existing MCP, resolver, hooks, and
     tool-search suites still pass alongside the new transport and token tests. Validation step; no
     commit unless fixes are required.
@@ -135,7 +135,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     - *File:* `docs/guide/mcp-clients-setup.md`, `docs/.vitepress/config.ts`
     - *Requirements: 8.1, 8.2, 8.3, 8.5*
 
-- [ ] 7. Final checkpoint — verify + docs consistent
+- [x] 7. Final checkpoint — verify + docs consistent
   - Re-run `./mvnw verify`; confirm green. Sanity-check the doc's curl and config snippets against
     the implemented endpoints (paths, response field names). Fix any drift.
   - *Requirements: (all)*
