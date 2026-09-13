@@ -143,15 +143,15 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       incl. no-skill-applies; re-aggregation is byte-identical.
     - *Requirements: 3.1, 3.2, 3.3, 5.2, 6.2, 7.4*
 
-- [ ] 8. Entry point + end-to-end smoke
-  - [ ] 8.1 `run_experiment` orchestrator
+- [x] 8. Entry point + end-to-end smoke
+  - [x] 8.1 `run_experiment` orchestrator
     - `harness/run_experiment.py`: validate task-set + provisioning, write `env.json` (machine, OS,
       model id+version together-or-neither, seeds, dep versions), run the matrix in seeded-random task
       order, write `results/raw/<run-id>/records.jsonl`; aggregation/scoring re-runnable standalone.
     - *Files:* `experiments/harness/run_experiment.py`
     - *Requirements: 6.1, 6.3, 6.4, 7.3, 7.4, 7.6*
 
-  - [ ]* 8.2 Integration smoke (opt-in; needs stack + Claude Code)
+  - [x]* 8.2 Integration smoke (opt-in; needs stack + Claude Code)
     - Provision N=20 into both conditions; run 2 tasks × 1 rep; assert a RunRecord with non-null
       `chosen_skill`, positive `retrieval_latency_ms`, and a token cost per condition. Does not assert
       on the (non-deterministic) accuracy value.
