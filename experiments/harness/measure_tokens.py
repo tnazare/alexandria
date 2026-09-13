@@ -1,0 +1,119 @@
+"""Offline Context_Token_Cost measurement (Requirements 3.1, 3.2, 3.3, 3.5).
+
+Computes, with one fixed tokenizer applied to both conditions, the number of tokens each mechanism
+introduces into the model context to service a task. Excludes the task prompt and model output that
+are common to both conditions.
+
+- **Alexandria** per task = tokens(resolve_skill schema) + tokens(fetch_skill schema)
+  + tokens(resolve result payload) + tokens(fetched skill body). The schema part is *resident* and
+  constant in N; the rest is per-task.
+- **Native** per task = Σ over all N skills of tokens(frontmatter name + description)  [resident,
+  grows with N] + tokens(full body of the matched skill)  [progressive disclosure].
+
+All functions are pure: they take a token-counting callable (``count`` : str -> int), so tests can
+inject a trivial counter and no ``tiktoken`` runtime is required. In production the callable is
+``Tokenizer(encoding).count``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Optional
+
+from harness.frontmatter import parse_frontmatter
+from harness.models import CorpusManifest, Tier
+
+Counter = Callable[[str], int]
+
+
+# --- Alexandria MCP tool schemas (the resident cost, constant in N) --------------------------
+# These mirror the two tools advertised by the Alexandria MCP endpoint. They are transcribed here
+# (not fetched) so token cost is reproducible offline; the exact wording is disclosed in results.
+
+RESOLVE_SKILL_SCHEMA = (
+    "resolve_skill: Find the most relevant governed skill candidates for a task. "
+    "Use this first to check whether a reusable workflow already exists. Returns a short ranked "
+    "list of candidates with identity, governance (lifecycle/risk/visibility), and match reasons, "
+    "but NOT full instructions. After choosing a candidate, call fetch_skill with its "
+    "skillVersionId to get the usable instructions. Results respect the caller's access control. "
+    'inputSchema: {"type":"object","properties":{"query":{"type":"string"},'
+    '"limit":{"type":"integer"}},"required":["query"]}'
+)
+
+FETCH_SKILL_SCHEMA = (
+    "fetch_skill: Fetch the full, usable instructions for one skill version chosen from "
+    "resolve_skill results. Returns the skill as an Agent Skills SKILL.md document by default (or "
+    "structured JSON with format=alexandria_native). Denied for blocked skills; deprecated skills "
+    "carry a warning. "
+    'inputSchema: {"type":"object","properties":{"skillVersionId":{"type":"string"},'
+    '"tool":{"type":"string"},"format":{"type":"string"}},"required":["skillVersionId"]}'
+)
+
+
+@dataclass(frozen=True)
+class TokenBreakdown:
+    """Per-task token cost decomposed into resident vs per-task parts."""
+
+    resident: int          # always in context to service the task (schemas / all frontmatter)
+    per_task: int          # brought in for this task (resolve result + fetched body / matched body)
+
+    @property
+    def total(self) -> int:
+        return self.resident + self.per_task
+
+
+def alexandria_resident_tokens(count: Counter) -> int:
+    """Resident cost for Alexandria: the two tool schemas. Independent of N (Requirement 3.2)."""
+    return count(RESOLVE_SKILL_SCHEMA) + count(FETCH_SKILL_SCHEMA)
+
+
+def alexandria_task_tokens(
+    count: Counter,
+    *,
+    resolve_result_text: str,
+    fetched_body: str,
+) -> TokenBreakdown:
+    """Alexandria per-task cost: resident schemas + resolve result payload + fetched body."""
+    resident = alexandria_resident_tokens(count)
+    per_task = count(resolve_result_text) + count(fetched_body)
+    return TokenBreakdown(resident=resident, per_task=per_task)
+
+
+def native_resident_tokens(count: Counter, manifest: CorpusManifest, corpus_dir: Path) -> int:
+    """Native resident cost: Σ frontmatter (name + description) over all N skills (Requirement 3.3).
+
+    This is the documented startup preload; it grows ~linearly with N. Read from the corpus files so
+    it is identical content to what the native condition installs.
+    """
+    total = 0
+    for entry in manifest.skills:
+        skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
+        fm, _ = parse_frontmatter(skill_md.read_text(encoding="utf-8"))
+        name = str(fm.get("name") or "")
+        description = str(fm.get("description") or "")
+        # A small structural overhead per skill entry (the preload lists them); count name + desc.
+        total += count(name) + count(description)
+    return total
+
+
+def native_task_tokens(
+    count: Counter,
+    manifest: CorpusManifest,
+    corpus_dir: Path,
+    *,
+    matched_slug: Optional[str],
+) -> TokenBreakdown:
+    """Native per-task cost: resident preload + full body of the matched skill (progressive disclosure).
+
+    If ``matched_slug`` is None (no skill applies / none invoked), per-task disclosure is 0 — only
+    the resident preload is in context.
+    """
+    resident = native_resident_tokens(count, manifest, corpus_dir)
+    per_task = 0
+    if matched_slug:
+        entry = next((e for e in manifest.skills if e.slug == matched_slug), None)
+        if entry is not None:
+            skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
+            per_task = count(skill_md.read_text(encoding="utf-8"))
+    return TokenBreakdown(resident=resident, per_task=per_task)

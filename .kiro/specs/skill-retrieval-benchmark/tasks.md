@@ -115,29 +115,29 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/harness/run_native.py`
     - *Requirements: 4.1, 4.3, 4.4, 5.2, 5.4, 3.4, 6.4*
 
-- [ ] 7. Metrics: tokens, scoring, aggregation
-  - [ ] 7.1 Offline token measurement
+- [x] 7. Metrics: tokens, scoring, aggregation
+  - [x] 7.1 Offline token measurement
     - `harness/measure_tokens.py`: pure function over (manifest, captured payloads, pinned tokenizer).
       Alexandria = tool schemas + resolve result + fetched body (resident constant in N). Native =
       Σ frontmatter over N (resident) + matched body. Exclude the common prompt/output.
     - *Files:* `experiments/harness/measure_tokens.py`
     - *Requirements: 3.1, 3.2, 3.3, 3.5*
 
-  - [ ] 7.2 Scoring
+  - [x] 7.2 Scoring
     - `harness/score.py`: Model_Choice_Accuracy (`chosen == gold`, incl. `null` control) and
       Retrieval_Recall_at_K per (condition, N) with bootstrap CIs; native recall uses the modeled
       ranking with the caveat emitted.
     - *Files:* `experiments/harness/score.py`
     - *Requirements: 5.2, 5.3, 5.4, 5.5*
 
-  - [ ] 7.3 Aggregation
+  - [x] 7.3 Aggregation
     - `harness/aggregate.py`: from `records.jsonl`, per (metric, condition, N): token median+IQR +
       mean reported usage; latency median+IQR with cold/warm split; accuracy rate+CI. Warm-up
       excluded from primary stats but retained+labeled. Tidy CSV/JSON out.
     - *Files:* `experiments/harness/aggregate.py`
     - *Requirements: 2.3, 4.4, 6.2, 6.5, 9.6*
 
-  - [ ]* 7.4 Unit tests: token purity, scoring, aggregation
+  - [x]* 7.4 Unit tests: token purity, scoring, aggregation
     - `measure_tokens` fixed-input->fixed-output; native resident scales linearly with N and
       Alexandria resident constant on a synthetic manifest; `score` correct on hand-built records
       incl. no-skill-applies; re-aggregation is byte-identical.
