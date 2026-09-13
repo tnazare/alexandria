@@ -23,17 +23,29 @@ system should surface/select for it (`gold_skill`), or `null` when **no skill sh
    (`gold_skill: null`); a correct system invokes **no** skill. These guard against a system that
    always fires something.
 
-## Task mix (target)
+## Task mix (v1: 54 tasks)
 
-- **Clear-match** — the prompt plainly calls for one real skill (e.g. "extract tables from a PDF").
-- **Near-variant trap** — the prompt is close to a padding variant's domain but the gold is the real
-  canonical skill; selecting the variant is wrong.
-- **No-skill-applies** — trivial edits / out-of-domain asks; gold is `null`.
+- **Clear-match (38 tasks, t001–t038)** — the prompt plainly calls for one real skill. Every one of
+  the 19 real skills is the gold answer for at least one task; the higher-traffic document skills
+  (`pdf`, `xlsx`, `docx`, `pptx`) and a few others have two clear-match tasks each.
+- **Near-variant trap (9 tasks, t039–t047)** — the prompt is close to a Padding_Tier variant's
+  domain (e.g. `pdf-processing-python-stdlib`), but the gold is the real canonical skill. Selecting
+  the variant is scored **wrong**. These make accuracy non-trivial and validate exact-slug pinning.
+- **No-skill-applies (7 tasks, t048–t054)** — trivial edits, general knowledge, or off-domain asks;
+  gold is `null`. A correct system invokes no skill. Guards against a system that always fires.
+
+Each task carries a `category` field (for reporting) and a `rationale`; trap tasks also carry
+`distractor_notes` naming the variant(s) that must not be accepted.
+
+## Gold-label coverage
+
+All 19 real slugs appear as a gold label: `academy-guide`, `algorithmic-art`, `brand-guidelines`,
+`canvas-design`, `claude-api`, `discernment-nudge`, `doc-coauthoring`, `docx`, `frontend-design`,
+`internal-comms`, `mcp-builder`, `pdf`, `pptx`, `skill-creator`, `slack-gif-creator`, `theme-factory`,
+`web-artifacts-builder`, `webapp-testing`, `xlsx`. No gold label is a padding or distractor slug
+(enforced by `validate_against_corpus`).
 
 ## Versioning
 
-The set is frozen per experiment version (`version` field). Changing labels or tasks requires a new
-version so results remain comparable within a version.
-
-> This is a skeleton for the v1 set. The full ≥50-task set is authored in task 9; this file is
-> completed there with the final per-category counts and any per-task notes.
+The set is frozen at `version: v1`. Changing labels or tasks requires a new version so results
+remain comparable within a version.

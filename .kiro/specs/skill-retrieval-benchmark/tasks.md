@@ -157,8 +157,8 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       on the (non-deterministic) accuracy value.
     - *Requirements: 1.2, 4.2, 4.3, 5.4*
 
-- [ ] 9. Author and freeze the Task_Set (v1)
-  - [ ] 9.1 Write >=50 labeled tasks + labeling rationale
+- [x] 9. Author and freeze the Task_Set (v1)
+  - [x] 9.1 Write >=50 labeled tasks + labeling rationale
     - Fill `tasks/task_set.v1.json` with a mix of clear-match, near-variant-trap, and
       no-skill-applies control tasks; every `gold_skill` a Real_Tier slug or `null`; complete
       `LABELING.md`. Freeze v1.
