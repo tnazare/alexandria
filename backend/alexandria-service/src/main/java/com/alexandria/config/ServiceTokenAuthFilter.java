@@ -15,11 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Optional;
 
 /**
@@ -41,7 +37,7 @@ import java.util.Optional;
 public class ServiceTokenAuthFilter extends OncePerRequestFilter {
 
     /** Non-secret prefix identifying an Alexandria service token. */
-    public static final String TOKEN_PREFIX = "alx_";
+    public static final String TOKEN_PREFIX = ServiceTokenHasher.TOKEN_PREFIX;
     private static final String BEARER = "Bearer ";
 
     private final ServiceTokenRepository serviceTokenRepository;
@@ -66,7 +62,8 @@ public class ServiceTokenAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        Optional<ServiceTokenEntity> match = serviceTokenRepository.findByTokenHash(sha256(token));
+        Optional<ServiceTokenEntity> match = serviceTokenRepository.findByTokenHash(
+                ServiceTokenHasher.sha256Hex(token));
         if (match.isEmpty() || !isUsable(match.get())) {
             // Invalid/revoked/expired service token: leave the context unauthenticated. The
             // authorizeHttpRequests(anyRequest().authenticated()) rule then yields 401.
@@ -109,15 +106,5 @@ public class ServiceTokenAuthFilter extends OncePerRequestFilter {
             return false;
         }
         return token.getExpiresAt() == null || token.getExpiresAt().isAfter(Instant.now());
-    }
-
-    private static String sha256(String value) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 not available", e);
-        }
     }
 }

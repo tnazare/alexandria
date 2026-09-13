@@ -19,8 +19,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
 
 ## Tasks
 
-- [ ] 1. Shared token hashing helper (no behavior change)
-  - [ ] 1.1 Extract `ServiceTokenHasher` and refactor `ServiceTokenAuthFilter` to use it
+- [x] 1. Shared token hashing helper (no behavior change)
+  - [x] 1.1 Extract `ServiceTokenHasher` and refactor `ServiceTokenAuthFilter` to use it
     - Create `com.alexandria.config.ServiceTokenHasher` with a static `sha256Hex(String)` (SHA-256
       via `MessageDigest` -> `HexFormat`), identical to the filter's current inline hashing.
     - Replace the inline `sha256(...)` in `ServiceTokenAuthFilter` with a call to the helper. No
@@ -29,7 +29,7 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
       `.../config/ServiceTokenAuthFilter.java`
     - *Requirements: 6.2 (hashing parity), 9.2*
 
-  - [ ]* 1.2 Unit test for hashing parity
+  - [x]* 1.2 Unit test for hashing parity
     - Assert `ServiceTokenHasher.sha256Hex(secret)` is stable and matches a known SHA-256 hex vector,
       and that a value hashed by the helper equals what the filter would look up for the same secret.
     - *Requirements: 6.2*
