@@ -23,7 +23,8 @@ export default defineConfig({
           items: [
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Configuration', link: '/guide/configuration' },
-            { text: 'OIDC Setup', link: '/guide/oidc-setup' }
+            { text: 'OIDC Setup', link: '/guide/oidc-setup' },
+            { text: 'Connecting MCP Clients', link: '/guide/mcp-clients-setup' }
           ]
         },
         {

@@ -124,14 +124,15 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     commit unless fixes are required.
   - *Requirements: 9.1, 9.2, 9.3, 9.4*
 
-- [ ] 6. Client setup documentation
-  - [ ] 6.1 Write the MCP client setup guide
-    - Add `docs/mcp-clients-setup.md` (or extend the manual-test doc) with: how to mint a service
+- [x] 6. Client setup documentation
+  - [x] 6.1 Write the MCP client setup guide
+    - Add `docs/guide/mcp-clients-setup.md` (placed in the VitePress guide section and linked in the
+      sidebar) with: how to mint a service
       token via `POST /api/agent/v1/service-tokens` as Org_Admin; and per-client config for
       Claude Code (`.mcp.json`, `type:"http"`, `url`, `headers.Authorization`),
       Copilot/VS Code (`.vscode/mcp.json`, `servers`, `type:"http"`), and Kiro
       (`.kiro/settings/mcp.json`, `mcpServers`, `url`, `headers`). Use `https://<host>/api/agent/v1/mcp`.
-    - *File:* `docs/mcp-clients-setup.md`
+    - *File:* `docs/guide/mcp-clients-setup.md`, `docs/.vitepress/config.ts`
     - *Requirements: 8.1, 8.2, 8.3, 8.5*
 
 - [ ] 7. Final checkpoint — verify + docs consistent
