@@ -1,0 +1,2 @@
+# Generated run outputs land here: raw/<run-id>/records.jsonl + env.json, computed/<run-id>/*.
+# These are reproducible from code + seeds and are gitignored; this file keeps the directory tracked.

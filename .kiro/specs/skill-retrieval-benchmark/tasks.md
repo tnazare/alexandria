@@ -166,7 +166,7 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Requirements: 5.1, 9.7, 9.9*
 
 - [ ] 10. Protocol, results, and the run
-  - [ ] 10.1 PROTOCOL.md + RESULTS_TEMPLATE.md
+  - [x] 10.1 PROTOCOL.md + RESULTS_TEMPLATE.md
     - `PROTOCOL.md`: hypotheses, conditions, metrics, procedure, single-command run instructions.
       `RESULTS_TEMPLATE.md`: raw -> computed -> interpretation, with a threats-to-validity section
       (modeled native token/recall, tokenizer mismatch, LLM non-determinism, apples-to-oranges
