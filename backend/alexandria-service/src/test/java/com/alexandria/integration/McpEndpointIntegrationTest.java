@@ -35,9 +35,13 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 /**
  * End-to-end MCP JSON-RPC round-trip tests over the real filter chain and resolver core.
@@ -167,6 +171,69 @@ class McpEndpointIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(rpc("tools/list", null)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // --- transport compliance (mcp-client-readiness) ---
+
+    @Test
+    @DisplayName("a notification (no id) is acknowledged with 202 and an empty body")
+    void notificationReturns202NoBody() throws Exception {
+        mockMvc.perform(post("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"))
+                .andExpect(status().isAccepted())
+                .andExpect(content().string(""));
+    }
+
+    @Test
+    @DisplayName("a request with a dual Accept header returns 200 application/json")
+    void dualAcceptHeaderReturnsJson() throws Exception {
+        mockMvc.perform(post("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .header("Accept", "application/json, text/event-stream")
+                        .header("MCP-Protocol-Version", "2025-06-18")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(rpc("tools/list", null)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.result.tools.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("a Content-Type with a charset parameter is accepted (not 415)")
+    void charsetContentTypeAccepted() throws Exception {
+        mockMvc.perform(post("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType("application/json;charset=utf-8")
+                        .content(rpc("tools/list", null)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("GET on the MCP endpoint returns 405 (no SSE stream offered)")
+    void getReturns405() throws Exception {
+        mockMvc.perform(get("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
+    @DisplayName("DELETE on the MCP endpoint returns 405 (stateless, no session teardown)")
+    void deleteReturns405() throws Exception {
+        mockMvc.perform(delete("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isMethodNotAllowed());
+    }
+
+    @Test
+    @DisplayName("a malformed (non-JSON) body returns 400")
+    void malformedBodyReturns400() throws Exception {
+        mockMvc.perform(post("/api/agent/v1/mcp")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("this is not json"))
+                .andExpect(status().isBadRequest());
     }
 
     // --- seeding helpers ---

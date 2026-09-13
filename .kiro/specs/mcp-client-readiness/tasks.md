@@ -34,8 +34,8 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
       and that a value hashed by the helper equals what the filter would look up for the same secret.
     - *Requirements: 6.2*
 
-- [ ] 2. MCP transport compliance — `McpResource`
-  - [ ] 2.1 Relax content negotiation and classify notification vs request
+- [x] 2. MCP transport compliance — `McpResource`
+  - [x] 2.1 Relax content negotiation and classify notification vs request
     - Remove `consumes`/`produces` from the `@PostMapping`. Change the handler to return
       `ResponseEntity<?>`: if the JSON-RPC message has no `id` (or a null `id`), return
       `202 Accepted` with an empty body; otherwise call `toolService.handle(...)` and return
@@ -44,13 +44,13 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     - *File:* `backend/alexandria-service/src/main/java/com/alexandria/agent/mcp/McpResource.java`
     - *Requirements: 1.1, 1.2, 1.3, 1.4, 2.1, 2.2, 2.3*
 
-  - [ ] 2.2 Add `GET`/`DELETE` -> `405`
+  - [x] 2.2 Add `GET`/`DELETE` -> `405`
     - Add `@GetMapping` and `@DeleteMapping` handlers on the same path returning
       `405 Method Not Allowed` (no SSE stream offered; no session teardown).
     - *File:* `McpResource.java`
     - *Requirements: 3.1, 3.2*
 
-  - [ ]* 2.3 Transport integration tests (extend `McpEndpointIntegrationTest`)
+  - [x]* 2.3 Transport integration tests (extend `McpEndpointIntegrationTest`)
     - Add cases: notification (`notifications/initialized`, no `id`) -> `202` empty body;
       request (`initialize`/`tools/list`/`tools/call`) still returns a JSON-RPC result (regression);
       `Accept: application/json, text/event-stream` -> `200 application/json`;
