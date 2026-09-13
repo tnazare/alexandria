@@ -98,8 +98,8 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/harness/provision_native.py`
     - *Requirements: 1.2, 1.4*
 
-- [ ] 6. Run drivers (Claude Code headless)
-  - [ ] 6.1 Alexandria driver + MCP capture proxy
+- [x] 6. Run drivers (Claude Code headless)
+  - [x] 6.1 Alexandria driver + MCP capture proxy
     - `harness/run_alexandria.py`: run `claude -p --output-format json` with the Alexandria MCP server
       configured through a thin local proxy that forwards to Alexandria and logs `resolve_skill`
       payloads, the `fetch_skill` `skillVersionId`, and per-call HTTP timings (Retrieval_Latency).
@@ -107,7 +107,7 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/harness/run_alexandria.py`, `experiments/harness/mcp_proxy.py`
     - *Requirements: 4.1, 4.2, 5.2, 5.4, 3.4, 6.4*
 
-  - [ ] 6.2 Native driver + transcript parse
+  - [x] 6.2 Native driver + transcript parse
     - `harness/run_native.py`: run `claude -p --output-format json` in the native workspace; parse the
       transcript for the `Skill` dispatcher invocation (chosen_skill); measure matched-file
       read+parse time (Retrieval_Latency) and record the one-time frontmatter-preload cost separately;
