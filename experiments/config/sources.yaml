@@ -1,0 +1,34 @@
+# Pinned harvest sources for the Real_Tier and Distractor_Tier (Requirement 9.2).
+#
+# Each source is pinned to a commit `ref` so a re-harvest yields the identical set. The harvester
+# walks the repo tree at that ref, takes every `**/SKILL.md` under `subpath`, and records provenance
+# (source_url, ref, license, sha256) per skill. Sources it cannot fetch/parse are skipped and logged
+# (Requirement 9.3); malformed skills are never silently included.
+#
+# `tier` assigns every skill from that source to a corpus tier:
+#   real       - genuine skills eligible to be a Gold_Skill
+#   distractor - realistic but task-wrong skills (never a Gold_Skill)
+#
+# Only `anthropics/skills` is confirmed to ship real SKILL.md files in the standard layout. The large
+# "awesome-skills" repos are link lists, not corpora, so they are NOT listed here; to expand the real
+# tier, add the underlying official/vendor repos (each shipping SKILL.md files) as new entries below,
+# pinned to a commit.
+
+sources:
+  - kind: github_repo
+    owner_repo: anthropics/skills
+    ref: 34040c9c568585f6929bedeaad110ad08f079624   # pinned 2026-09-10
+    subpath: skills
+    tier: real
+    license: UNKNOWN          # repo ships a non-SPDX license file; recorded per-skill as declared
+    exclude_slugs: []          # e.g. move some real skills to the distractor tier by slug
+
+# To add distractor skills, add entries with `tier: distractor`, e.g. real skills from adjacent
+# domains that should never be a gold answer for the task set:
+#
+#   - kind: github_repo
+#     owner_repo: some-vendor/their-skills
+#     ref: <pinned-sha>
+#     subpath: skills
+#     tier: distractor
+#     license: MIT

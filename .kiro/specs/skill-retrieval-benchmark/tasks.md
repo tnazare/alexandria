@@ -50,8 +50,8 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       is either `null` or a Real_Tier slug (enforced once the corpus exists).
     - *Requirements: 5.6, 9.4*
 
-- [ ] 3. Harvester (Real_Tier + Distractor_Tier) with provenance
-  - [ ] 3.1 `sources.yaml` + harvester
+- [x] 3. Harvester (Real_Tier + Distractor_Tier) with provenance
+  - [x] 3.1 `sources.yaml` + harvester
     - `harness/harvest.py`: walk pinned GitHub sources (start with `anthropics/skills`), take every
       `**/SKILL.md`, parse frontmatter (reuse importer logic), record `source_url`/`ref`/`license`/
       `sha256`, skip-and-log malformed, de-dupe by `(name, sha256)`. Write `corpus/real/<slug>/` and
@@ -59,7 +59,7 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/harness/harvest.py`, `experiments/config/sources.yaml`
     - *Requirements: 9.2, 9.3, 9.8*
 
-  - [ ]* 3.2 Unit test frontmatter parity + skip-on-malformed
+  - [x]* 3.2 Unit test frontmatter parity + skip-on-malformed
     - Parser matches the importer on block-scalar descriptions; a malformed SKILL.md is skipped and
       logged, never included.
     - *Requirements: 9.3*
