@@ -50,6 +50,14 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("NOT_FOUND", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.alexandria.agent.admin.ServiceTokenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleServiceTokenNotFound(
+            com.alexandria.agent.admin.ServiceTokenNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of("NOT_FOUND", ex.getMessage()));
+    }
+
     @ExceptionHandler(SkillAccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleSkillAccessDenied(SkillAccessDeniedException ex) {
         return ResponseEntity

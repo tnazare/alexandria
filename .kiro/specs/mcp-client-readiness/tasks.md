@@ -77,15 +77,15 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
       `.../agent/admin/ServiceTokenAdminApi.java`
     - *Requirements: 6.2, 6.3, 6.6, 7.1*
 
-- [ ] 4. Service-token minting service + resource
-  - [ ] 4.1 Add `ServiceTokenNotFoundException` and map it to 404
+- [x] 4. Service-token minting service + resource
+  - [x] 4.1 Add `ServiceTokenNotFoundException` and map it to 404
     - Create the exception in `com.alexandria.agent.admin` (or reuse a common not-found) and add a
       `@ExceptionHandler` in `GlobalExceptionHandler` returning `404`.
     - *Files:* `.../agent/admin/ServiceTokenNotFoundException.java`,
       `backend/alexandria-service/src/main/java/com/alexandria/common/exception/GlobalExceptionHandler.java`
     - *Requirements: 7.5*
 
-  - [ ] 4.2 Implement `ServiceTokenAdminService` / `Impl`
+  - [x] 4.2 Implement `ServiceTokenAdminService` / `Impl`
     - `create(name, expiresAt, admin)`: generate `secret = "alx_" + base64url(SecureRandom 32B)`,
       `hash = ServiceTokenHasher.sha256Hex(secret)`, `prefix = secret[0..12]`; persist a
       `ServiceTokenEntity` (admin org, name, hash, prefix, `scope="agent_read"`, `createdBy`,
@@ -96,20 +96,20 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     - *Files:* `.../agent/admin/ServiceTokenAdminService.java`, `.../agent/admin/ServiceTokenAdminServiceImpl.java`
     - *Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 7.2, 7.3, 7.6*
 
-  - [ ] 4.3 Implement `ServiceTokenResource`
+  - [x] 4.3 Implement `ServiceTokenResource`
     - `@RestController implements ServiceTokenAdminApi`; each method `@PreAuthorize("hasRole('Org_Admin')")`;
       resolve current user via the same SecurityContext pattern as `SkillResource`; create -> 201,
       list -> 200, revoke -> 204.
     - *File:* `backend/alexandria-service/src/main/java/com/alexandria/agent/admin/ServiceTokenResource.java`
     - *Requirements: 6.1, 6.5, 7.1, 7.2, 8.4*
 
-  - [ ]* 4.4 Unit tests for the service (Mockito)
+  - [x]* 4.4 Unit tests for the service (Mockito)
     - create: entity has admin org, `agent_read` scope, hash == `ServiceTokenHasher.sha256Hex(secret)`,
       secret starts `alx_`, 12-char prefix, audit recorded, response carries raw secret. revoke:
       sets `revokedAt`; idempotent on already-revoked; 404 on missing/other-org.
     - *Requirements: 6.2, 6.3, 6.4, 7.3, 7.5, 7.6*
 
-  - [ ]* 4.5 Security + end-to-end integration test (`ServiceTokenAdminIntegrationTest`)
+  - [x]* 4.5 Security + end-to-end integration test (`ServiceTokenAdminIntegrationTest`)
     - Org_Admin create -> 201 with `token` starting `alx_`; immediately use that token as a bearer on
       `POST /api/agent/v1/skills/resolve` -> 200 (end-to-end mint->authenticate). List returns the
       token by prefix with no `token`/`tokenHash`. Revoke -> 204; same token then resolve -> 401.
