@@ -1,0 +1,50 @@
+# Skill Retrieval Benchmark — experiment configuration.
+#
+# Every value here is recorded into results/raw/<run-id>/env.json so a run is reproducible.
+# The LLM is non-deterministic; seeds control everything else (corpus, padding, task order).
+
+experiment_version: v1
+
+# Primary independent variable: library sizes to test. Each is a full corpus (real + distractor +
+# padding to reach the size). Reported metrics are a function of these (Requirement 2.3, 9.6).
+library_sizes: [20, 100, 500]
+
+# Repetitions per (task, condition, library_size) cell. Dispersion is reported over these
+# (Requirement 6.2). The LLM varies run to run; nrep quantifies that.
+nrep: 5
+
+# Warm-up runs per cell, excluded from primary statistics but retained+labeled (Requirement 6.5).
+warmup: 1
+
+# recall@K for the secondary accuracy metric (Requirement 5.3).
+k: 5
+
+# Seeds (Requirement 6.3, 7.6). padding_seed feeds the variant generator; order_seed shuffles tasks.
+seeds:
+  padding: 1234
+  order: 5678
+
+# Conditions to run. First pass: Claude Code only, both mechanisms.
+conditions: [alexandria, native]
+
+# Model under test. Recorded per run; a mid-experiment change invalidates results (Requirement 6.4).
+# Leave model_id null to inherit the CLI default and let the harness record whatever it resolves to.
+model_id: null
+
+# Tokenizer used for the client-independent Context_Token_Cost (Requirement 3.1). Fixed for all
+# conditions. cl100k_base is a stable, widely-available encoding; it is a *comparable proxy*, not
+# Claude's own tokenizer (see PROTOCOL threats-to-validity).
+tokenizer_encoding: cl100k_base
+
+# Alexandria stack + OIDC (local docker compose defaults).
+alexandria:
+  host: http://localhost:8080
+  oidc_token_url: http://localhost:9000/alexandria/token
+  oidc_client_id: alexandria-client
+  oidc_client_secret: any          # mock OIDC accepts any secret (see manual-test docs 0.2)
+  team_name: Benchmark Skills
+
+# Claude Code CLI.
+claude:
+  command: claude
+  output_format: json
