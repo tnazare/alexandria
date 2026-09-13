@@ -190,3 +190,42 @@ curl -s -X DELETE https://<your-alexandria-host>/api/agent/v1/service-tokens/<to
 
 Token minting, listing, and revocation all require the `Org_Admin` role, and every mint and revoke
 is recorded in the audit log.
+
+## 7. Importing the Anthropic skills library
+
+To populate a fresh deployment with realistic content, the repository ships an importer that loads
+every skill from Anthropic's public [`anthropics/skills`](https://github.com/anthropics/skills)
+library into your catalog. Each `skills/<slug>/SKILL.md` becomes one Alexandria skill (name derived
+from the slug, description from the SKILL.md frontmatter, full SKILL.md as the canonical
+instructions), created under an owner team named "Anthropic Skills".
+
+The importer talks to the same REST API as everything else, so it needs an `Org_Admin` bearer token.
+Set `TOKEN`, then run the wrapper script:
+
+```bash
+export TOKEN=$ORG_ADMIN_TOKEN
+
+# Preview without writing anything:
+scripts/import-anthropic-skills.sh --dry-run
+
+# Import all skills into a local stack:
+scripts/import-anthropic-skills.sh
+
+# Import into a remote host, or a subset of skills:
+scripts/import-anthropic-skills.sh --host https://<your-alexandria-host> --only pdf,xlsx,mcp-builder
+```
+
+Flags (all optional; run with `--help` for the full list):
+
+- `--host` — Alexandria base URL (default `http://localhost:8080`, or set `ALEXANDRIA_HOST`).
+- `--team` — owner team name (default `Anthropic Skills`; created if absent).
+- `--only` — comma-separated slugs to import (default: all).
+- `--dry-run` — show what would be imported without calling the API.
+
+Requirements: `python3` (the importer uses only the standard library plus PyYAML when available;
+it falls back to a built-in frontmatter parser otherwise).
+
+> Imported skills start in **Draft** / **private**. Promote the ones you want the resolver to return
+> to `Company_Approved` / `organization` before agents can retrieve them — see the
+> [Skill Resolver manual test](../manual-testing/skill-resolver-manual-test.md) (section 0.3) for the
+> `UPDATE` statements, scoped to the "Anthropic Skills" team.

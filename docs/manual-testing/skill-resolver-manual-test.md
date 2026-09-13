@@ -161,6 +161,12 @@ UPDATE skills s
 
 - [ ] Expected: each `UPDATE` reports a row count (e.g. `UPDATE 1` / `UPDATE 2`), no errors.
 
+> **Bulk alternative.** To populate the catalog with a larger, realistic set instead of hand-seeding,
+> run the [Anthropic skills importer](../guide/mcp-clients-setup.md#importing-the-anthropic-skills-library):
+> `TOKEN=$TOKEN scripts/import-anthropic-skills.sh`. Imported skills start in `Draft`; promote the
+> ones you want the resolver to return with an `UPDATE` like the one above (scoped to
+> `owner_team_id = (SELECT id FROM teams WHERE name='Anthropic Skills')`).
+
 ---
 
 ## 1. Resolve — ranked candidates, no bodies
