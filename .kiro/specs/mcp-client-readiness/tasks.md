@@ -59,14 +59,14 @@ Build/verify: `./mvnw test` (unit), `./mvnw verify` (integration, needs Docker).
     - *File:* `backend/alexandria-service/src/test/java/com/alexandria/integration/McpEndpointIntegrationTest.java`
     - *Requirements: 1.1-1.4, 2.1-2.4, 3.1-3.4, 5.1, 5.3, 9.1*
 
-- [ ] 3. Service-token repository queries + DTOs + REST contract
-  - [ ] 3.1 Add org-scoped queries to `ServiceTokenRepository`
+- [x] 3. Service-token repository queries + DTOs + REST contract
+  - [x] 3.1 Add org-scoped queries to `ServiceTokenRepository`
     - Add `findByOrganizationIdOrderByCreatedAtDesc(UUID organizationId)` and
       `findByIdAndOrganizationId(UUID id, UUID organizationId)`. Leave `findByTokenHash` as-is.
     - *File:* `backend/alexandria-entities/src/main/java/com/alexandria/agent/ServiceTokenRepository.java`
     - *Requirements: 7.1, 7.4*
 
-  - [ ] 3.2 Add token DTOs and the `ServiceTokenAdminApi` contract
+  - [x] 3.2 Add token DTOs and the `ServiceTokenAdminApi` contract
     - Under `com.alexandria.agent.admin.dto`: `CreateServiceTokenRequest(@NotBlank name, Instant
       expiresAt)`, `CreateServiceTokenResponse(id, name, tokenPrefix, scope, expiresAt, token)`
       (the only response carrying the secret), `ServiceTokenResponse(id, name, tokenPrefix, scope,
