@@ -64,22 +64,22 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       logged, never included.
     - *Requirements: 9.3*
 
-- [ ] 4. Padding generator + corpus builder
-  - [ ] 4.1 Seeded variant-skill generator
+- [x] 4. Padding generator + corpus builder
+  - [x] 4.1 Seeded variant-skill generator
     - `harness/generate_padding.py`: deterministic cartesian walk over CONCEPTS × STACKS producing
       realistic variant skills (`<concept>-<lang>-<framework>` slugs, templated bodies of realistic
       size), skipping any reserved (real/distractor) slug; seeded so `(target_n, seed)` reproduces.
     - *Files:* `experiments/harness/generate_padding.py`
     - *Requirements: 2.2, 2.4, 9.4, 9.5*
 
-  - [ ] 4.2 Corpus builder + manifest/hashing
+  - [x] 4.2 Corpus builder + manifest/hashing
     - `harness/build_corpus.py`: assemble size-N corpus = all real + all distractor + enough padding;
       write files + `corpus/manifest.json` (tier, slug, source, license, sha256) and a `content_hash`
       over sorted `(slug, sha256)`. Halt if any skill fails to materialize.
     - *Files:* `experiments/harness/build_corpus.py`
     - *Requirements: 1.1, 1.3, 9.1, 9.6, 1.4*
 
-  - [ ]* 4.3 Unit tests: determinism, no-collision, stable hash
+  - [x]* 4.3 Unit tests: determinism, no-collision, stable hash
     - `generate_padding(N, seed)` stable and never collides with reserved slugs; `build_corpus`
       yields a stable `content_hash` and identical tier sets for both conditions.
     - *Requirements: 2.4, 9.4, 9.5, 1.1*
