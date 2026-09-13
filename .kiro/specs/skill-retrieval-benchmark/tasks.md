@@ -84,15 +84,15 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
       yields a stable `content_hash` and identical tier sets for both conditions.
     - *Requirements: 2.4, 9.4, 9.5, 1.1*
 
-- [ ] 5. Provisioning (both conditions) with halting guards
-  - [ ] 5.1 Alexandria provisioning
+- [x] 5. Provisioning (both conditions) with halting guards
+  - [x] 5.1 Alexandria provisioning
     - `harness/provision_alexandria.py`: mint Org_Admin token (`client_secret=any` OIDC), import the
       size-N corpus into a clean org via the existing importer, promote to resolvable; verify
       count == N or halt.
     - *Files:* `experiments/harness/provision_alexandria.py`
     - *Requirements: 1.2, 1.4*
 
-  - [ ] 5.2 Native sandbox provisioning
+  - [x] 5.2 Native sandbox provisioning
     - `harness/provision_native.py`: create an isolated workspace, copy the size-N corpus into
       `<workspace>/.claude/skills/<slug>/SKILL.md`; verify count == N or halt.
     - *Files:* `experiments/harness/provision_native.py`
