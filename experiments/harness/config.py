@@ -81,6 +81,11 @@ class ExperimentConfig:
     def claude_output_format(self) -> str:
         return str(self.raw.get("claude", {}).get("output_format", "json"))
 
+    def system_prompt(self, condition: str) -> str | None:
+        """The standing 'consult your skill library first' instruction for a condition (Option A)."""
+        v = (self.raw.get("system_prompt") or {}).get(condition)
+        return " ".join(str(v).split()) if v else None
+
 
 def load_config(path: str | Path) -> ExperimentConfig:
     import yaml

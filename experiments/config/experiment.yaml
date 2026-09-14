@@ -56,3 +56,25 @@ alexandria:
 claude:
   command: claude
   output_format: json
+
+# Standing "consult your skill library FIRST" directive, appended to the system prompt per condition
+# (Option A / Option 2 wording). Without an instruction, no model spontaneously calls the retrieval
+# tools for a natural task prompt (verified: Haiku AND Sonnet both call 0/3 un-instructed), and a
+# soft instruction gives only ~50% compliance. So the directive is imperative ("You MUST ... before
+# anything else") to push compliance toward 100%, making the token/latency/accuracy comparison clean
+# rather than swamped by compliance noise. The two prompts are equivalent in force so the instruction
+# stays a controlled variable. Compliance (did the agent actually consult?) is still recorded per run,
+# so the "does the agent obey" observation falls out for free. This measures the mechanisms under a
+# forced-consult regime — disclosed in the results.
+system_prompt:
+  alexandria: >
+    IMPORTANT: Before doing anything else, you MUST call the resolve_skill tool with a query derived
+    from the user's task to check for a reusable governed skill. This is mandatory even if you think
+    you already know how to do the task. If resolve_skill returns any relevant candidate, you MUST
+    then call fetch_skill on that candidate's skillVersionId and follow the returned instructions.
+    Only if resolve_skill returns no relevant candidate may you proceed on your own.
+  native: >
+    IMPORTANT: Before doing anything else, you MUST check your available Skills for a relevant one
+    that applies to the user's task. This is mandatory even if you think you already know how to do
+    the task. If a relevant Skill exists, you MUST use it and follow its instructions. Only if no
+    relevant Skill applies may you proceed on your own.

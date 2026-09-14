@@ -73,6 +73,7 @@ def run_task(
     claude_command: str = "claude",
     model_id: Optional[str] = None,
     effort: Optional[str] = None,
+    append_system_prompt: Optional[str] = None,
     seed: Optional[int] = None,
     manifest=None,
     corpus_dir: Optional[Path] = None,
@@ -99,9 +100,11 @@ def run_task(
                 prompt, workspace, command=claude_command, model_id=model_id, effort=effort,
                 mcp_config=mcp_cfg, strict_mcp_config=True,
                 allowed_tools=["mcp__alexandria__resolve_skill", "mcp__alexandria__fetch_skill"],
+                append_system_prompt=append_system_prompt,
             )
 
         cap = proxy.capture
+        consulted = any(c.get("kind") == "tools/call:resolve_skill" for c in cap.calls)
         # Candidates are captured as display names -> map via id_to_slug directly.
         candidate_slugs = map_candidates_to_slugs(cap.resolve_candidates, id_to_slug)
         # The fetched skillVersionId is mapped to a slug via the resolve response's versionId->name
@@ -134,6 +137,7 @@ def run_task(
             is_warmup=is_warmup,
             chosen_skill=chosen_slug,
             resolve_candidates=candidate_slugs,
+            consulted=consulted,
             retrieval_latency_ms=cap.retrieval_latency_ms(),
             end_to_end_latency_ms=e2e_ms,
             context_token_cost=token_cost,

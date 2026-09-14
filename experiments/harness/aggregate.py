@@ -102,6 +102,21 @@ def aggregate_latency_cold_warm(records: list[RunRecord]) -> list[Aggregate]:
     return out
 
 
+def aggregate_compliance(records: list[RunRecord]) -> list[Aggregate]:
+    """Fraction of runs where the agent consulted its skill library (compliance), per (condition, N)."""
+    out = []
+    for cond, n in _cells(records):
+        cell = [r for r in records if r.condition == cond and r.library_size == n
+                and r.consulted is not None]
+        vals = [1 if r.consulted else 0 for r in cell]
+        out.append(Aggregate(
+            metric="consult_compliance", condition=cond, library_size=n, n=len(vals),
+            mean=(_mean([float(v) for v in vals]) if vals else None),
+            extra={"consulted": sum(vals)},
+        ))
+    return out
+
+
 def aggregate_accuracy(records: list[RunRecord], k: int, *, seed: int = 0) -> list[Aggregate]:
     """Model-choice accuracy + recall@K per (condition, N), each with a bootstrap CI."""
     out = []
@@ -130,6 +145,7 @@ def aggregate_all(records: list[RunRecord], *, k: int = 5, seed: int = 0) -> lis
     result += aggregate_numeric(m, "retrieval_latency_ms", "retrieval_latency_ms")
     result += aggregate_latency_cold_warm(m)
     result += aggregate_accuracy(m, k, seed=seed)
+    result += aggregate_compliance(m)
     return result
 
 

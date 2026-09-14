@@ -119,6 +119,8 @@ class RunRecord:
     # accuracy signals
     chosen_skill: Optional[str] = None            # slug the agent actually used (model-choice)
     resolve_candidates: Optional[list[str]] = None  # slugs surfaced (recall@k)
+    consulted: Optional[bool] = None              # did the agent consult its skill library at all
+                                                  # (resolve_skill called / Skill invoked) — compliance
 
     # latency (milliseconds)
     retrieval_latency_ms: Optional[float] = None

@@ -57,6 +57,7 @@ def build_env(cfg: ExperimentConfig, *, model_id: Optional[str], model_version: 
         "tokenizer_encoding": cfg.tokenizer_encoding,
         "conditions": cfg.conditions,
         "model": model_block,
+        "system_prompt": {c: cfg.system_prompt(c) for c in cfg.conditions},
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
     }
     if extra:
@@ -211,10 +212,13 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
             for rep in reps:
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
                                          model_id=cfg.model_id, effort=cfg.effort,
-                                         allowed_tools=["Skill"])
+                                         allowed_tools=["Skill"],
+                                         append_system_prompt=cfg.system_prompt("native"))
                 chosen_name = extract_chosen_skill(result)
                 chosen_slug = name_to_slug.get(chosen_name) if chosen_name else None
-                print(f"  [native N={size}] {task_id} rep={rep} chosen={chosen_slug}", flush=True)
+                consulted = chosen_name is not None
+                print(f"  [native N={size}] {task_id} rep={rep} "
+                      f"consulted={consulted} chosen={chosen_slug}", flush=True)
                 retrieval_ms = None
                 if chosen_slug:
                     entry = next((e for e in manifest.skills if e.slug == chosen_slug), None)
@@ -228,7 +232,7 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                     condition=Condition.NATIVE.value, library_size=size,
                     content_hash=manifest.content_hash, task_id=task_id, gold_skill=task.gold_skill,
                     rep=rep, is_warmup=(rep < cfg.warmup), chosen_skill=chosen_slug,
-                    resolve_candidates=None, retrieval_latency_ms=retrieval_ms,
+                    resolve_candidates=None, consulted=consulted, retrieval_latency_ms=retrieval_ms,
                     end_to_end_latency_ms=e2e, native_preload_ms=preload_ms,
                     context_token_cost=tokens.total, reported_usage=reported_usage(result),
                     model_id=cfg.model_id, model_version=reported_model(result),
@@ -262,7 +266,8 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 is_warmup=(rep < cfg.warmup), upstream_mcp_url=upstream, service_token=bearer,
                 id_to_slug=id_to_slug, experiment_version=cfg.experiment_version,
                 run_id=writer.run_dir.name, claude_command=cfg.claude_command,
-                model_id=cfg.model_id, effort=cfg.effort, seed=cfg.order_seed,
+                model_id=cfg.model_id, effort=cfg.effort,
+                append_system_prompt=cfg.system_prompt("alexandria"), seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
             print(f"  [alexandria N={size}] {task_id} rep={rep} "

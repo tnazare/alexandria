@@ -153,7 +153,8 @@ def reported_model(result: dict) -> Optional[str]:
 def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
                model_id: Optional[str] = None, effort: Optional[str] = None, timeout: float = 300.0,
                mcp_config: Optional[Path] = None, allowed_tools: Optional[list[str]] = None,
-               strict_mcp_config: bool = False) -> tuple[dict, float]:
+               strict_mcp_config: bool = False,
+               append_system_prompt: Optional[str] = None) -> tuple[dict, float]:
     """Invoke ``claude -p`` headless in ``workspace``; return (parsed_result, end_to_end_ms).
 
     Headless Claude Code does NOT auto-load a project ``.mcp.json`` and denies tool calls without a
@@ -170,6 +171,8 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
         args += ["--model", model_id]
     if effort:
         args += ["--effort", effort]
+    if append_system_prompt:
+        args += ["--append-system-prompt", append_system_prompt]
     if mcp_config is not None:
         args += ["--mcp-config", str(mcp_config)]
         if strict_mcp_config:
