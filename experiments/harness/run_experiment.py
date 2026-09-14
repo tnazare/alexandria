@@ -257,17 +257,34 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 id_to_slug=id_to_slug, experiment_version=cfg.experiment_version,
                 run_id=writer.run_dir.name, claude_command=cfg.claude_command,
                 model_id=cfg.model_id, seed=cfg.order_seed,
+                manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
-            # Token cost is filled offline here (the run driver captured payloads via the proxy;
-            # for the resolve/fetch text the proxy could be extended to persist bodies — for now we
-            # record the run and leave context_token_cost to the offline measure step in the full run).
             writer.write(rec)
+
+
+def ensure_corpus(corpus_root: Path, size: int, seed: int, experiment_version: str,
+                  sources_path: Path) -> Path:
+    """Return the corpus dir for ``size``, building it if the manifest is absent. Live (needs net)."""
+    from harness.build_corpus import assemble, write
+    from harness.harvest import harvest, load_sources
+
+    corpus_dir = corpus_root / str(size)
+    if (corpus_dir / "manifest.json").is_file():
+        return corpus_dir
+    skills = harvest(load_sources(sources_path))
+    real = [s for s in skills if s.tier == Tier.REAL]
+    distractors = [s for s in skills if s.tier == Tier.DISTRACTOR]
+    manifest, padding = assemble(real, distractors, library_size=size, seed=seed,
+                                 experiment_version=experiment_version)
+    write(manifest, real, distractors, padding, corpus_dir)
+    return corpus_dir
 
 
 def main() -> int:
     import argparse
 
     from harness.config import load_config
+    from harness.tasks import load_task_set, validate_against_corpus
 
     parser = argparse.ArgumentParser(description="Run the skill-retrieval benchmark matrix.")
     parser.add_argument("--config", default="config/experiment.yaml")
@@ -275,23 +292,58 @@ def main() -> int:
     parser.add_argument("--nrep", type=int, default=None)
     parser.add_argument("--warmup", type=int, default=None)
     parser.add_argument("--results", default="results")
+    parser.add_argument("--corpus", default="corpus")
+    parser.add_argument("--sources", default="config/sources.yaml")
+    parser.add_argument("--task-set", default="tasks/task_set.v1.json")
     parser.add_argument("--print-env", action="store_true",
                         help="Print the captured env and exit (no runs).")
+    parser.add_argument("--build-only", action="store_true",
+                        help="Only build the corpora for the configured sizes, then exit.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    env = build_env(cfg, model_id=cfg.model_id, model_version=None)
+    # Apply CLI overrides onto the loaded config's raw dict so downstream accessors see them.
+    if args.sizes:
+        cfg.raw["library_sizes"] = [int(s) for s in args.sizes.split(",")]
+    if args.nrep is not None:
+        cfg.raw["nrep"] = args.nrep
+    if args.warmup is not None:
+        cfg.raw["warmup"] = args.warmup
 
+    env = build_env(cfg, model_id=cfg.model_id, model_version=None)
     if args.print_env:
         print(json.dumps(env, indent=2))
         return 0
 
-    # The live matrix run is documented in PROTOCOL.md and driven manually (task 10.2): it provisions
-    # each condition per size, executes tasks in seeded order via the run drivers, computes token
-    # cost, writes records.jsonl + env.json, and aggregates. Kept out of the offline unit path.
-    print("run_experiment scaffolding ready. See experiments/PROTOCOL.md for the live run procedure.")
-    print(json.dumps({"conditions": cfg.conditions, "sizes": cfg.library_sizes,
-                      "nrep": cfg.nrep, "warmup": cfg.warmup}, indent=2))
+    # Build corpora for each configured size (idempotent: skips sizes already built).
+    corpus_root = Path(args.corpus)
+    for size in cfg.library_sizes:
+        d = ensure_corpus(corpus_root, size, cfg.padding_seed, cfg.experiment_version,
+                          Path(args.sources))
+        print(f"corpus N={size}: {d}")
+    if args.build_only:
+        return 0
+
+    # Validate the task set against the (largest) real-tier slug set before any run (Requirement 5.6).
+    task_set = load_task_set(args.task_set)
+    largest = max(cfg.library_sizes)
+    manifest = load_manifest(corpus_root / str(largest) / "manifest.json")
+    validate_against_corpus(task_set, manifest.real_slugs())
+
+    print(f"Running matrix: conditions={cfg.conditions} sizes={cfg.library_sizes} "
+          f"nrep={cfg.nrep} warmup={cfg.warmup} tasks={len(task_set.tasks)}")
+    records_path = run_matrix(cfg, results_root=Path(args.results), corpus_root=corpus_root,
+                              task_set=task_set)
+    print(f"Raw records: {records_path}")
+
+    # Aggregate immediately so results are ready to write up.
+    from harness.aggregate import aggregate_all, load_records, write_aggregates
+
+    run_id = records_path.parent.name
+    aggs = aggregate_all(load_records(records_path), k=cfg.k)
+    jp, cp = write_aggregates(aggs, Path(args.results) / "computed" / run_id)
+    print(f"Aggregates: {jp} , {cp}")
+    print("Now copy RESULTS_TEMPLATE.md to results/<run-id>.md and fill it in.")
     return 0
 
 

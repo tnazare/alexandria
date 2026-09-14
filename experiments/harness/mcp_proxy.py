@@ -101,6 +101,7 @@ class CaptureLog:
     fetch_version_id: Optional[str] = None
     resolve_latency_ms: Optional[float] = None
     fetch_latency_ms: Optional[float] = None
+    resolve_result_text: Optional[str] = None   # raw resolve response body (for offline token count)
     calls: list[dict[str, Any]] = field(default_factory=list)
 
     def retrieval_latency_ms(self) -> Optional[float]:
@@ -112,6 +113,7 @@ class CaptureLog:
         self.fetch_version_id = None
         self.resolve_latency_ms = None
         self.fetch_latency_ms = None
+        self.resolve_result_text = None
         self.calls = []
 
 
@@ -164,8 +166,9 @@ class McpCaptureProxy:
         if kind == "tools/call:resolve_skill":
             self.capture.resolve_latency_ms = elapsed_ms
             try:
-                self.capture.resolve_candidates = extract_resolve_candidates(
-                    json.loads(response_bytes.decode("utf-8")))
+                text = response_bytes.decode("utf-8")
+                self.capture.resolve_result_text = text
+                self.capture.resolve_candidates = extract_resolve_candidates(json.loads(text))
             except (json.JSONDecodeError, UnicodeDecodeError):
                 pass
         elif kind == "tools/call:fetch_skill":

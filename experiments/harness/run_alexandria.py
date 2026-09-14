@@ -73,11 +73,20 @@ def run_task(
     claude_command: str = "claude",
     model_id: Optional[str] = None,
     seed: Optional[int] = None,
+    manifest=None,
+    corpus_dir: Optional[Path] = None,
+    count=None,
 ) -> RunRecord:
     """Execute one Alexandria-condition run and return its RunRecord.
 
     ``id_to_slug`` maps resolver identifiers (skillVersionId and/or display name) to corpus slugs,
     built at provision time so accuracy can be scored against gold slugs.
+
+    When ``manifest``, ``corpus_dir`` and ``count`` (a tokenizer counter) are supplied, the run's
+    Context_Token_Cost is filled here: the two tool schemas + the captured resolve-result text + the
+    fetched skill body (recovered from the corpus via the chosen slug). This closes the Alexandria
+    token-cost measurement in the live loop (Requirement 3.2); the count is a pure, reproducible
+    function of the captured payloads + corpus files.
     """
     proxy = McpCaptureProxy(upstream_mcp_url, bearer_token=service_token)
     proxy.start()
@@ -90,6 +99,14 @@ def run_task(
         cap = proxy.capture
         chosen_slug = id_to_slug.get(cap.fetch_version_id) if cap.fetch_version_id else None
         candidate_slugs = map_candidates_to_slugs(cap.resolve_candidates, id_to_slug)
+
+        token_cost = None
+        if count is not None and manifest is not None and corpus_dir is not None:
+            token_cost = _alexandria_token_cost(
+                count, manifest, Path(corpus_dir),
+                resolve_result_text=cap.resolve_result_text or "",
+                chosen_slug=chosen_slug,
+            )
 
         return RunRecord(
             run_id=run_id,
@@ -105,6 +122,7 @@ def run_task(
             resolve_candidates=candidate_slugs,
             retrieval_latency_ms=cap.retrieval_latency_ms(),
             end_to_end_latency_ms=e2e_ms,
+            context_token_cost=token_cost,
             reported_usage=reported_usage(result),
             model_id=model_id,
             model_version=(result.get("model") if isinstance(result, dict) else None),
@@ -112,3 +130,20 @@ def run_task(
         )
     finally:
         proxy.stop()
+
+
+def _alexandria_token_cost(count, manifest, corpus_dir: Path, *, resolve_result_text: str,
+                           chosen_slug: Optional[str]) -> int:
+    """Context_Token_Cost for one Alexandria run: schemas + resolve result + fetched body."""
+    from harness.measure_tokens import alexandria_task_tokens
+
+    fetched_body = ""
+    if chosen_slug:
+        entry = next((e for e in manifest.skills if e.slug == chosen_slug), None)
+        if entry is not None:
+            skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
+            if skill_md.is_file():
+                fetched_body = skill_md.read_text(encoding="utf-8")
+    return alexandria_task_tokens(
+        count, resolve_result_text=resolve_result_text, fetched_body=fetched_body,
+    ).total
