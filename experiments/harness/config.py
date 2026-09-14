@@ -55,6 +55,11 @@ class ExperimentConfig:
         return str(v) if v else None
 
     @property
+    def effort(self) -> str | None:
+        v = self.raw.get("effort")
+        return str(v) if v else None
+
+    @property
     def tokenizer_encoding(self) -> str:
         return str(self.raw.get("tokenizer_encoding", "cl100k_base"))
 

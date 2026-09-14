@@ -35,12 +35,13 @@ def build_env(cfg: ExperimentConfig, *, model_id: Optional[str], model_version: 
 
     Model identifier and version are recorded **together or neither**: if the identifier is missing,
     no version is recorded and the run is flagged as missing model provenance (Requirement 6.4).
+    The effort level is recorded alongside the model.
     """
     model_block: dict[str, object]
     if model_id:
-        model_block = {"model_id": model_id, "model_version": model_version}
+        model_block = {"model_id": model_id, "model_version": model_version, "effort": cfg.effort}
     else:
-        model_block = {"model_id": None, "model_version": None,
+        model_block = {"model_id": None, "model_version": None, "effort": cfg.effort,
                        "missing_model_provenance": True}
 
     env = {
@@ -158,7 +159,7 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
     from harness.provision_native import provision as provision_native
     from harness.run_native import (
         extract_chosen_skill, measure_matched_skill_load, measure_preload,
-        parse_claude_json, reported_usage, run_claude,
+        parse_claude_json, reported_model, reported_usage, run_claude,
     )
     from harness.tokenizer import Tokenizer
 
@@ -209,7 +210,8 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
             task = by_id[task_id]
             for rep in reps:
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
-                                         model_id=cfg.model_id, allowed_tools=["Skill"])
+                                         model_id=cfg.model_id, effort=cfg.effort,
+                                         allowed_tools=["Skill"])
                 chosen_name = extract_chosen_skill(result)
                 chosen_slug = name_to_slug.get(chosen_name) if chosen_name else None
                 print(f"  [native N={size}] {task_id} rep={rep} chosen={chosen_slug}", flush=True)
@@ -220,6 +222,7 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                         skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
                         retrieval_ms, _ = measure_matched_skill_load(skill_md)
                 tokens = native_task_tokens(count, manifest, corpus_dir, matched_slug=chosen_slug)
+                from harness.run_native import reported_model
                 writer.write(RunRecord(
                     run_id=writer.run_dir.name, experiment_version=cfg.experiment_version,
                     condition=Condition.NATIVE.value, library_size=size,
@@ -228,7 +231,8 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                     resolve_candidates=None, retrieval_latency_ms=retrieval_ms,
                     end_to_end_latency_ms=e2e, native_preload_ms=preload_ms,
                     context_token_cost=tokens.total, reported_usage=reported_usage(result),
-                    model_id=cfg.model_id, seed=cfg.order_seed,
+                    model_id=cfg.model_id, model_version=reported_model(result),
+                    seed=cfg.order_seed,
                 ))
 
 
@@ -258,7 +262,7 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 is_warmup=(rep < cfg.warmup), upstream_mcp_url=upstream, service_token=bearer,
                 id_to_slug=id_to_slug, experiment_version=cfg.experiment_version,
                 run_id=writer.run_dir.name, claude_command=cfg.claude_command,
-                model_id=cfg.model_id, seed=cfg.order_seed,
+                model_id=cfg.model_id, effort=cfg.effort, seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
             print(f"  [alexandria N={size}] {task_id} rep={rep} "

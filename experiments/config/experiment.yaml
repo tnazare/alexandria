@@ -27,9 +27,12 @@ seeds:
 # Conditions to run. First pass: Claude Code only, both mechanisms.
 conditions: [alexandria, native]
 
-# Model under test. Recorded per run; a mid-experiment change invalidates results (Requirement 6.4).
-# Leave model_id null to inherit the CLI default and let the harness record whatever it resolves to.
-model_id: null
+# Model + effort under test. Both are pinned and recorded per run; a mid-experiment change
+# invalidates results (Requirement 6.4). model_id accepts a CLI alias (opus/sonnet/fable) or a full
+# model name; effort is one of low/medium/high/xhigh/max. Set model_id to pin the model; leaving it
+# null inherits the CLI default (less reproducible — prefer pinning for a real run).
+model_id: sonnet
+effort: high
 
 # Tokenizer used for the client-independent Context_Token_Cost (Requirement 3.1). Fixed for all
 # conditions. cl100k_base is a stable, widely-available encoding; it is a *comparable proxy*, not

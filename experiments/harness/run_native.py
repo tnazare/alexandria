@@ -123,11 +123,35 @@ def reported_usage(result: dict) -> Optional[dict]:
     return None
 
 
+def reported_model(result: dict) -> Optional[str]:
+    """Extract the concrete model version Claude actually used (Requirement 6.4 provenance).
+
+    Prefers a plain ``model`` string; else derives the canonical model from the ``modelUsage`` block
+    (choosing the entry with the most input tokens, i.e. the primary model, not a helper like haiku).
+    """
+    if isinstance(result.get("model"), str):
+        return result["model"]
+    usage = result.get("modelUsage")
+    if isinstance(usage, dict) and usage:
+        def _weight(info: object) -> int:
+            if not isinstance(info, dict):
+                return 0
+            # The primary model carries the bulk of context, much of it cache-read; count both plus
+            # output. Helper models (e.g. haiku) do small uncached calls, so they weigh less.
+            return (int(info.get("inputTokens", 0)) + int(info.get("cacheReadInputTokens", 0))
+                    + int(info.get("cacheCreationInputTokens", 0)) + int(info.get("outputTokens", 0)))
+        name, info = max(usage.items(), key=lambda kv: _weight(kv[1]))
+        if isinstance(info, dict) and info.get("canonicalModel"):
+            return str(info["canonicalModel"])
+        return str(name)
+    return None
+
+
 # --- subprocess driver -----------------------------------------------------------------------
 
 
 def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
-               model_id: Optional[str] = None, timeout: float = 300.0,
+               model_id: Optional[str] = None, effort: Optional[str] = None, timeout: float = 300.0,
                mcp_config: Optional[Path] = None, allowed_tools: Optional[list[str]] = None,
                strict_mcp_config: bool = False) -> tuple[dict, float]:
     """Invoke ``claude -p`` headless in ``workspace``; return (parsed_result, end_to_end_ms).
@@ -136,11 +160,16 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
     permission decision. So the Alexandria condition passes ``mcp_config`` (+ ``--strict-mcp-config``)
     and ``allowed_tools``; both conditions run with ``--permission-mode bypassPermissions`` so the MCP
     tools / the native ``Skill`` dispatcher can actually fire non-interactively.
+
+    ``model_id`` and ``effort`` are pinned for experiment validity (Requirement 6.4) and recorded in
+    ``env.json``. ``effort`` is one of low/medium/high/xhigh/max.
     """
     args = [command, "-p", prompt, "--output-format", "json",
             "--permission-mode", "bypassPermissions"]
     if model_id:
         args += ["--model", model_id]
+    if effort:
+        args += ["--effort", effort]
     if mcp_config is not None:
         args += ["--mcp-config", str(mcp_config)]
         if strict_mcp_config:

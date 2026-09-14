@@ -42,13 +42,21 @@ def _manifest() -> CorpusManifest:
 class TestEnv:
     def test_records_model_id_and_version_together(self):
         env = build_env(_cfg(), model_id="claude-x", model_version="2026-01")
-        assert env["model"] == {"model_id": "claude-x", "model_version": "2026-01"}
+        assert env["model"]["model_id"] == "claude-x"
+        assert env["model"]["model_version"] == "2026-01"
+        assert "missing_model_provenance" not in env["model"]
 
     def test_flags_missing_provenance_when_no_id(self):
         env = build_env(_cfg(), model_id=None, model_version="ignored-because-no-id")
         assert env["model"]["model_id"] is None
         assert env["model"]["model_version"] is None
         assert env["model"]["missing_model_provenance"] is True
+
+    def test_records_effort(self):
+        cfg = _cfg()
+        cfg.raw["effort"] = "high"
+        env = build_env(cfg, model_id="claude-x", model_version="2026-01")
+        assert env["model"]["effort"] == "high"
 
     def test_captures_seeds_and_config(self):
         env = build_env(_cfg(), model_id="m", model_version=None)

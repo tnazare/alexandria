@@ -21,7 +21,7 @@ from typing import Optional
 
 from harness.mcp_proxy import McpCaptureProxy
 from harness.models import Condition, RunRecord
-from harness.run_native import parse_claude_json, reported_usage, run_claude
+from harness.run_native import parse_claude_json, reported_model, reported_usage, run_claude
 
 
 def write_mcp_config(workspace: Path, endpoint: str, bearer: str = "proxy") -> Path:
@@ -72,6 +72,7 @@ def run_task(
     run_id: str = "adhoc",
     claude_command: str = "claude",
     model_id: Optional[str] = None,
+    effort: Optional[str] = None,
     seed: Optional[int] = None,
     manifest=None,
     corpus_dir: Optional[Path] = None,
@@ -95,7 +96,7 @@ def run_task(
             workspace = Path(ws)
             mcp_cfg = write_mcp_config(workspace, proxy.endpoint)
             result, e2e_ms = run_claude(
-                prompt, workspace, command=claude_command, model_id=model_id,
+                prompt, workspace, command=claude_command, model_id=model_id, effort=effort,
                 mcp_config=mcp_cfg, strict_mcp_config=True,
                 allowed_tools=["mcp__alexandria__resolve_skill", "mcp__alexandria__fetch_skill"],
             )
@@ -138,7 +139,7 @@ def run_task(
             context_token_cost=token_cost,
             reported_usage=reported_usage(result),
             model_id=model_id,
-            model_version=(result.get("model") if isinstance(result, dict) else None),
+            model_version=(reported_model(result) if isinstance(result, dict) else None),
             seed=seed,
         )
     finally:
