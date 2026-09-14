@@ -26,6 +26,20 @@ NAME_MAX = 200
 DESCRIPTION_MAX = 2000
 INSTRUCTIONS_MAX = 100000
 
+# Deletes all skills (and their versions) owned by the benchmark team, so provisioning is idempotent
+# and each run starts from exactly N skills. Scoped strictly to the benchmark team by name.
+CLEANUP_SQL = """
+UPDATE skills SET current_version_id = NULL
+ WHERE owner_team_id = (SELECT id FROM teams WHERE name = :team);
+
+DELETE FROM skill_versions
+ WHERE skill_id IN (SELECT id FROM skills
+                     WHERE owner_team_id = (SELECT id FROM teams WHERE name = :team));
+
+DELETE FROM skills
+ WHERE owner_team_id = (SELECT id FROM teams WHERE name = :team);
+"""
+
 # Promotes every skill owned by the benchmark team to a resolvable state. Parameterized by team name.
 PROMOTE_SQL = """
 UPDATE skill_versions v SET published_at = NOW()
@@ -86,6 +100,9 @@ def provision(
     team_id = client.ensure_team()
     log.info("owner team '%s' -> %s", cfg.team_name, team_id)
 
+    # Idempotent reset: clear any skills left by a previous run so we start at exactly N.
+    _run_sql(postgres_container, CLEANUP_SQL, cfg.team_name, "cleanup")
+
     created = 0
     for entry in manifest.skills:
         skill_md = corpus / entry.tier.value / entry.slug / "SKILL.md"
@@ -127,14 +144,20 @@ def _count_team_skills(client: AlexandriaClient, cfg: AlexandriaConfig, team_id:
 
 
 def _promote(container: str, team_name: str) -> None:
-    sql = PROMOTE_SQL.replace(":team", f"'{team_name}'")
+    _run_sql(container, PROMOTE_SQL, team_name, "promotion")
+    log.info("promoted benchmark skills to resolvable state")
+
+
+def _run_sql(container: str, sql_template: str, team_name: str, label: str) -> None:
+    """Run a team-scoped SQL script on the postgres container via docker exec. Test-harness only."""
+    sql = sql_template.replace(":team", f"'{team_name}'")
     proc = subprocess.run(
-        ["docker", "exec", "-i", container, "psql", "-U", "alexandria", "-d", "alexandria"],
+        ["docker", "exec", "-i", container, "psql", "-U", "alexandria", "-d", "alexandria",
+         "-v", "ON_ERROR_STOP=1"],
         input=sql, capture_output=True, text=True,
     )
     if proc.returncode != 0:
-        raise AlexandriaError(f"promotion SQL failed: {proc.stderr.strip()}")
-    log.info("promoted benchmark skills to resolvable state")
+        raise AlexandriaError(f"{label} SQL failed: {proc.stderr.strip()}")
 
 
 def main() -> int:

@@ -35,25 +35,35 @@ class TestMcpClassify:
 
 
 class TestResolveCandidates:
-    def test_extracts_version_ids_from_structured_content(self):
+    def test_extracts_display_names_from_structured_content(self):
+        # Candidates are captured as display names (the resolver returns name + version id; the
+        # harness id-map keys on the display name provisioning created).
         resp = {"result": {"structuredContent": {"results": [
             {"ref": {"skillVersionId": "v-pdf"}, "name": "Pdf"},
             {"ref": {"skillVersionId": "v-xlsx"}, "name": "Xlsx"},
         ]}}}
-        assert extract_resolve_candidates(resp) == ["v-pdf", "v-xlsx"]
+        assert extract_resolve_candidates(resp) == ["Pdf", "Xlsx"]
 
     def test_extracts_from_text_content_json(self):
         import json
         payload = {"results": [{"ref": {"skillVersionId": "v-pdf"}, "name": "Pdf"}]}
         resp = {"result": {"content": [{"type": "text", "text": json.dumps(payload)}]}}
-        assert extract_resolve_candidates(resp) == ["v-pdf"]
-
-    def test_falls_back_to_name_when_no_version_id(self):
-        resp = {"result": {"structuredContent": {"results": [{"name": "Pdf"}]}}}
         assert extract_resolve_candidates(resp) == ["Pdf"]
+
+    def test_falls_back_to_version_id_when_no_name(self):
+        resp = {"result": {"structuredContent": {"results": [{"ref": {"skillVersionId": "v-pdf"}}]}}}
+        assert extract_resolve_candidates(resp) == ["v-pdf"]
 
     def test_none_when_no_results(self):
         assert extract_resolve_candidates({"result": {}}) is None
+
+    def test_versionid_to_name_pairing(self):
+        from harness.mcp_proxy import extract_versionid_to_name
+        resp = {"result": {"structuredContent": {"results": [
+            {"ref": {"skillVersionId": "v-pdf"}, "name": "Pdf"},
+            {"ref": {"skillVersionId": "v-xlsx"}, "name": "Xlsx"},
+        ]}}}
+        assert extract_versionid_to_name(resp) == {"v-pdf": "Pdf", "v-xlsx": "Xlsx"}
 
 
 class TestFetchVersionId:

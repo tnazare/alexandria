@@ -57,12 +57,12 @@ def _tool_result_json(response: dict) -> Optional[dict]:
 
 
 def extract_resolve_candidates(response: dict) -> Optional[list[str]]:
-    """From a resolve_skill tools/call response, return the ordered candidate identifiers.
+    """From a resolve_skill tools/call response, return the ordered candidate **display names**.
 
-    The resolver result carries ``name`` (display name) and ``ref.skillVersionId`` (a UUID); it does
-    NOT carry a slug. We capture each candidate's ``skillVersionId`` when present, else its ``name``.
-    Scoring maps these back to gold slugs using the provision-time id/name -> slug map (the harness
-    knows both because it created the skills), so no lossy slug-guessing happens here.
+    The resolver result carries ``name`` (display name) and ``ref.skillVersionId`` (a UUID) but no
+    slug. We capture the ``name`` here because the harness's id map (display name -> slug, built at
+    provision time from the names it created the skills with) can score it directly; the raw version
+    UUID has no provision-time mapping. Falls back to the version id only if a name is absent.
     """
     payload = _tool_result_json(response)
     if not payload:
@@ -70,15 +70,35 @@ def extract_resolve_candidates(response: dict) -> Optional[list[str]]:
     results = payload.get("results")
     if not isinstance(results, list):
         return None
-    ids: list[str] = []
+    out: list[str] = []
     for r in results:
         if not isinstance(r, dict):
             continue
-        ref = r.get("ref") or {}
-        ident = ref.get("skillVersionId") or r.get("name")
+        ident = r.get("name") or (r.get("ref") or {}).get("skillVersionId")
         if ident:
-            ids.append(str(ident))
-    return ids
+            out.append(str(ident))
+    return out
+
+
+def extract_versionid_to_name(response: dict) -> dict[str, str]:
+    """Map each resolve candidate's ``skillVersionId`` -> ``name`` (for scoring the fetched version).
+
+    ``fetch_skill`` is called with a ``skillVersionId``; the resolve response is the only place that
+    id is paired with a display name, so we harvest the pairing here to recover the chosen skill's
+    slug downstream (versionId -> name -> slug).
+    """
+    payload = _tool_result_json(response)
+    out: dict[str, str] = {}
+    if not payload:
+        return out
+    for r in payload.get("results") or []:
+        if not isinstance(r, dict):
+            continue
+        vid = (r.get("ref") or {}).get("skillVersionId")
+        name = r.get("name")
+        if vid and name:
+            out[str(vid)] = str(name)
+    return out
 
 
 def extract_fetch_version_id(msg: dict) -> Optional[str]:
@@ -102,6 +122,7 @@ class CaptureLog:
     resolve_latency_ms: Optional[float] = None
     fetch_latency_ms: Optional[float] = None
     resolve_result_text: Optional[str] = None   # raw resolve response body (for offline token count)
+    versionid_to_name: dict = field(default_factory=dict)  # skillVersionId -> display name (fetch scoring)
     calls: list[dict[str, Any]] = field(default_factory=list)
 
     def retrieval_latency_ms(self) -> Optional[float]:
@@ -114,6 +135,7 @@ class CaptureLog:
         self.resolve_latency_ms = None
         self.fetch_latency_ms = None
         self.resolve_result_text = None
+        self.versionid_to_name = {}
         self.calls = []
 
 
@@ -168,7 +190,9 @@ class McpCaptureProxy:
             try:
                 text = response_bytes.decode("utf-8")
                 self.capture.resolve_result_text = text
-                self.capture.resolve_candidates = extract_resolve_candidates(json.loads(text))
+                parsed = json.loads(text)
+                self.capture.resolve_candidates = extract_resolve_candidates(parsed)
+                self.capture.versionid_to_name.update(extract_versionid_to_name(parsed))
             except (json.JSONDecodeError, UnicodeDecodeError):
                 pass
         elif kind == "tools/call:fetch_skill":

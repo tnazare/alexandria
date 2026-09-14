@@ -127,11 +127,26 @@ def reported_usage(result: dict) -> Optional[dict]:
 
 
 def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
-               model_id: Optional[str] = None, timeout: float = 300.0) -> tuple[dict, float]:
-    """Invoke ``claude -p`` headless in ``workspace``; return (parsed_result, end_to_end_ms)."""
-    args = [command, "-p", prompt, "--output-format", "json"]
+               model_id: Optional[str] = None, timeout: float = 300.0,
+               mcp_config: Optional[Path] = None, allowed_tools: Optional[list[str]] = None,
+               strict_mcp_config: bool = False) -> tuple[dict, float]:
+    """Invoke ``claude -p`` headless in ``workspace``; return (parsed_result, end_to_end_ms).
+
+    Headless Claude Code does NOT auto-load a project ``.mcp.json`` and denies tool calls without a
+    permission decision. So the Alexandria condition passes ``mcp_config`` (+ ``--strict-mcp-config``)
+    and ``allowed_tools``; both conditions run with ``--permission-mode bypassPermissions`` so the MCP
+    tools / the native ``Skill`` dispatcher can actually fire non-interactively.
+    """
+    args = [command, "-p", prompt, "--output-format", "json",
+            "--permission-mode", "bypassPermissions"]
     if model_id:
         args += ["--model", model_id]
+    if mcp_config is not None:
+        args += ["--mcp-config", str(mcp_config)]
+        if strict_mcp_config:
+            args += ["--strict-mcp-config"]
+    if allowed_tools:
+        args += ["--allowedTools", *allowed_tools]
     start = time.perf_counter()
     proc = subprocess.run(args, cwd=str(workspace), capture_output=True, text=True, timeout=timeout)
     elapsed_ms = (time.perf_counter() - start) * 1000.0

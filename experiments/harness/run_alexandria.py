@@ -93,12 +93,25 @@ def run_task(
     try:
         with tempfile.TemporaryDirectory(prefix="alx-run-") as ws:
             workspace = Path(ws)
-            write_mcp_config(workspace, proxy.endpoint)
-            result, e2e_ms = run_claude(prompt, workspace, command=claude_command, model_id=model_id)
+            mcp_cfg = write_mcp_config(workspace, proxy.endpoint)
+            result, e2e_ms = run_claude(
+                prompt, workspace, command=claude_command, model_id=model_id,
+                mcp_config=mcp_cfg, strict_mcp_config=True,
+                allowed_tools=["mcp__alexandria__resolve_skill", "mcp__alexandria__fetch_skill"],
+            )
 
         cap = proxy.capture
-        chosen_slug = id_to_slug.get(cap.fetch_version_id) if cap.fetch_version_id else None
+        # Candidates are captured as display names -> map via id_to_slug directly.
         candidate_slugs = map_candidates_to_slugs(cap.resolve_candidates, id_to_slug)
+        # The fetched skillVersionId is mapped to a slug via the resolve response's versionId->name
+        # pairing (id_to_slug covers name->slug), or directly if id_to_slug already knows the id.
+        chosen_slug = None
+        if cap.fetch_version_id:
+            chosen_slug = id_to_slug.get(cap.fetch_version_id)
+            if chosen_slug is None:
+                name = cap.versionid_to_name.get(cap.fetch_version_id)
+                if name:
+                    chosen_slug = id_to_slug.get(name)
 
         token_cost = None
         if count is not None and manifest is not None and corpus_dir is not None:

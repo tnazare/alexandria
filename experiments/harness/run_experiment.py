@@ -209,9 +209,10 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
             task = by_id[task_id]
             for rep in reps:
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
-                                         model_id=cfg.model_id)
+                                         model_id=cfg.model_id, allowed_tools=["Skill"])
                 chosen_name = extract_chosen_skill(result)
                 chosen_slug = name_to_slug.get(chosen_name) if chosen_name else None
+                print(f"  [native N={size}] {task_id} rep={rep} chosen={chosen_slug}", flush=True)
                 retrieval_ms = None
                 if chosen_slug:
                     entry = next((e for e in manifest.skills if e.slug == chosen_slug), None)
@@ -243,10 +244,11 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
     client = AlexandriaClient(acfg)
     upstream = f"{acfg.host}/api/agent/v1/mcp"
     bearer = client.token()
-    # Provision-time id map: display name -> slug (skillVersionId is captured live via the proxy and
-    # is a UUID; name mapping covers the common resolver 'name' field).
-    id_to_slug = build_id_to_slug(manifest, name_for_slug=lambda s:
-                                  next((e.name for e in manifest.skills if e.slug == s), None))
+    # The resolver returns each skill's display *name*, which provisioning set to titleize(slug)
+    # (NOT the manifest's harvested frontmatter name). So the id map must key on the same titleize
+    # the provisioner used, or resolve candidates won't map back to slugs.
+    from harness.provision_alexandria import _titleize
+    id_to_slug = build_id_to_slug(manifest, name_for_slug=_titleize)
     for task_id in order:
         task = by_id[task_id]
         for rep in reps:
@@ -259,6 +261,9 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 model_id=cfg.model_id, seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
+            print(f"  [alexandria N={size}] {task_id} rep={rep} "
+                  f"chosen={rec.chosen_skill} cand={len(rec.resolve_candidates or [])} "
+                  f"tok={rec.context_token_cost}", flush=True)
             writer.write(rec)
 
 
