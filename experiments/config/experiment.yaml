@@ -29,10 +29,15 @@ conditions: [alexandria, native]
 
 # Model + effort under test. Both are pinned and recorded per run; a mid-experiment change
 # invalidates results (Requirement 6.4). model_id accepts a CLI alias (opus/sonnet/fable) or a full
-# model name; effort is one of low/medium/high/xhigh/max. Set model_id to pin the model; leaving it
-# null inherits the CLI default (less reproducible — prefer pinning for a real run).
-model_id: sonnet
-effort: high
+# model name; effort is one of low/medium/high/xhigh/max.
+#
+# Default: haiku + low. Skill retrieval is a tool-selection decision, not reasoning-hard, so the
+# cheapest tier keeps the ~2000-invocation matrix affordable while staying a valid controlled
+# variable (both conditions run under the identical model). For a more representative "typical Claude
+# Code user" reported run, consider sonnet + medium. Note the near-variant-trap tasks are the ones a
+# weaker model may fumble — but that affects both conditions equally, so the A/B comparison holds.
+model_id: haiku
+effort: low
 
 # Tokenizer used for the client-independent Context_Token_Cost (Requirement 3.1). Fixed for all
 # conditions. cl100k_base is a stable, widely-available encoding; it is a *comparable proxy*, not
