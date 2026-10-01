@@ -177,6 +177,7 @@ def reported_model(result: dict) -> Optional[str]:
 def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
                model_id: Optional[str] = None, effort: Optional[str] = None, timeout: float = 300.0,
                mcp_config: Optional[Path] = None, allowed_tools: Optional[list[str]] = None,
+               disallowed_tools: Optional[list[str]] = None,
                strict_mcp_config: bool = False,
                append_system_prompt: Optional[str] = None,
                stream: bool = False) -> tuple[dict, float]:
@@ -212,6 +213,8 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
             args += ["--strict-mcp-config"]
     if allowed_tools:
         args += ["--allowedTools", *allowed_tools]
+    if disallowed_tools:
+        args += ["--disallowedTools", *disallowed_tools]
     start = time.perf_counter()
     proc = subprocess.run(args, cwd=str(workspace), capture_output=True, text=True, timeout=timeout)
     elapsed_ms = (time.perf_counter() - start) * 1000.0

@@ -66,15 +66,23 @@ claude:
 # stays a controlled variable. Compliance (did the agent actually consult?) is still recorded per run,
 # so the "does the agent obey" observation falls out for free. This measures the mechanisms under a
 # forced-consult regime — disclosed in the results.
+#
+# DECISION-ONLY: the benchmark measures skill *selection*, not task execution. So the directive also
+# tells the agent to STOP after identifying/consulting the skill and NOT perform the task or create,
+# write, run, or open any files. Without this the agent does the real work (generating files, opening
+# a browser preview, etc.) — wasted tokens and side effects that leak out of the sandbox. Both
+# conditions get the identical stop-after-selection constraint, so it stays a controlled variable.
 system_prompt:
   alexandria: >
     IMPORTANT: Before doing anything else, you MUST call the resolve_skill tool with a query derived
     from the user's task to check for a reusable governed skill. This is mandatory even if you think
     you already know how to do the task. If resolve_skill returns any relevant candidate, you MUST
-    then call fetch_skill on that candidate's skillVersionId and follow the returned instructions.
-    Only if resolve_skill returns no relevant candidate may you proceed on your own.
+    then call fetch_skill on that candidate's skillVersionId. Then STOP: state which skill you would
+    use and end your turn. Do NOT actually perform the task, and do NOT create, write, edit, run, or
+    open any files or commands. If resolve_skill returns no relevant candidate, simply say so and stop.
   native: >
     IMPORTANT: Before doing anything else, you MUST check your available Skills for a relevant one
-    that applies to the user's task. This is mandatory even if you think you already know how to do
-    the task. If a relevant Skill exists, you MUST use it and follow its instructions. Only if no
-    relevant Skill applies may you proceed on your own.
+    that applies to the user's task and invoke it with the Skill tool. This is mandatory even if you
+    think you already know how to do the task. After invoking the relevant Skill, STOP: state which
+    skill you would use and end your turn. Do NOT actually perform the task, and do NOT create, write,
+    edit, run, or open any files or commands. If no relevant Skill applies, simply say so and stop.

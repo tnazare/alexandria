@@ -142,6 +142,15 @@ def write_env(run_dir: Path, env: dict) -> Path:
 # offline unit suite.
 
 
+# Side-effecting / task-execution tools denied in both conditions (decision-only runs). The agent
+# may still invoke the Skill dispatcher (native) or the resolve/fetch MCP tools (alexandria) — those
+# are on the per-condition allowed list — but cannot write/run/open anything, so no files are created
+# and no browser preview pops. Defense-in-depth behind the stop-after-selection system prompt.
+DISALLOWED_TOOLS = [
+    "Bash", "Write", "Edit", "NotebookEdit", "WebFetch", "WebSearch", "Task",
+]
+
+
 def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
                task_set, run_id: Optional[str] = None) -> Path:
     """Execute the full (condition × size × task × rep) matrix and return the records.jsonl path.
@@ -213,6 +222,7 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
                                          model_id=cfg.model_id, effort=cfg.effort,
                                          allowed_tools=["Skill"],
+                                         disallowed_tools=DISALLOWED_TOOLS,
                                          append_system_prompt=cfg.system_prompt("native"),
                                          stream=True)
                 chosen_name = extract_chosen_skill(result)
@@ -268,7 +278,8 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 id_to_slug=id_to_slug, experiment_version=cfg.experiment_version,
                 run_id=writer.run_dir.name, claude_command=cfg.claude_command,
                 model_id=cfg.model_id, effort=cfg.effort,
-                append_system_prompt=cfg.system_prompt("alexandria"), seed=cfg.order_seed,
+                append_system_prompt=cfg.system_prompt("alexandria"),
+                disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
             print(f"  [alexandria N={size}] {task_id} rep={rep} "

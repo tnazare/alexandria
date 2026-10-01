@@ -74,6 +74,7 @@ def run_task(
     model_id: Optional[str] = None,
     effort: Optional[str] = None,
     append_system_prompt: Optional[str] = None,
+    disallowed_tools: Optional[list[str]] = None,
     seed: Optional[int] = None,
     manifest=None,
     corpus_dir: Optional[Path] = None,
@@ -100,6 +101,7 @@ def run_task(
                 prompt, workspace, command=claude_command, model_id=model_id, effort=effort,
                 mcp_config=mcp_cfg, strict_mcp_config=True,
                 allowed_tools=["mcp__alexandria__resolve_skill", "mcp__alexandria__fetch_skill"],
+                disallowed_tools=disallowed_tools,
                 append_system_prompt=append_system_prompt,
             )
 
