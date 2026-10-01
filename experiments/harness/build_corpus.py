@@ -1,12 +1,14 @@
-"""Corpus builder: assemble a size-N corpus from the three tiers (Requirements 1.1, 1.3, 9.1, 9.6).
+"""Corpus builder: materialize a named subset from the frozen superset (task 5).
 
-A size-N corpus = **all** Real_Tier + **all** Distractor_Tier + enough deterministic Padding_Tier
-to reach N. The same assembled corpus drives both conditions, so content is byte-identical and only
-the *mechanism* differs (Requirement 1.1). A ``content_hash`` over the sorted ``(slug, sha256)``
-pairs pins the corpus into every RunRecord (Requirement 1.3).
+A benchmark run operates on one **named subset** (e.g. ``close-semantics-20``) — a fixed, committed
+selection of real skills from the 500-skill superset. This module copies that subset's SKILL.md
+bodies out of ``corpus/superset/`` into a run directory ``corpus/<subset-name>/<slug>/SKILL.md`` and
+writes a ``manifest.json`` (same :class:`CorpusManifest` shape the provisioners and metrics consume),
+with a ``content_hash`` over the sorted ``(slug, sha256)`` pairs that pins the corpus into every
+RunRecord.
 
-If N is smaller than the real+distractor count, that is an error (we never drop real/distractor
-skills to hit a size); if a skill fails to materialize, the build halts (Requirement 1.4).
+All skills are real (``Tier.REAL``) — the padding/distractor tiers are gone now that the corpus comes
+from a curated real superset. Materialization is a pure filesystem copy, deterministic and offline.
 """
 
 from __future__ import annotations
@@ -14,15 +16,15 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Optional
 
-from harness.generate_padding import generate as generate_padding
-from harness.harvest import HarvestedSkill
-from harness.models import CorpusManifest, GeneratedSkill, ManifestEntry, Tier
+from harness.models import CorpusManifest, ManifestEntry, Tier
+
+SUPERSET_DIR = "corpus/superset"
+SUBSETS_DIR = "corpus/subsets"
 
 
 class CorpusError(RuntimeError):
-    """Raised when a corpus cannot be assembled at the requested size."""
+    """Raised when a corpus cannot be materialized (missing superset body, bad subset, etc.)."""
 
 
 def compute_content_hash(entries: list[ManifestEntry]) -> str:
@@ -37,103 +39,62 @@ def compute_content_hash(entries: list[ManifestEntry]) -> str:
     return "sha256:" + h.hexdigest()
 
 
-def assemble(
-    real: list[HarvestedSkill],
-    distractors: list[HarvestedSkill],
+def materialize_subset(
+    subset_name: str,
     *,
-    library_size: int,
-    seed: int,
+    out_dir: str | Path,
+    subsets_dir: str | Path = SUBSETS_DIR,
+    superset_dir: str | Path = SUPERSET_DIR,
     experiment_version: str = "v1",
-) -> tuple[CorpusManifest, list[GeneratedSkill]]:
-    """Assemble a size-N manifest and the padding skills needed to reach it.
+) -> CorpusManifest:
+    """Copy a named subset's skills from the superset into ``out_dir`` and write its run manifest.
 
-    Returns ``(manifest, padding_skills)``. Pure and network-free (padding is generated here), so it
-    is unit-testable. Writing files to disk is done separately by :func:`write` .
+    Returns the :class:`CorpusManifest`. Halts (raises) if the subset manifest is missing or any
+    member's SKILL.md body is absent from the superset.
     """
-    base_count = len(real) + len(distractors)
-    if library_size < base_count:
-        raise CorpusError(
-            f"library_size {library_size} is smaller than the {base_count} real+distractor skills; "
-            f"real/distractor skills are never dropped to hit a size (Requirement 9.4)."
-        )
+    subset_manifest_path = Path(subsets_dir) / subset_name / "manifest.json"
+    if not subset_manifest_path.is_file():
+        raise CorpusError(f"subset '{subset_name}' not found at {subset_manifest_path}")
+    subset = json.loads(subset_manifest_path.read_text(encoding="utf-8"))
 
-    reserved = {s.slug for s in real} | {s.slug for s in distractors}
-    n_padding = library_size - base_count
-    padding = generate_padding(n_padding, seed=seed, reserved_slugs=reserved) if n_padding else []
-
+    base = Path(out_dir)
+    base.mkdir(parents=True, exist_ok=True)
     entries: list[ManifestEntry] = []
-    for s in real:
-        entries.append(ManifestEntry(slug=s.slug, tier=Tier.REAL, name=s.name, sha256=s.sha256,
-                                     source_url=s.source_url, ref=s.ref, license=s.license))
-    for s in distractors:
-        entries.append(ManifestEntry(slug=s.slug, tier=Tier.DISTRACTOR, name=s.name, sha256=s.sha256,
-                                     source_url=s.source_url, ref=s.ref, license=s.license))
-    for g in padding:
-        entries.append(ManifestEntry(slug=g.slug, tier=Tier.PADDING, name=g.name, sha256=g.sha256))
-
-    # Guard against any slug collision across tiers (would make provisioning ambiguous).
-    slugs = [e.slug for e in entries]
-    if len(slugs) != len(set(slugs)):
-        dupes = sorted({s for s in slugs if slugs.count(s) > 1})
-        raise CorpusError(f"slug collision across tiers: {dupes}")
-
-    if len(entries) != library_size:
-        raise CorpusError(f"assembled {len(entries)} skills, expected {library_size}")
+    for s in subset["skills"]:
+        slug = s["slug"]
+        src = Path(superset_dir) / slug / "SKILL.md"
+        if not src.is_file():
+            raise CorpusError(f"superset body missing for '{slug}': {src}")
+        dest = base / Tier.REAL.value / slug / "SKILL.md"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        entries.append(ManifestEntry(
+            slug=slug, tier=Tier.REAL, name=s["name"], sha256=s["sha256"],
+            source_url=s.get("source_url"), ref=s.get("ref"), license=s.get("license"),
+        ))
 
     manifest = CorpusManifest(
         experiment_version=experiment_version,
-        library_size=library_size,
-        seed=seed,
+        library_size=len(entries),
+        seed=int(subset.get("seed", 0)),
         content_hash=compute_content_hash(entries),
         skills=entries,
     )
-    return manifest, padding
+    Path(base, "manifest.json").write_text(_manifest_json(manifest, subset_name), encoding="utf-8")
+    return manifest
 
 
-def write(
-    manifest: CorpusManifest,
-    real: list[HarvestedSkill],
-    distractors: list[HarvestedSkill],
-    padding: list[GeneratedSkill],
-    corpus_dir: str | Path,
-) -> None:
-    """Write all skill files under ``<corpus_dir>/<tier>/<slug>/SKILL.md`` and the manifest JSON.
-
-    Halts (raises) if any skill body is missing (Requirement 1.4).
-    """
-    base = Path(corpus_dir)
-    bodies: dict[str, tuple[str, str]] = {}  # slug -> (tier, body)
-    for s in real:
-        bodies[s.slug] = (Tier.REAL.value, s.body)
-    for s in distractors:
-        bodies[s.slug] = (Tier.DISTRACTOR.value, s.body)
-    for g in padding:
-        bodies[g.slug] = (Tier.PADDING.value, g.body)
-
-    for entry in manifest.skills:
-        if entry.slug not in bodies:
-            raise CorpusError(f"no body for skill '{entry.slug}'; refusing to write partial corpus")
-        tier, body = bodies[entry.slug]
-        dest = base / tier / entry.slug / "SKILL.md"
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(body.rstrip("\n") + "\n", encoding="utf-8")
-
-    base.mkdir(parents=True, exist_ok=True)
-    Path(base, "manifest.json").write_text(_manifest_json(manifest), encoding="utf-8")
-
-
-def _manifest_json(manifest: CorpusManifest) -> str:
+def _manifest_json(manifest: CorpusManifest, subset_name: str) -> str:
     return json.dumps(
         {
             "experiment_version": manifest.experiment_version,
+            "subset": subset_name,
             "library_size": manifest.library_size,
             "seed": manifest.seed,
             "content_hash": manifest.content_hash,
             "skills": [
-                {
-                    "slug": e.slug, "tier": e.tier.value, "name": e.name, "sha256": e.sha256,
-                    "source_url": e.source_url, "ref": e.ref, "license": e.license,
-                }
+                {"slug": e.slug, "tier": e.tier.value, "name": e.name, "sha256": e.sha256,
+                 "source_url": e.source_url, "ref": e.ref, "license": e.license}
                 for e in manifest.skills
             ],
         },
@@ -163,28 +124,17 @@ def main() -> int:
     import argparse
     import logging
 
-    from harness.harvest import harvest, load_sources
-
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description="Build a size-N benchmark corpus.")
-    parser.add_argument("--sources", default="config/sources.yaml")
-    parser.add_argument("--corpus", default="corpus")
-    parser.add_argument("--size", type=int, required=True)
-    parser.add_argument("--seed", type=int, default=1234)
+    parser = argparse.ArgumentParser(description="Materialize a named subset corpus from the superset.")
+    parser.add_argument("--subset", required=True, help="subset name, e.g. close-semantics-20")
+    parser.add_argument("--out", default=None, help="output dir (default: corpus/<subset>)")
     parser.add_argument("--experiment-version", default="v1")
     args = parser.parse_args()
 
-    skills = harvest(load_sources(args.sources))
-    real = [s for s in skills if s.tier == Tier.REAL]
-    distractors = [s for s in skills if s.tier == Tier.DISTRACTOR]
-    manifest, padding = assemble(
-        real, distractors, library_size=args.size, seed=args.seed,
-        experiment_version=args.experiment_version,
-    )
-    write(manifest, real, distractors, padding, args.corpus)
-    print(f"Built corpus N={manifest.library_size} "
-          f"(real={len(real)}, distractor={len(distractors)}, padding={len(padding)}) "
-          f"hash={manifest.content_hash}")
+    out = args.out or f"corpus/{args.subset}"
+    m = materialize_subset(args.subset, out_dir=out, experiment_version=args.experiment_version)
+    print(f"Materialized subset '{args.subset}': {m.library_size} skills -> {out} "
+          f"hash={m.content_hash}")
     return 0
 
 

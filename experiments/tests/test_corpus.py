@@ -1,143 +1,98 @@
-"""Unit tests for padding generation and corpus assembly.
+"""Unit tests for subset materialization and content hashing (post-superset rework).
 
-Covers Requirements 2.4/9.5 (deterministic, seeded padding), 9.4 (padding never collides with
-reserved slugs / never a gold answer), and 1.1/1.3 (stable content hash, identical tier sets that
-drive both conditions).
+Covers: materializing a named subset from a (fake) superset into a run corpus, the content hash
+being deterministic/order-independent, and halting when a superset body is missing.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
-from harness.build_corpus import (
-    CorpusError,
-    assemble,
-    compute_content_hash,
-)
-from harness.generate_padding import generate, max_capacity
-from harness.models import HarvestedSkill, Tier
+from harness.build_corpus import CorpusError, compute_content_hash, load_manifest, materialize_subset
+from harness.models import ManifestEntry, Tier
 
 
-def _real(slug: str) -> HarvestedSkill:
-    body = f"---\nname: {slug}\ndescription: real skill {slug}\n---\n# {slug}\nBody.\n"
-    return HarvestedSkill(
-        slug=slug, name=slug, description=f"real {slug}", body=body, tier=Tier.REAL,
-        source_url=f"https://src/{slug}", ref="ref1", license="MIT",
-        sha256=f"sha-{slug}",
-    )
+def _fake_superset(tmp_path: Path, slugs: list[str]) -> Path:
+    """Create a minimal superset dir (bodies + manifest) for testing."""
+    sup = tmp_path / "superset"
+    skills = []
+    for slug in slugs:
+        d = sup / slug
+        d.mkdir(parents=True, exist_ok=True)
+        body = f"---\nname: {slug}\ndescription: desc {slug}\n---\n# {slug}\nBody.\n"
+        (d / "SKILL.md").write_text(body, encoding="utf-8")
+        skills.append({"slug": slug, "name": slug, "description": f"desc {slug}",
+                       "source_url": f"https://src/{slug}", "ref": "r1", "license": "MIT",
+                       "sha256": f"sha-{slug}"})
+    (sup / "manifest.json").write_text(json.dumps({"kind": "superset", "size": len(slugs),
+                                                   "skills": skills}), encoding="utf-8")
+    return sup
 
 
-def _distractor(slug: str) -> HarvestedSkill:
-    body = f"---\nname: {slug}\ndescription: distractor {slug}\n---\n# {slug}\nBody.\n"
-    return HarvestedSkill(
-        slug=slug, name=slug, description=f"distractor {slug}", body=body, tier=Tier.DISTRACTOR,
-        source_url=f"https://src/{slug}", ref="ref1", license="MIT",
-        sha256=f"sha-{slug}",
-    )
+def _fake_subset(tmp_path: Path, name: str, members: list[str], superset_skills: dict) -> Path:
+    subs = tmp_path / "subsets"
+    d = subs / name
+    d.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "kind": "subset", "name": name, "flavor": name.rsplit("-", 1)[0], "size": len(members),
+        "seed": 42, "embedding_model": "test",
+        "skills": [{"slug": m, "name": superset_skills[m]["name"],
+                    "sha256": superset_skills[m]["sha256"],
+                    "source_url": superset_skills[m]["source_url"], "ref": "r1", "license": "MIT"}
+                   for m in members],
+    }
+    (d / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return subs
 
 
-class TestPaddingDeterminism:
-    def test_same_seed_same_output(self):
-        a = generate(50, seed=1234)
-        b = generate(50, seed=1234)
-        assert [s.slug for s in a] == [s.slug for s in b]
-        assert [s.sha256 for s in a] == [s.sha256 for s in b]
+class TestMaterialize:
+    def test_materializes_members_from_superset(self, tmp_path):
+        sup = _fake_superset(tmp_path, ["pdf", "xlsx", "docx", "api-client"])
+        sup_skills = {s["slug"]: s for s in json.loads((sup / "manifest.json").read_text())["skills"]}
+        subs = _fake_subset(tmp_path, "random-20", ["pdf", "docx"], sup_skills)
 
-    def test_different_seed_different_order(self):
-        a = generate(50, seed=1)
-        b = generate(50, seed=2)
-        # Same set size but (overwhelmingly likely) a different ordering/selection.
-        assert [s.slug for s in a] != [s.slug for s in b]
+        out = tmp_path / "corpus" / "random-20"
+        m = materialize_subset("random-20", out_dir=out, subsets_dir=subs, superset_dir=sup)
 
-    def test_prefix_stability_across_sizes(self):
-        # generate(N) and generate(M) share the same shuffled walk for a fixed seed, so the smaller
-        # is a prefix of the larger.
-        small = generate(20, seed=1234)
-        large = generate(60, seed=1234)
-        assert [s.slug for s in small] == [s.slug for s in large[:20]]
+        assert m.library_size == 2
+        assert all(e.tier == Tier.REAL for e in m.skills)
+        assert {e.slug for e in m.skills} == {"pdf", "docx"}
+        # bodies copied byte-identically under real/<slug>/SKILL.md
+        assert (out / "real" / "pdf" / "SKILL.md").read_text() == (sup / "pdf" / "SKILL.md").read_text()
+        # run manifest written and reloadable
+        reloaded = load_manifest(out / "manifest.json")
+        assert reloaded.content_hash == m.content_hash
+        assert reloaded.real_slugs() == {"pdf", "docx"}
 
-    def test_exact_count(self):
-        assert len(generate(37, seed=7)) == 37
+    def test_halts_when_subset_missing(self, tmp_path):
+        sup = _fake_superset(tmp_path, ["pdf"])
+        with pytest.raises(CorpusError, match="not found"):
+            materialize_subset("nope-20", out_dir=tmp_path / "c",
+                               subsets_dir=tmp_path / "subsets", superset_dir=sup)
 
-    def test_slugs_unique(self):
-        skills = generate(200, seed=99)
-        slugs = [s.slug for s in skills]
-        assert len(slugs) == len(set(slugs))
-
-    def test_never_uses_reserved_slugs(self):
-        # Reserve some slugs that would otherwise be generated; none may appear.
-        reserved = {s.slug for s in generate(10, seed=1234)}
-        skills = generate(50, seed=1234, reserved_slugs=reserved)
-        assert reserved.isdisjoint({s.slug for s in skills})
-
-    def test_raises_when_matrix_exhausted(self):
-        with pytest.raises(ValueError, match="exhausted"):
-            generate(max_capacity() + 1, seed=1)
-
-    def test_can_reach_500(self):
-        assert max_capacity() >= 500
-        assert len(generate(500, seed=1234)) == 500
+    def test_halts_when_superset_body_missing(self, tmp_path):
+        sup = _fake_superset(tmp_path, ["pdf"])
+        sup_skills = {s["slug"]: s for s in json.loads((sup / "manifest.json").read_text())["skills"]}
+        # subset references a slug whose body does not exist in the superset
+        sup_skills["ghost"] = {"name": "ghost", "sha256": "g", "source_url": "u"}
+        subs = _fake_subset(tmp_path, "random-20", ["pdf", "ghost"], sup_skills)
+        with pytest.raises(CorpusError, match="superset body missing"):
+            materialize_subset("random-20", out_dir=tmp_path / "c",
+                               subsets_dir=subs, superset_dir=sup)
 
 
-class TestCorpusAssembly:
-    def test_assemble_reaches_target_and_tiers(self):
-        real = [_real(f"r{i}") for i in range(5)]
-        distractors = [_distractor(f"d{i}") for i in range(3)]
-        manifest, padding = assemble(real, distractors, library_size=20, seed=1234)
-        assert manifest.library_size == 20
-        assert len(manifest.skills) == 20
-        assert len(padding) == 20 - 5 - 3
-        assert manifest.real_slugs() == {f"r{i}" for i in range(5)}
-        tiers = {e.tier for e in manifest.skills}
-        assert tiers == {Tier.REAL, Tier.DISTRACTOR, Tier.PADDING}
+class TestContentHash:
+    def test_stable_and_order_independent(self):
+        e1 = [ManifestEntry(slug="a", tier=Tier.REAL, name="A", sha256="x"),
+              ManifestEntry(slug="b", tier=Tier.REAL, name="B", sha256="y")]
+        e2 = list(reversed(e1))
+        assert compute_content_hash(e1) == compute_content_hash(e2)
+        assert compute_content_hash(e1).startswith("sha256:")
 
-    def test_content_hash_is_stable_and_order_independent(self):
-        real = [_real(f"r{i}") for i in range(5)]
-        distractors = [_distractor("d0")]
-        m1, _ = assemble(real, distractors, library_size=20, seed=1234)
-        m2, _ = assemble(list(reversed(real)), distractors, library_size=20, seed=1234)
-        # Same skills, different input order -> identical content hash.
-        assert m1.content_hash == m2.content_hash
-
-    def test_different_seed_changes_hash(self):
-        real = [_real(f"r{i}") for i in range(5)]
-        m1, _ = assemble(real, [], library_size=20, seed=1)
-        m2, _ = assemble(real, [], library_size=20, seed=2)
-        assert m1.content_hash != m2.content_hash
-
-    def test_identical_corpus_for_both_conditions(self):
-        # The single manifest drives both conditions; the (slug, sha256) set is what each condition
-        # provisions. Re-assembling with the same inputs yields the identical set.
-        real = [_real(f"r{i}") for i in range(5)]
-        distractors = [_distractor("d0")]
-        m1, _ = assemble(real, distractors, library_size=30, seed=1234)
-        m2, _ = assemble(real, distractors, library_size=30, seed=1234)
-        pairs1 = sorted((e.slug, e.sha256) for e in m1.skills)
-        pairs2 = sorted((e.slug, e.sha256) for e in m2.skills)
-        assert pairs1 == pairs2
-        assert m1.content_hash == m2.content_hash
-
-    def test_padding_never_collides_with_reserved(self):
-        real = [_real("pdf-processing-python-stdlib")]  # deliberately shaped like a padding slug
-        manifest, padding = assemble(real, [], library_size=40, seed=1234)
-        assert "pdf-processing-python-stdlib" not in {p.slug for p in padding}
-        # And the real slug is present exactly once.
-        assert [e.slug for e in manifest.skills].count("pdf-processing-python-stdlib") == 1
-
-    def test_rejects_size_below_base_count(self):
-        real = [_real(f"r{i}") for i in range(5)]
-        distractors = [_distractor(f"d{i}") for i in range(3)]
-        with pytest.raises(CorpusError, match="smaller than"):
-            assemble(real, distractors, library_size=6, seed=1234)
-
-    def test_size_equal_to_base_count_uses_no_padding(self):
-        real = [_real(f"r{i}") for i in range(5)]
-        manifest, padding = assemble(real, [], library_size=5, seed=1234)
-        assert padding == []
-        assert all(e.tier == Tier.REAL for e in manifest.skills)
-
-
-def test_compute_content_hash_prefix():
-    from harness.models import ManifestEntry
-    entries = [ManifestEntry(slug="a", tier=Tier.REAL, name="A", sha256="x")]
-    assert compute_content_hash(entries).startswith("sha256:")
+    def test_different_members_change_hash(self):
+        e1 = [ManifestEntry(slug="a", tier=Tier.REAL, name="A", sha256="x")]
+        e2 = [ManifestEntry(slug="a", tier=Tier.REAL, name="A", sha256="z")]
+        assert compute_content_hash(e1) != compute_content_hash(e2)

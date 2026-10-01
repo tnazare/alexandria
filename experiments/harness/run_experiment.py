@@ -187,14 +187,14 @@ DISALLOWED_TOOLS = [
 ]
 
 
-def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
+def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, subset_name: str,
                task_set, run_id: Optional[str] = None) -> Path:
-    """Execute the full (condition × size × task × rep) matrix and return the records.jsonl path.
+    """Execute the (condition × task × rep) matrix for ONE named subset; return the records path.
 
-    Live: provisions each condition per size, runs each task in seeded order for warmup+nrep, computes
-    Context_Token_Cost offline, and appends RunRecords. Halts (raises) on any provisioning failure
-    (Requirement 1.4). Import of live-only modules is deferred so the offline unit suite need not
-    have httpx/tiktoken.
+    A run operates on a single frozen subset (e.g. ``close-semantics-20``); its already-materialized
+    corpus lives at ``corpus_dir``. The subset name is recorded as ``library_size``-style key via the
+    manifest's size, and each record carries the subset name. Halts on provisioning failure or a
+    zero-token (quota) run. Live-only imports are deferred.
     """
     import tempfile
 
@@ -220,39 +220,36 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
     by_id = {t.id: t for t in task_set.tasks}
     reps = list(range(cfg.warmup + cfg.nrep))  # rep < warmup are warmup runs
 
-    # Resume support: skip cells already recorded; only (re)write env.json on a fresh run.
     done = completed_cells(run_dir)
     if resuming:
         print(f"Resuming {run_id}: {len(done)} cells already complete, skipping them.", flush=True)
     else:
         write_env(run_dir, build_env(cfg, model_id=cfg.model_id, model_version=None,
-                                     extra={"note": "matrix run"}))
+                                     extra={"note": "subset run", "subset": subset_name}))
 
-    for size in cfg.library_sizes:
-        # A per-size corpus must already be built under corpus_root/<size>; halt if absent.
-        corpus_dir = corpus_root if (corpus_root / "manifest.json").is_file() else corpus_root / str(size)
-        manifest = load_manifest(corpus_dir / "manifest.json")
-        name_to_slug = native_name_to_slug(manifest)
+    manifest = load_manifest(corpus_dir / "manifest.json")
+    size = manifest.library_size
+    name_to_slug = native_name_to_slug(manifest)
 
-        for condition in cfg.conditions:
-            if condition == Condition.NATIVE.value:
-                _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
-                                 name_to_slug, size,
-                                 provision_native, run_claude, parse_claude_json,
-                                 extract_chosen_skill, reported_usage,
-                                 measure_matched_skill_load, measure_preload, native_task_tokens,
-                                 tempfile, done)
-            elif condition == Condition.ALEXANDRIA.value:
-                _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
-                                     size, provision_alexandria, alexandria_task_tokens, done)
+    for condition in cfg.conditions:
+        if condition == Condition.NATIVE.value:
+            _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
+                             name_to_slug, size, subset_name,
+                             provision_native, run_claude, parse_claude_json,
+                             extract_chosen_skill, reported_usage,
+                             measure_matched_skill_load, measure_preload, native_task_tokens,
+                             tempfile, done)
+        elif condition == Condition.ALEXANDRIA.value:
+            _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
+                                 size, subset_name, provision_alexandria, alexandria_task_tokens, done)
 
     return writer.records_path
 
 
 def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, name_to_slug,
-                     size, provision_native, run_claude, parse_claude_json, extract_chosen_skill,
-                     reported_usage, measure_matched_skill_load, measure_preload,
-                     native_task_tokens, tempfile, done) -> None:
+                     size, subset_name, provision_native, run_claude, parse_claude_json,
+                     extract_chosen_skill, reported_usage, measure_matched_skill_load,
+                     measure_preload, native_task_tokens, tempfile, done) -> None:
     # Resume: if every (task, rep) in this cell is already recorded, skip provisioning entirely.
     pending = [(t, rep) for t in order for rep in reps
                if cell_key(Condition.NATIVE.value, size, t, rep) not in done]
@@ -303,12 +300,12 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                     end_to_end_latency_ms=e2e, native_preload_ms=preload_ms,
                     context_token_cost=tokens.total, reported_usage=reported_usage(result),
                     model_id=cfg.model_id, model_version=reported_model(result),
-                    seed=cfg.order_seed,
+                    seed=cfg.order_seed, notes=f"subset={subset_name}",
                 ))
 
 
 def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,
-                         provision_alexandria, alexandria_task_tokens, done) -> None:
+                         subset_name, provision_alexandria, alexandria_task_tokens, done) -> None:
     from harness.alexandria_client import AlexandriaClient
     from harness.run_alexandria import run_task
 
@@ -347,6 +344,7 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
+            rec.notes = f"subset={subset_name}"
             u = rec.reported_usage or {}
             real = (int(u.get("input_tokens", 0) or 0) + int(u.get("cache_read_input_tokens", 0) or 0)
                     + int(u.get("output_tokens", 0) or 0)) > 0
@@ -361,99 +359,80 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
             writer.write(rec)
 
 
-def ensure_corpus(corpus_root: Path, size: int, seed: int, experiment_version: str,
-                  sources_path: Path) -> Path:
-    """Return the corpus dir for ``size``, building it if the manifest is absent. Live (needs net)."""
-    from harness.build_corpus import assemble, write
-    from harness.harvest import harvest, load_sources
-
-    corpus_dir = corpus_root / str(size)
-    if (corpus_dir / "manifest.json").is_file():
-        return corpus_dir
-    skills = harvest(load_sources(sources_path))
-    real = [s for s in skills if s.tier == Tier.REAL]
-    distractors = [s for s in skills if s.tier == Tier.DISTRACTOR]
-    manifest, padding = assemble(real, distractors, library_size=size, seed=seed,
-                                 experiment_version=experiment_version)
-    write(manifest, real, distractors, padding, corpus_dir)
-    return corpus_dir
-
-
 def main() -> int:
     import argparse
 
+    from harness.build_corpus import materialize_subset
     from harness.config import load_config
     from harness.tasks import load_task_set, validate_against_corpus
 
-    parser = argparse.ArgumentParser(description="Run the skill-retrieval benchmark matrix.")
+    parser = argparse.ArgumentParser(description="Run the skill-retrieval benchmark for one subset.")
     parser.add_argument("--config", default="config/experiment.yaml")
-    parser.add_argument("--sizes", default=None, help="Override library sizes, e.g. 20,100")
+    parser.add_argument("--subset", default=None,
+                        help="Named subset to run, e.g. close-semantics-20 / random-100 / "
+                             "sparse-semantics-20.")
     parser.add_argument("--nrep", type=int, default=None)
     parser.add_argument("--warmup", type=int, default=None)
     parser.add_argument("--results", default="results")
     parser.add_argument("--corpus", default="corpus")
-    parser.add_argument("--sources", default="config/sources.yaml")
-    parser.add_argument("--task-set", default="tasks/task_set.v1.json")
     parser.add_argument("--resume", default=None, metavar="RUN_ID",
                         help="Resume an interrupted run: skip cells already in "
                              "results/raw/<RUN_ID>/records.jsonl and append the rest.")
     parser.add_argument("--print-env", action="store_true",
                         help="Print the captured env and exit (no runs).")
-    parser.add_argument("--build-only", action="store_true",
-                        help="Only build the corpora for the configured sizes, then exit.")
+    parser.add_argument("--materialize-only", action="store_true",
+                        help="Only materialize the subset corpus, then exit.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    # Apply CLI overrides onto the loaded config's raw dict so downstream accessors see them.
-    if args.sizes:
-        cfg.raw["library_sizes"] = [int(s) for s in args.sizes.split(",")]
     if args.nrep is not None:
         cfg.raw["nrep"] = args.nrep
     if args.warmup is not None:
         cfg.raw["warmup"] = args.warmup
 
-    # On resume, inherit the original run's matrix shape from its env.json so cell keys align with
-    # what was already recorded (sizes/nrep/warmup/conditions must match the interrupted run).
+    subset_name = args.subset
+
+    # On resume, inherit matrix shape + subset from the original run's env.json.
     if args.resume:
         env_path = Path(args.results) / "raw" / args.resume / "env.json"
         if not env_path.is_file():
             print(f"ERROR: --resume {args.resume}: no env.json at {env_path}", flush=True)
             return 2
         orig = json.loads(env_path.read_text(encoding="utf-8"))
-        cfg.raw["library_sizes"] = orig["library_sizes"]
         cfg.raw["nrep"] = orig["nrep"]
         cfg.raw["warmup"] = orig["warmup"]
         cfg.raw["conditions"] = orig["conditions"]
-        print(f"Resume: inheriting matrix shape from {args.resume} "
-              f"(sizes={orig['library_sizes']} nrep={orig['nrep']} warmup={orig['warmup']})",
-              flush=True)
+        subset_name = orig.get("subset", subset_name)
+        print(f"Resume: inheriting from {args.resume} (subset={subset_name} nrep={orig['nrep']} "
+              f"warmup={orig['warmup']})", flush=True)
 
-    env = build_env(cfg, model_id=cfg.model_id, model_version=None)
+    env = build_env(cfg, model_id=cfg.model_id, model_version=None, extra={"subset": subset_name})
     if args.print_env:
         print(json.dumps(env, indent=2))
         return 0
 
-    # Build corpora for each configured size (idempotent: skips sizes already built).
-    corpus_root = Path(args.corpus)
-    for size in cfg.library_sizes:
-        d = ensure_corpus(corpus_root, size, cfg.padding_seed, cfg.experiment_version,
-                          Path(args.sources))
-        print(f"corpus N={size}: {d}")
-    if args.build_only:
+    if not subset_name:
+        print("ERROR: --subset is required (e.g. --subset close-semantics-20).", flush=True)
+        return 2
+
+    # Materialize the chosen subset's corpus from the frozen superset.
+    corpus_dir = Path(args.corpus) / subset_name
+    manifest = materialize_subset(subset_name, out_dir=corpus_dir,
+                                  experiment_version=cfg.experiment_version)
+    print(f"corpus subset '{subset_name}': {corpus_dir} ({manifest.library_size} skills)")
+    if args.materialize_only:
         return 0
 
-    # Validate the task set against the (largest) real-tier slug set before any run (Requirement 5.6).
-    task_set = load_task_set(args.task_set)
-    largest = max(cfg.library_sizes)
-    manifest = load_manifest(corpus_root / str(largest) / "manifest.json")
+    # Load this subset's frozen task set; validate every gold label is in the subset.
+    task_set = load_task_set(f"tasks/subsets/{subset_name}.json", require_min=False)
     validate_against_corpus(task_set, manifest.real_slugs())
 
-    print(f"Running matrix: conditions={cfg.conditions} sizes={cfg.library_sizes} "
+    print(f"Running subset '{subset_name}': conditions={cfg.conditions} "
           f"nrep={cfg.nrep} warmup={cfg.warmup} tasks={len(task_set.tasks)}")
     aborted = False
     try:
-        records_path = run_matrix(cfg, results_root=Path(args.results), corpus_root=corpus_root,
-                                  task_set=task_set, run_id=args.resume)
+        records_path = run_matrix(cfg, results_root=Path(args.results), corpus_dir=corpus_dir,
+                                  subset_name=subset_name, task_set=task_set, run_id=args.resume)
     except QuotaExhaustedError as e:
         aborted = True
         print(f"\n*** ABORTED: {e}", flush=True)

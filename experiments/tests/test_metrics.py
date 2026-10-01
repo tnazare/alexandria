@@ -16,15 +16,14 @@ from harness.aggregate import (
     measured,
     write_aggregates,
 )
-from harness.build_corpus import assemble
+from harness.build_corpus import compute_content_hash
 from harness.measure_tokens import (
     alexandria_resident_tokens,
     alexandria_task_tokens,
     native_resident_tokens,
     native_task_tokens,
 )
-from harness.harvest import HarvestedSkill
-from harness.models import Condition, RunRecord, Tier
+from harness.models import CorpusManifest, Condition, ManifestEntry, RunRecord, Tier
 from harness.score import is_model_choice_correct, is_recall_hit, score_model_choice
 
 
@@ -33,25 +32,23 @@ def wc(text: str) -> int:
     return len(text.split())
 
 
-def _real(slug: str, desc_words: int = 5, body_words: int = 40) -> HarvestedSkill:
+def _skill_body(slug: str, desc_words: int = 5, body_words: int = 40) -> str:
     desc = " ".join(["d"] * desc_words)
     body_line = " ".join(["b"] * body_words)
-    body = f"---\nname: {slug}\ndescription: {desc}\n---\n# {slug}\n{body_line}\n"
-    return HarvestedSkill(slug=slug, name=slug, description=desc, body=body, tier=Tier.REAL,
-                          source_url="u", ref="r", license="MIT", sha256=f"s-{slug}")
+    return f"---\nname: {slug}\ndescription: {desc}\n---\n# {slug}\n{body_line}\n"
 
 
-def _write_corpus(tmp_path: Path, real, size, seed=1234):
-    manifest, padding = assemble(real, [], library_size=size, seed=seed)
+def _write_corpus(tmp_path: Path, slugs: list[str]):
+    """Materialize a real-only corpus (all Tier.REAL) + manifest, like a subset materialization."""
     corpus = tmp_path / "corpus"
-    for s in real:
-        d = corpus / "real" / s.slug
+    entries = []
+    for slug in slugs:
+        d = corpus / Tier.REAL.value / slug
         d.mkdir(parents=True, exist_ok=True)
-        (d / "SKILL.md").write_text(s.body, encoding="utf-8")
-    for g in padding:
-        d = corpus / "padding" / g.slug
-        d.mkdir(parents=True, exist_ok=True)
-        (d / "SKILL.md").write_text(g.body, encoding="utf-8")
+        (d / "SKILL.md").write_text(_skill_body(slug), encoding="utf-8")
+        entries.append(ManifestEntry(slug=slug, tier=Tier.REAL, name=slug, sha256=f"s-{slug}"))
+    manifest = CorpusManifest(experiment_version="v1", library_size=len(entries), seed=1,
+                              content_hash=compute_content_hash(entries), skills=entries)
     return manifest, corpus
 
 
@@ -62,9 +59,8 @@ class TestTokenMechanismShape:
         assert alexandria_resident_tokens(wc) > 0
 
     def test_native_resident_grows_with_n(self, tmp_path):
-        real = [_real(f"r{i}") for i in range(5)]
-        m_small, c_small = _write_corpus(tmp_path / "a", real, size=10)
-        m_big, c_big = _write_corpus(tmp_path / "b", real, size=40)
+        m_small, c_small = _write_corpus(tmp_path / "a", [f"r{i}" for i in range(10)])
+        m_big, c_big = _write_corpus(tmp_path / "b", [f"r{i}" for i in range(40)])
         small = native_resident_tokens(wc, m_small, c_small)
         big = native_resident_tokens(wc, m_big, c_big)
         # More skills resident -> strictly more resident tokens (frontmatter summed over N).
@@ -77,8 +73,7 @@ class TestTokenMechanismShape:
         assert bd.total == bd.resident + bd.per_task
 
     def test_native_task_adds_only_matched_body(self, tmp_path):
-        real = [_real("pdf"), _real("xlsx")]
-        manifest, corpus = _write_corpus(tmp_path, real, size=5)
+        manifest, corpus = _write_corpus(tmp_path, ["pdf", "xlsx"])
         matched = native_task_tokens(wc, manifest, corpus, matched_slug="pdf")
         none = native_task_tokens(wc, manifest, corpus, matched_slug=None)
         assert none.per_task == 0                 # no disclosure when no skill applies
