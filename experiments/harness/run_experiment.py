@@ -142,6 +142,14 @@ def write_env(run_dir: Path, env: dict) -> Path:
 # offline unit suite.
 
 
+class QuotaExhaustedError(RuntimeError):
+    """Raised when a Claude invocation returns no token work (quota/rate-limit/auth failure).
+
+    The matrix aborts immediately rather than record poisoned zero-token runs, so a mid-run quota
+    exhaustion can never silently corrupt a dataset (as happened in run-20260930-222648).
+    """
+
+
 # Side-effecting / task-execution tools denied in both conditions (decision-only runs). The agent
 # may still invoke the Skill dispatcher (native) or the resolve/fetch MCP tools (alexandria) — those
 # are on the per-condition allowed list — but cannot write/run/open anything, so no files are created
@@ -168,7 +176,7 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
     from harness.provision_alexandria import provision as provision_alexandria
     from harness.provision_native import provision as provision_native
     from harness.run_native import (
-        extract_chosen_skill, measure_matched_skill_load, measure_preload,
+        did_real_work, extract_chosen_skill, measure_matched_skill_load, measure_preload,
         parse_claude_json, reported_model, reported_usage, run_claude,
     )
     from harness.tokenizer import Tokenizer
@@ -225,6 +233,12 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                                          disallowed_tools=DISALLOWED_TOOLS,
                                          append_system_prompt=cfg.system_prompt("native"),
                                          stream=True)
+                from harness.run_native import did_real_work
+                if not did_real_work(result):
+                    raise QuotaExhaustedError(
+                        f"native {task_id} rep={rep} returned zero token work — likely Claude "
+                        f"quota/rate-limit exhausted. Aborting to avoid poisoning the dataset. "
+                        f"Resume after the quota resets; records written so far are valid.")
                 chosen_name = extract_chosen_skill(result)
                 chosen_slug = name_to_slug.get(chosen_name) if chosen_name else None
                 consulted = chosen_name is not None
@@ -282,6 +296,14 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
                 disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
                 manifest=manifest, corpus_dir=corpus_dir, count=count,
             )
+            u = rec.reported_usage or {}
+            real = (int(u.get("input_tokens", 0) or 0) + int(u.get("cache_read_input_tokens", 0) or 0)
+                    + int(u.get("output_tokens", 0) or 0)) > 0
+            if not real:
+                raise QuotaExhaustedError(
+                    f"alexandria {task_id} rep={rep} returned zero token work — likely Claude "
+                    f"quota/rate-limit exhausted. Aborting to avoid poisoning the dataset. "
+                    f"Resume after the quota resets; records written so far are valid.")
             print(f"  [alexandria N={size}] {task_id} rep={rep} "
                   f"chosen={rec.chosen_skill} cand={len(rec.resolve_candidates or [])} "
                   f"tok={rec.context_token_cost}", flush=True)
@@ -358,8 +380,19 @@ def main() -> int:
 
     print(f"Running matrix: conditions={cfg.conditions} sizes={cfg.library_sizes} "
           f"nrep={cfg.nrep} warmup={cfg.warmup} tasks={len(task_set.tasks)}")
-    records_path = run_matrix(cfg, results_root=Path(args.results), corpus_root=corpus_root,
-                              task_set=task_set)
+    aborted = False
+    try:
+        records_path = run_matrix(cfg, results_root=Path(args.results), corpus_root=corpus_root,
+                                  task_set=task_set)
+    except QuotaExhaustedError as e:
+        aborted = True
+        print(f"\n*** ABORTED: {e}", flush=True)
+        # Find the most recent run dir so we can still aggregate the valid partial records.
+        raw_root = Path(args.results) / "raw"
+        run_dirs = sorted(raw_root.glob("run-*"), key=lambda p: p.stat().st_mtime)
+        records_path = (run_dirs[-1] / "records.jsonl") if run_dirs else None
+        if not records_path or not records_path.is_file():
+            return 2
     print(f"Raw records: {records_path}")
 
     # Aggregate immediately so results are ready to write up.
@@ -369,6 +402,9 @@ def main() -> int:
     aggs = aggregate_all(load_records(records_path), k=cfg.k)
     jp, cp = write_aggregates(aggs, Path(args.results) / "computed" / run_id)
     print(f"Aggregates: {jp} , {cp}")
+    if aborted:
+        print("NOTE: run aborted early (quota). Aggregates cover only the valid completed records.")
+        return 2
     print("Now copy RESULTS_TEMPLATE.md to results/<run-id>.md and fill it in.")
     return 0
 

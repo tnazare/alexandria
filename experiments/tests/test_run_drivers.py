@@ -142,6 +142,19 @@ class TestClaudeJson:
         assert reported_usage({"total_usage": {"input_tokens": 5}}) == {"input_tokens": 5}
         assert reported_usage({}) is None
 
+    def test_did_real_work_detects_quota_exhaustion(self):
+        from harness.run_native import did_real_work
+        # Real inference: nonzero tokens somewhere.
+        assert did_real_work({"usage": {"input_tokens": 46, "cache_read_input_tokens": 71820,
+                                        "output_tokens": 1103}}) is True
+        assert did_real_work({"usage": {"input_tokens": 0, "cache_read_input_tokens": 0,
+                                        "output_tokens": 5}}) is True
+        # Quota-exhausted / error: all zero tokens.
+        assert did_real_work({"usage": {"input_tokens": 0, "cache_read_input_tokens": 0,
+                                        "output_tokens": 0}}) is False
+        assert did_real_work({"_error": "rate limit", "_returncode": 1}) is False
+        assert did_real_work({}) is False
+
 
 class TestCandidateMapping:
     def test_maps_ids_to_slugs_preserving_order(self):

@@ -147,6 +147,25 @@ def reported_usage(result: dict) -> Optional[dict]:
     return None
 
 
+def did_real_work(result: dict) -> bool:
+    """True if the Claude invocation actually did token inference (not an error/quota-exhausted call).
+
+    A quota/rate-limit or auth failure returns a result with zero tokens across the board in ~2s.
+    We treat any nonzero input/cache-read/output token as evidence of a real inference. Used by the
+    orchestrator to abort the matrix rather than silently record poisoned zero-token runs.
+    """
+    if not isinstance(result, dict):
+        return False
+    if result.get("_error") or result.get("is_error"):
+        # is_error can be set on genuine tool errors too, so only treat it as fatal when no tokens.
+        pass
+    u = reported_usage(result) or {}
+    worked = (int(u.get("input_tokens", 0) or 0)
+              + int(u.get("cache_read_input_tokens", 0) or 0)
+              + int(u.get("output_tokens", 0) or 0)) > 0
+    return worked
+
+
 def reported_model(result: dict) -> Optional[str]:
     """Extract the concrete model version Claude actually used (Requirement 6.4 provenance).
 
