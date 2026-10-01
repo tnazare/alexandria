@@ -1,0 +1,291 @@
+{
+  "version": "random-100-v1",
+  "labeling_doc": "../LABELING.md",
+  "subset": "random-100",
+  "flavor": "random",
+  "size": 100,
+  "seed": 1234,
+  "notes": "Auto-derived tasks: one natural request per gold skill, templated from the skill's own description (name/slug scrubbed). Gold labels are in-subset by construction.",
+  "tasks": [
+    {
+      "id": "random-100-t001",
+      "prompt": "I have a task that involves create, iterate, and scale paid for Google Ads, Meta, LinkedIn, TikTok, and similar platforms.",
+      "gold_skill": "ad-creative",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ad-creative' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t002",
+      "prompt": "I have a task that involves autonomous DevSecOps & FinOps Guardrails.",
+      "gold_skill": "aegisops-ai",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'aegisops-ai' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t003",
+      "prompt": "I have a task that involves an expert in the interface between LLMs and the outside world.",
+      "gold_skill": "agent-tool-builder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'agent-tool-builder' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t004",
+      "prompt": "I have a task that involves design, audit, and improve systems that produce reliable, decision-ready data.",
+      "gold_skill": "analytics-tracking",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'analytics-tracking' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t005",
+      "prompt": "Please analyze market conditions, geographic opportunities, pricing, consumer behavior, and product validation across Google Maps, Facebook, Instagram, Booking.com, and TripAdvisor.",
+      "gold_skill": "apify-market-research",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'apify-market-research' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t006",
+      "prompt": "My task is to build secure, scalable authentication and authorization systems using industry-standard patterns and modern best practices.",
+      "gold_skill": "auth-implementation-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'auth-implementation-patterns' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t007",
+      "prompt": "I have a task that involves azure AI Text Analytics SDK for sentiment analysis, entity recognition, key phrases, language detection, PII, and healthcare NLP.",
+      "gold_skill": "azure-ai-textanalytics-py",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-ai-textanalytics-py' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t008",
+      "prompt": "I have a task that involves azure Event Grid SDK for .NET.",
+      "gold_skill": "azure-eventgrid-dotnet",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-eventgrid-dotnet' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t009",
+      "prompt": "I have a task that involves azure Identity SDK for Python authentication.",
+      "gold_skill": "azure-identity-py",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-identity-py' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t010",
+      "prompt": "I have a task that involves azure Monitor Query SDK for Java.",
+      "gold_skill": "azure-monitor-query-java",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-monitor-query-java' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t011",
+      "prompt": "Please build search applications with vector, hybrid, and semantic search capabilities.",
+      "gold_skill": "azure-search-documents-ts",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-search-documents-ts' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t012",
+      "prompt": "My task is to generate comprehensive C4 architecture documentation for an existing repository/codebase using a bottom-up analysis approach.",
+      "gold_skill": "c4-architecture-c4-architecture",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'c4-architecture-c4-architecture' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t013",
+      "prompt": "I have a task that involves cloud infrastructure and DevOps workflow covering AWS, Azure, GCP, Kubernetes, Terraform, CI/CD, monitoring, and cloud-native development.",
+      "gold_skill": "cloud-devops",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'cloud-devops' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t014",
+      "prompt": "I have a task that involves production deployment principles and decision-making.",
+      "gold_skill": "deployment-procedures",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'deployment-procedures' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t015",
+      "prompt": "I have a task that involves curated micro-interactions and design details that add \"magic\" and personality to websites and apps.",
+      "gold_skill": "design-spells",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'design-spells' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t016",
+      "prompt": "I have a task that involves build, maintain, and extend the EarLLM One Android project \u2014 a Kotlin/Compose app that connects Bluetooth earbuds to an LLM via voice pipeline.",
+      "gold_skill": "earllm-build",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'earllm-build' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t017",
+      "prompt": "I have a task that involves search logs and codebases for error patterns, stack traces, and anomalies.",
+      "gold_skill": "error-detective",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'error-detective' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t018",
+      "prompt": "I have a task that involves find exploitable vulnerabilities in GitHub Actions workflows.",
+      "gold_skill": "gha-security-review",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'gha-security-review' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t019",
+      "prompt": "I have a task that involves an **expert onboarding specialist and knowledge transfer architect** with deep experience in remote-first organizations, technical team integration, and accelerated learning methodologies.",
+      "gold_skill": "git-pr-workflows-onboard",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'git-pr-workflows-onboard' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t020",
+      "prompt": "I have a task that involves master modern JavaScript with ES6+, async patterns, and Node.js APIs.",
+      "gold_skill": "javascript-pro",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'javascript-pro' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t021",
+      "prompt": "I have a task that involves centralized 'Truth Engine' for cross-jurisdictional legal context (US, EU, CA) and contract scaffolding.",
+      "gold_skill": "lex",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'lex' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t022",
+      "prompt": "I have a task that involves master local LLM inference, model selection, VRAM optimization, and local deployment using Ollama, llama.cpp, vLLM, and LM Studio.",
+      "gold_skill": "local-llm-expert",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'local-llm-expert' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t023",
+      "prompt": "I have a task that involves complete end-to-end MLOps pipeline orchestration from data preparation through model deployment.",
+      "gold_skill": "ml-pipeline-workflow",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ml-pipeline-workflow' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t024",
+      "prompt": "I have a task that involves conselho de especialistas \u2014 consulta multiplos agentes do ecossistema em paralelo para analise multi-perspectiva de qualquer topico.",
+      "gold_skill": "multi-advisor",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'multi-advisor' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t025",
+      "prompt": "I have a task that involves expert guide for creating custom Odoo modules.",
+      "gold_skill": "odoo-module-developer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'odoo-module-developer' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t026",
+      "prompt": "I have a task that involves expert on Odoo's external JSON-RPC and XML-RPC APIs.",
+      "gold_skill": "odoo-rpc-api",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'odoo-rpc-api' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t027",
+      "prompt": "I have a task that involves patterns.",
+      "gold_skill": "powershell-windows",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'powershell-windows' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t028",
+      "prompt": "I want to automate Reddit tasks via Rube MCP (Composio): search subreddits, create posts, manage comments, and browse top content.",
+      "gold_skill": "reddit-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'reddit-automation' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t029",
+      "prompt": "Please create sales collateral such as decks, one-pagers, objection docs, demo scripts, playbooks, and proposal templates.",
+      "gold_skill": "sales-enablement",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sales-enablement' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t030",
+      "prompt": "I have a task that involves practical guide to testing web applications with screen readers for comprehensive accessibility validation.",
+      "gold_skill": "screen-reader-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'screen-reader-testing' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t031",
+      "prompt": "I have a task that involves derive security requirements from threat models and business context.",
+      "gold_skill": "security-requirement-extraction",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'security-requirement-extraction' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t032",
+      "prompt": "I have a task that involves auditoria e evolucao do ecossistema de skills.",
+      "gold_skill": "skill-sentinel",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'skill-sentinel' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t033",
+      "prompt": "I have a task that involves master modern SQL with cloud-native databases, OLTP/OLAP optimization, and advanced query techniques.",
+      "gold_skill": "sql-pro",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sql-pro' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t034",
+      "prompt": "I want to build production-ready design systems with Tailwind CSS, including design tokens, component variants, responsive patterns, and accessibility.",
+      "gold_skill": "tailwind-design-system",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'tailwind-design-system' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t035",
+      "prompt": "I have a task that involves you build apps where 800M+ Telegram users already are.",
+      "gold_skill": "telegram-mini-app",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'telegram-mini-app' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t036",
+      "prompt": "My task is to build end-to-end type-safe APIs with tRPC \u2014 routers, procedures, middleware, subscriptions, and Next.js/React integration patterns.",
+      "gold_skill": "trpc-fullstack",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'trpc-fullstack' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t037",
+      "prompt": "I have a task that involves advanced vulnerability analysis principles.",
+      "gold_skill": "vulnerability-scanner",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'vulnerability-scanner' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t038",
+      "prompt": "I have a task that involves master comprehensive testing strategies for smart contracts using Hardhat, Foundry, and advanced testing patterns.",
+      "gold_skill": "web3-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'web3-testing' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t039",
+      "prompt": "I have a task that involves thesis-driven equity analysis from public SEC EDGAR and market data; /analyze, /score, /compare workflows with bundled Python tools (Claude Code, Cursor, Codex).",
+      "gold_skill": "xvary-stock-research",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'xvary-stock-research' skill description; that skill is the intended gold match within subset 'random-100'."
+    },
+    {
+      "id": "random-100-t040",
+      "prompt": "I want to automate Zoho CRM tasks via Rube MCP (Composio): create/update records, search contacts, manage leads, and convert leads.",
+      "gold_skill": "zoho-crm-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'zoho-crm-automation' skill description; that skill is the intended gold match within subset 'random-100'."
+    }
+  ]
+}

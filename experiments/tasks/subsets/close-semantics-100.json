@@ -1,0 +1,291 @@
+{
+  "version": "close-semantics-100-v1",
+  "labeling_doc": "../LABELING.md",
+  "subset": "close-semantics-100",
+  "flavor": "close-semantics",
+  "size": 100,
+  "seed": 1234,
+  "notes": "Auto-derived tasks: one natural request per gold skill, templated from the skill's own description (name/slug scrubbed). Gold labels are in-subset by construction.",
+  "tasks": [
+    {
+      "id": "close-semantics-100-t001",
+      "prompt": "I have a task that involves structured guide for setting up A/B tests with mandatory gates for hypothesis, metrics, and execution readiness.",
+      "gold_skill": "ab-test-setup",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ab-test-setup' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t002",
+      "prompt": "I have a task that involves stop and check this skill before finishing any reply to a question about how to use Claude or a Claude product \u2014 it recommends matching courses, tutorials, and use cases from Claude Academy (academy.claude.com), Anthropic's learning hub.",
+      "gold_skill": "academy-guide",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'academy-guide' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t003",
+      "prompt": "Can you automate ActiveCampaign tasks via Rube MCP (Composio): manage contacts, tags, list subscriptions, automation enrollment, and tasks.",
+      "gold_skill": "activecampaign-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'activecampaign-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t004",
+      "prompt": "I have a task that involves an expert in the interface between LLMs and the outside world.",
+      "gold_skill": "agent-tool-builder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'agent-tool-builder' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t005",
+      "prompt": "I have a task that involves modern for loading states, error handling, and data display.",
+      "gold_skill": "angular-ui-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'angular-ui-patterns' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t006",
+      "prompt": "I have a task that involves a meta-skill that understands task requirements, dynamically selects appropriate skills, tracks successful skill combinations using agent-memory-mcp, and prevents skill overuse for simple tasks.",
+      "gold_skill": "antigravity-skill-orchestrator",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'antigravity-skill-orchestrator' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t007",
+      "prompt": "I need to build production-ready REST API endpoints with validation, error handling, authentication, and documentation.",
+      "gold_skill": "api-endpoint-builder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'api-endpoint-builder' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t008",
+      "prompt": "I have a task that involves complete (ASO) toolkit for researching, optimizing, and tracking mobile app performance on Apple App Store and Google Play Store.",
+      "gold_skill": "app-store-optimization",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'app-store-optimization' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t009",
+      "prompt": "Can you automate Asana tasks via Rube MCP (Composio): tasks, projects, sections, teams, workspaces.",
+      "gold_skill": "asana-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'asana-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t010",
+      "prompt": "I want to build content-focused websites with \u2014 zero JS by default, islands architecture, multi-framework components, and Markdown/MDX support.",
+      "gold_skill": "astro",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'astro' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t011",
+      "prompt": "I have a task that involves azure Monitor OpenTelemetry Distro for Python.",
+      "gold_skill": "azure-monitor-opentelemetry-py",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-monitor-opentelemetry-py' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t012",
+      "prompt": "My task is to automate CircleCI tasks via Rube MCP (Composio): trigger pipelines, monitor workflows/jobs, retrieve artifacts and test metadata.",
+      "gold_skill": "circleci-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'circleci-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t013",
+      "prompt": "I need to automate Coda tasks via Rube MCP (Composio): manage docs, pages, tables, rows, formulas, permissions, and publishing.",
+      "gold_skill": "coda-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'coda-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t014",
+      "prompt": "I have a task that involves transform debugging from frustrating guesswork into systematic problem-solving with proven strategies, powerful tools, and methodical approaches.",
+      "gold_skill": "debugging-strategies",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'debugging-strategies' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t015",
+      "prompt": "I have a task that involves a dependency security expert specializing in vulnerability scanning, license compliance, and supply chain security.",
+      "gold_skill": "dependency-management-deps-audit",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'dependency-management-deps-audit' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t016",
+      "prompt": "I have a task that involves a user may ask you to create, edit, or analyze the contents of a .docx file.",
+      "gold_skill": "docx-official",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'docx-official' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t017",
+      "prompt": "I have a task that involves developer Experience specialist.",
+      "gold_skill": "dx-optimizer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'dx-optimizer' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t018",
+      "prompt": "I have a task that involves apple Human Interface Guidelines for platform-specific design.",
+      "gold_skill": "hig-platforms",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'hig-platforms' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t019",
+      "prompt": "I need to create and manage datasets on Hugging Face Hub.",
+      "gold_skill": "hugging-face-datasets",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'hugging-face-datasets' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t020",
+      "prompt": "Help me automate Linear tasks via Rube MCP (Composio): issues, projects, cycles, teams, labels.",
+      "gold_skill": "linear-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'linear-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t021",
+      "prompt": "Can you guide for creating high-quality MCP (Model Context Protocol) servers that enable LLMs to interact with external services through well-designed tools.",
+      "gold_skill": "mcp-builder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'mcp-builder' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t022",
+      "prompt": "I want to build and deploy the same feature consistently across web, mobile, and desktop platforms using API-first architecture and parallel implementation strategies.",
+      "gold_skill": "multi-platform-apps-multi-platform",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'multi-platform-apps-multi-platform' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t023",
+      "prompt": "I have a task that involves a monitoring and observability expert specializing in implementing comprehensive monitoring solutions.",
+      "gold_skill": "observability-monitoring-monitor-setup",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'observability-monitoring-monitor-setup' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t024",
+      "prompt": "My task is to generate and maintain OpenAPI 3.1 specifications from code, design-first specs, and validation patterns.",
+      "gold_skill": "openapi-spec-generation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'openapi-spec-generation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t025",
+      "prompt": "I need to provide a comprehensive command reference for penetration testing tools including network scanning, exploitation, password cracking, and web application testing.",
+      "gold_skill": "pentest-commands",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'pentest-commands' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t026",
+      "prompt": "I have a task that involves iMPORTANT - Path Resolution: This skill can be installed in different locations (plugin system, manual installation, global, or project-specific).",
+      "gold_skill": "playwright-skill",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'playwright-skill' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t027",
+      "prompt": "I have a task that involves essential tools and frameworks for modern product management, from discovery to delivery.",
+      "gold_skill": "product-manager-toolkit",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'product-manager-toolkit' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t028",
+      "prompt": "I have a task that involves master modern with Redux Toolkit, Zustand, Jotai, and React Query.",
+      "gold_skill": "react-state-management",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'react-state-management' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t029",
+      "prompt": "Please design and improve revenue operations, lead lifecycle rules, scoring, routing, handoffs, and CRM process automation.",
+      "gold_skill": "revops",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'revops' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t030",
+      "prompt": "I have a task that involves secure practices for CI/CD pipelines using Vault, AWS Secrets Manager, and other tools.",
+      "gold_skill": "secrets-management",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'secrets-management' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t031",
+      "prompt": "I need to automate Segment tasks via Rube MCP (Composio): track events, identify users, manage groups, page views, aliases, batch operations.",
+      "gold_skill": "segment-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'segment-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t032",
+      "prompt": "I have a task that involves complete toolkit for with modern tools and best practices.",
+      "gold_skill": "senior-fullstack",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'senior-fullstack' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t033",
+      "prompt": "Can you automate Sentry tasks via Rube MCP (Composio): manage issues/events, configure alerts, track releases, monitor projects and teams.",
+      "gold_skill": "sentry-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sentry-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t034",
+      "prompt": "I have a task that involves expert guidance for crafting effective prompts in Google Stitch, the AI-powered UI design tool by Google Labs.",
+      "gold_skill": "stitch-ui-design",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'stitch-ui-design' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t035",
+      "prompt": "I have a task that involves a Rust project architecture expert specializing in scaffolding production-ready Rust applications.",
+      "gold_skill": "systems-programming-rust-project",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'systems-programming-rust-project' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t036",
+      "prompt": "I have a task that involves toolkit for styling artifacts with a theme.",
+      "gold_skill": "theme-factory",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'theme-factory' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t037",
+      "prompt": "I need to review files for compliance with Web Interface Guidelines.",
+      "gold_skill": "web-design-guidelines",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'web-design-guidelines' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t038",
+      "prompt": "I have a task that involves toolkit for interacting with and testing local web applications using Playwright.",
+      "gold_skill": "webapp-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'webapp-testing' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t039",
+      "prompt": "Can you automate YouTube tasks via Rube MCP (Composio): upload videos, manage playlists, search content, get analytics, and handle comments.",
+      "gold_skill": "youtube-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'youtube-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    },
+    {
+      "id": "close-semantics-100-t040",
+      "prompt": "I want to automate Zoom meeting creation, management, recordings, webinars, and participant tracking via Rube MCP (Composio).",
+      "gold_skill": "zoom-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'zoom-automation' skill description; that skill is the intended gold match within subset 'close-semantics-100'."
+    }
+  ]
+}

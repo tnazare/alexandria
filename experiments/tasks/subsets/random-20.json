@@ -1,0 +1,151 @@
+{
+  "version": "random-20-v1",
+  "labeling_doc": "../LABELING.md",
+  "subset": "random-20",
+  "flavor": "random",
+  "size": 20,
+  "seed": 1234,
+  "notes": "Auto-derived tasks: one natural request per gold skill, templated from the skill's own description (name/slug scrubbed). Gold labels are in-subset by construction.",
+  "tasks": [
+    {
+      "id": "random-20-t001",
+      "prompt": "I have a task that involves structured guide for setting up A/B tests with mandatory gates for hypothesis, metrics, and execution readiness.",
+      "gold_skill": "ab-test-setup",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ab-test-setup' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t002",
+      "prompt": "Help me build image analysis applications with Azure AI Vision SDK for Java.",
+      "gold_skill": "azure-ai-vision-imageanalysis-java",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-ai-vision-imageanalysis-java' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t003",
+      "prompt": "I have a task that involves development skill from everything-claude-code.",
+      "gold_skill": "cc-skill-strategic-compact",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'cc-skill-strategic-compact' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t004",
+      "prompt": "I want to automate changelog generation from commits, PRs, and releases following Keep a Changelog format.",
+      "gold_skill": "changelog-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'changelog-automation' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t005",
+      "prompt": "Please manage citations systematically throughout the research and writing process.",
+      "gold_skill": "citation-management",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'citation-management' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t006",
+      "prompt": "I have a task that involves expert patterns for implementation, middleware, organizations, webhooks, and user sync Use when: adding authentication, , user authentication, sign in, sign up.",
+      "gold_skill": "clerk-auth",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'clerk-auth' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t007",
+      "prompt": "I have a task that involves cloud infrastructure and DevOps workflow covering AWS, Azure, GCP, Kubernetes, Terraform, CI/CD, monitoring, and cloud-native development.",
+      "gold_skill": "cloud-devops",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'cloud-devops' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t008",
+      "prompt": "I have a task that involves use when working with.",
+      "gold_skill": "context-management-context-restore",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'context-management-context-restore' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t009",
+      "prompt": "I have a task that involves an expert in designing collaborative AI agent teams with.",
+      "gold_skill": "crewai",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'crewai' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t010",
+      "prompt": "I have a task that involves a er-engineer, not a layout generator.",
+      "gold_skill": "frontend-design-2",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'frontend-design-2' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t011",
+      "prompt": "I have a task that involves master comprehensive evaluation strategies for LLM applications, from automated metrics to human evaluation and A/B testing.",
+      "gold_skill": "llm-evaluation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'llm-evaluation' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t012",
+      "prompt": "I have a task that involves expert in secure mobile coding practices specializing in input validation, WebView security, and mobile-specific security patterns.",
+      "gold_skill": "mobile-security-coder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'mobile-security-coder' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t013",
+      "prompt": "I have a task that involves is a Python package for creating, manipulating, and analyzing complex networks and graphs.",
+      "gold_skill": "networkx",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'networkx' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t014",
+      "prompt": "I have a task that involves expert in Odoo access control: ir.model.access.csv, record rules (ir.rule), groups, and multi-company security patterns.",
+      "gold_skill": "odoo-security-rules",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'odoo-security-rules' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t015",
+      "prompt": "I have a task that involves python development principles and decision-making.",
+      "gold_skill": "python-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'python-patterns' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t016",
+      "prompt": "I have a task that involves complete toolkit for with modern tools and best practices.",
+      "gold_skill": "senior-architect",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'senior-architect' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t017",
+      "prompt": "Please automate Sentry tasks via Rube MCP (Composio): manage issues/events, configure alerts, track releases, monitor projects and teams.",
+      "gold_skill": "sentry-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sentry-automation' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t018",
+      "prompt": "My task is to implement efficient similarity search with vector databases.",
+      "gold_skill": "similarity-search-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'similarity-search-patterns' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t019",
+      "prompt": "I need to create new skills, modify and improve existing skills, and measure skill performance.",
+      "gold_skill": "skill-creator",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'skill-creator' skill description; that skill is the intended gold match within subset 'random-20'."
+    },
+    {
+      "id": "random-20-t020",
+      "prompt": "I have a task that involves web scraping inteligente multi-estrategia.",
+      "gold_skill": "web-scraper",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'web-scraper' skill description; that skill is the intended gold match within subset 'random-20'."
+    }
+  ]
+}

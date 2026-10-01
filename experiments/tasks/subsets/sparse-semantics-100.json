@@ -1,0 +1,291 @@
+{
+  "version": "sparse-semantics-100-v1",
+  "labeling_doc": "../LABELING.md",
+  "subset": "sparse-semantics-100",
+  "flavor": "sparse-semantics",
+  "size": 100,
+  "seed": 1234,
+  "notes": "Auto-derived tasks: one natural request per gold skill, templated from the skill's own description (name/slug scrubbed). Gold labels are in-subset by construction.",
+  "tasks": [
+    {
+      "id": "sparse-semantics-100-t001",
+      "prompt": "I need to automate ActiveCampaign tasks via Rube MCP (Composio): manage contacts, tags, list subscriptions, automation enrollment, and tasks.",
+      "gold_skill": "activecampaign-automation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'activecampaign-automation' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t002",
+      "prompt": "I have a task that involves create, iterate, and scale paid for Google Ads, Meta, LinkedIn, TikTok, and similar platforms.",
+      "gold_skill": "ad-creative",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ad-creative' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t003",
+      "prompt": "Can you fetch any X/Twitter post as clean LLM-friendly JSON.",
+      "gold_skill": "adhx",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'adhx' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t004",
+      "prompt": "I have a task that involves ista especializado em Maria da Penha, violencia domestica, feminicidio, direito penal brasileiro, medidas protetivas, inquerito policial e acao penal.",
+      "gold_skill": "advogado-criminal",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'advogado-criminal' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t005",
+      "prompt": "I have a task that involves creating using p5.js with seeded randomness and interactive parameter exploration.",
+      "gold_skill": "algorithmic-art",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'algorithmic-art' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t006",
+      "prompt": "I have a task that involves agente que simula \u2014 ex-Director of AI da Tesla, co-fundador da OpenAI, fundador da Eureka Labs, e o maior educador de deep learning do mundo.",
+      "gold_skill": "andrej-karpathy",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'andrej-karpathy' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t007",
+      "prompt": "I need to implement secure API design patterns including authentication, authorization, input validation, rate limiting, and protection against common API vulnerabilities.",
+      "gold_skill": "api-security-best-practices",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'api-security-best-practices' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t008",
+      "prompt": "Help me design patterns for building autonomous coding agents, inspired by [Cline](https://github.com/cline/cline) and [OpenAI Codex](https://github.com/openai/codex).",
+      "gold_skill": "autonomous-agent-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'autonomous-agent-patterns' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t009",
+      "prompt": "I have a task that involves mandatory skills, conventions, and behavioral rules for Avalonia UI development using the Zafiro toolkit.",
+      "gold_skill": "avalonia-zafiro-development",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'avalonia-zafiro-development' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t010",
+      "prompt": "I want to build production-grade Azure Cosmos DB NoSQL services following clean code, security best practices, and TDD principles.",
+      "gold_skill": "azure-cosmos-db-py",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-cosmos-db-py' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t011",
+      "prompt": "I have a task that involves azure Key Vault Certificates SDK for Rust.",
+      "gold_skill": "azure-keyvault-certificates-rust",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-keyvault-certificates-rust' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t012",
+      "prompt": "I have a task that involves azure Blob Storage JavaScript/TypeScript SDK (@azure/storage-blob) for blob operations.",
+      "gold_skill": "azure-storage-blob-ts",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'azure-storage-blob-ts' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t013",
+      "prompt": "I need to ensure all code follows security best practices and identifies potential vulnerabilities.",
+      "gold_skill": "cc-skill-security-review",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'cc-skill-security-review' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t014",
+      "prompt": "I have a task that involves use when working with.",
+      "gold_skill": "context-management-context-restore",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'context-management-context-restore' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t015",
+      "prompt": "I have a task that involves use when working with.",
+      "gold_skill": "context-management-context-save",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'context-management-context-save' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t016",
+      "prompt": "I want to build scalable data pipelines, modern data warehouses, and real-time streaming architectures.",
+      "gold_skill": "data-engineer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'data-engineer' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t017",
+      "prompt": "I have a task that involves a dependency security expert specializing in vulnerability scanning, license compliance, and supply chain security.",
+      "gold_skill": "dependency-management-deps-audit",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'dependency-management-deps-audit' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t018",
+      "prompt": "I have a task that involves stop throwing everywhere - handle errors as values using Either and TaskEither for cleaner, more predictable code.",
+      "gold_skill": "fp-errors",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'fp-errors' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t019",
+      "prompt": "I have a task that involves an expert in engineering-as-marketing strategy.",
+      "gold_skill": "free-tool-strategy",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'free-tool-strategy' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t020",
+      "prompt": "I have a task that involves 33+ essential JavaScript concepts every developer should know, inspired by [33-js-concepts](https://github.com/leonardomso/33-js-concepts).",
+      "gold_skill": "javascript-mastery",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'javascript-mastery' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t021",
+      "prompt": "I have a task that involves analise juridica de leiloes: nulidades, bem de familia, alienacao fiduciaria, CPC arts 829-903, Lei 9514/97, onus reais, embargos e jurisprudencia.",
+      "gold_skill": "leiloeiro-juridico",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'leiloeiro-juridico' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t022",
+      "prompt": "I have a task that involves cRITICAL: Use for syntax and inheritance.",
+      "gold_skill": "makepad-dsl",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'makepad-dsl' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t023",
+      "prompt": "I have a task that involves cRITICAL: Use for system.",
+      "gold_skill": "makepad-layout",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'makepad-layout' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t024",
+      "prompt": "I have a task that involves \u5206\u6790\u5fc3\u7406\u5065\u5eb7\u6570\u636e\u3001\u8bc6\u522b\u5fc3\u7406\u6a21\u5f0f\u3001\u8bc4\u4f30\u5fc3\u7406\u5065\u5eb7\u72b6\u51b5\u3001\u63d0\u4f9b\u4e2a\u6027\u5316\u5fc3\u7406\u5065\u5eb7\u5efa\u8bae\u3002\u652f\u6301\u4e0e\u7761\u7720\u3001\u8fd0\u52a8\u3001\u8425\u517b\u7b49\u5176\u4ed6\u5065\u5eb7\u6570\u636e\u7684\u5173\u8054\u5206\u6790\u3002.",
+      "gold_skill": "mental-health-analyzer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'mental-health-analyzer' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t025",
+      "prompt": "I have a task that involves modo Elite Coder + UX Pixel-Perfect otimizado especificamente para Gemini 3.1 Pro High.",
+      "gold_skill": "nerdzao-elite-gemini-high",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'nerdzao-elite-gemini-high' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t026",
+      "prompt": "I have a task that involves expert integration of Supabase Auth with Next.js App Router Use when: supabase auth next, authentication next.js, login supabase, auth middleware, protected route.",
+      "gold_skill": "nextjs-supabase-auth",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'nextjs-supabase-auth' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t027",
+      "prompt": "I have a task that involves use when working with.",
+      "gold_skill": "performance-testing-review-multi-agent-review",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'performance-testing-review-multi-agent-review' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t028",
+      "prompt": "I have a task that involves python development principles and decision-making.",
+      "gold_skill": "python-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'python-patterns' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t029",
+      "prompt": "I have a task that involves codified expertise for returns authorisation, receipt and inspection, disposition decisions, refund processing, fraud detection, and warranty claims management.",
+      "gold_skill": "returns-reverse-logistics",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'returns-reverse-logistics' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t030",
+      "prompt": "My task is to create sales collateral such as decks, one-pagers, objection docs, demo scripts, playbooks, and proposal templates.",
+      "gold_skill": "sales-enablement",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sales-enablement' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t031",
+      "prompt": "I have a task that involves agente que simula \u2014 CEO da OpenAI, ex-presidente da Y Combinator, arquiteto da era AGI.",
+      "gold_skill": "sam-altman",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'sam-altman' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t032",
+      "prompt": "I have a task that involves practical guide to testing web applications with screen readers for comprehensive accessibility validation.",
+      "gold_skill": "screen-reader-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'screen-reader-testing' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t033",
+      "prompt": "I have a task that involves is a Python visualization library for creating publication-quality statistical graphics.",
+      "gold_skill": "seaborn",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'seaborn' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t034",
+      "prompt": "I have a task that involves core principles of SEO including E-E-A-T, Core Web Vitals, technical foundations, content quality, and how modern search engines evaluate pages.",
+      "gold_skill": "seo-fundamentals",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'seo-fundamentals' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t035",
+      "prompt": "I have a task that involves strategic ning for new or existing websites.",
+      "gold_skill": "seo-plan",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'seo-plan' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t036",
+      "prompt": "I have a task that involves instala, valida, registra e verifica novas skills no ecossistema.",
+      "gold_skill": "skill-installer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'skill-installer' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t037",
+      "prompt": "I have a task that involves project scaffolding for new applications.",
+      "gold_skill": "templates",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'templates' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t038",
+      "prompt": "I have a task that involves web scraping inteligente multi-estrategia.",
+      "gold_skill": "web-scraper",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'web-scraper' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t039",
+      "prompt": "I have a task that involves reliable command execution on Windows: paths, encoding, and common binary pitfalls.",
+      "gold_skill": "windows-shell-reliability",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'windows-shell-reliability' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    },
+    {
+      "id": "sparse-semantics-100-t040",
+      "prompt": "I have a task that involves sub-skill filos\u00f3fica e pedag\u00f3gica de Yann LeCun.",
+      "gold_skill": "yann-lecun-filosofia",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'yann-lecun-filosofia' skill description; that skill is the intended gold match within subset 'sparse-semantics-100'."
+    }
+  ]
+}

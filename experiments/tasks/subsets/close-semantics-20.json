@@ -1,0 +1,151 @@
+{
+  "version": "close-semantics-20-v1",
+  "labeling_doc": "../LABELING.md",
+  "subset": "close-semantics-20",
+  "flavor": "close-semantics",
+  "size": 20,
+  "seed": 1234,
+  "notes": "Auto-derived tasks: one natural request per gold skill, templated from the skill's own description (name/slug scrubbed). Gold labels are in-subset by construction.",
+  "tasks": [
+    {
+      "id": "close-semantics-20-t001",
+      "prompt": "I have a task that involves structured guide for setting up A/B tests with mandatory gates for hypothesis, metrics, and execution readiness.",
+      "gold_skill": "ab-test-setup",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'ab-test-setup' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t002",
+      "prompt": "Help me build production-ready REST API endpoints with validation, error handling, authentication, and documentation.",
+      "gold_skill": "api-endpoint-builder",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'api-endpoint-builder' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t003",
+      "prompt": "Can you implement secure API design patterns including authentication, authorization, input validation, rate limiting, and protection against common API vulnerabilities.",
+      "gold_skill": "api-security-best-practices",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'api-security-best-practices' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t004",
+      "prompt": "I have a task that involves workflow for REST and GraphQL APIs covering authentication, authorization, rate limiting, input validation, and security best practices.",
+      "gold_skill": "api-security-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'api-security-testing' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t005",
+      "prompt": "Please build secure, scalable authentication and authorization systems using industry-standard patterns and modern best practices.",
+      "gold_skill": "auth-implementation-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'auth-implementation-patterns' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t006",
+      "prompt": "My task is to ensure all code follows security best practices and identifies potential vulnerabilities.",
+      "gold_skill": "cc-skill-security-review",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'cc-skill-security-review' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t007",
+      "prompt": "I need to build scalable data pipelines, modern data warehouses, and real-time streaming architectures.",
+      "gold_skill": "data-engineer",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'data-engineer' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t008",
+      "prompt": "Help me build features guided by data insights, A/B testing, and continuous measurement using specialized agents for analysis, implementation, and experimentation.",
+      "gold_skill": "data-engineering-data-driven-feature",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'data-engineering-data-driven-feature' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t009",
+      "prompt": "Can you implement data quality validation with Great Expectations, dbt tests, and data contracts.",
+      "gold_skill": "data-quality-frameworks",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'data-quality-frameworks' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t010",
+      "prompt": "I want to guide for building reliable, fault-tolerant Go applications with DBOS durable workflows.",
+      "gold_skill": "dbos-golang",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'dbos-golang' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t011",
+      "prompt": "I have a task that involves production-ready patterns for dbt (data build tool) including model organization, testing strategies, documentation, and incremental processing.",
+      "gold_skill": "dbt-transformation-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'dbt-transformation-patterns' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t012",
+      "prompt": "My task is to create comprehensive technical documentation from existing codebases.",
+      "gold_skill": "docs-architect",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'docs-architect' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t013",
+      "prompt": "I need to build reliable, fast, and maintainable end-to-end test suites that provide confidence to ship code quickly and catch regressions before users do.",
+      "gold_skill": "e2e-testing-patterns",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'e2e-testing-patterns' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t014",
+      "prompt": "I have a task that involves an error tracking and observability expert specializing in implementing comprehensive error monitoring solutions.",
+      "gold_skill": "error-debugging-error-trace",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'error-debugging-error-trace' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t015",
+      "prompt": "Can you create and manage datasets on Hugging Face Hub.",
+      "gold_skill": "hugging-face-datasets",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'hugging-face-datasets' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t016",
+      "prompt": "I want to generate and maintain OpenAPI 3.1 specifications from code, design-first specs, and validation patterns.",
+      "gold_skill": "openapi-spec-generation",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'openapi-spec-generation' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t017",
+      "prompt": "I have a task that involves comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel.",
+      "gold_skill": "react-best-practices",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'react-best-practices' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t018",
+      "prompt": "I have a task that involves a compliance expert specializing in regulatory requirements for software systems including GDPR, HIPAA, SOC2, PCI-DSS, and other industry standards.",
+      "gold_skill": "security-compliance-compliance-check",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'security-compliance-compliance-check' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t019",
+      "prompt": "I have a task that involves verifies code implements exactly what documentation specifies for blockchain audits.",
+      "gold_skill": "spec-to-code-compliance",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'spec-to-code-compliance' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    },
+    {
+      "id": "close-semantics-20-t020",
+      "prompt": "I have a task that involves master comprehensive testing strategies for smart contracts using Hardhat, Foundry, and advanced testing patterns.",
+      "gold_skill": "web3-testing",
+      "category": "derived-clear-match",
+      "rationale": "Prompt derived from the 'web3-testing' skill description; that skill is the intended gold match within subset 'close-semantics-20'."
+    }
+  ]
+}
