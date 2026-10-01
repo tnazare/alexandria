@@ -174,7 +174,9 @@ Run/verify: `pytest experiments/` (deterministic units); `python -m harness.run_
     - *Files:* `experiments/PROTOCOL.md`, `experiments/RESULTS_TEMPLATE.md`
     - *Requirements: 7.5, 8.1, 8.2, 8.3, 8.4*
 
-  - [ ] 10.2 Full run at 20/100/500 and fill results
+  - [~] 10.2 Full run at 20/100/500 and fill results
+    - DONE for N=20 (run-20260930-225422, written up in experiments/results/). N=100/500 pending
+      quota; harness + abort guard ready.
     - Run the full matrix; recompute aggregates from raw; fill a results report from the template;
       plot per-N token/latency curves and accuracy with CIs. Record env + seeds. (Needs the live
       stack, Claude Code CLI, and real API spend; driven manually via the single-command entry point.)
