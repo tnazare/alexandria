@@ -4,3 +4,8 @@ tiktoken==0.12.0
 httpx==0.27.2
 PyYAML==6.0.2
 pytest==8.3.3
+
+# Embeddings for semantic subset construction (task 2/3). Pulls torch — only needed to (re)build
+# the subsets, NOT to run the experiment, since the subsets are frozen/committed. Install when
+# rebuilding: pip install -r requirements-embeddings.txt
+# (kept in a separate file so the core harness stays light.)
