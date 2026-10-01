@@ -1,0 +1,811 @@
+{
+  "kind": "subset",
+  "name": "close-semantics-100",
+  "flavor": "close-semantics",
+  "size": 100,
+  "seed": 8334,
+  "embedding_model": "minishlab/potion-base-8M",
+  "cohesion_mean_cosine": 0.3833,
+  "skills": [
+    {
+      "slug": "ab-test-setup",
+      "name": "ab-test-setup",
+      "sha256": "d3b0236e0246c1020e8dd54cc97c3d1a9505324e0172b83c5fd9426ff7c388c9",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-data-analytics/skills/ab-test-setup/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "academy-guide",
+      "name": "academy-guide",
+      "sha256": "a1cb099d66914e8c18b4a180c40ab8a9eaaf0354eb5fb3bc071a681b99173808",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/academy-guide/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Complete terms in LICENSE.txt"
+    },
+    {
+      "slug": "activecampaign-automation",
+      "name": "activecampaign-automation",
+      "sha256": "ef3ece617e87ea68f5c635f97a7f9cc0d40a4909133a661b705601d4763ef4a4",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/activecampaign-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "agent-tool-builder",
+      "name": "agent-tool-builder",
+      "sha256": "6133cfdb653c85d98525db2e4a26d2c8710d57b9cb4df66ecb5df1e77b64c2f2",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/agent-tool-builder/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "angular-ui-patterns",
+      "name": "angular-ui-patterns",
+      "sha256": "e6d890b85574d55e83e401f607c94e7e5e96d25d52bc28ca827227ff45c0113a",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/angular-ui-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "antigravity-skill-orchestrator",
+      "name": "antigravity-skill-orchestrator",
+      "sha256": "b25ddc9373565b5c730b85716daf598fede89a708c71464ab9ecb6ca277a77c2",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/antigravity-skill-orchestrator/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-design-principles",
+      "name": "api-design-principles",
+      "sha256": "d9b39111411fd25b43530fddf42357a39026b7089562705169e423ddab3694e7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/api-design-principles/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-documentation",
+      "name": "api-documentation",
+      "sha256": "a74607c0a40310e779124e4493e5bdecaeccf6201ff80a4ad732640a57f2a0e1",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/api-documentation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-endpoint-builder",
+      "name": "api-endpoint-builder",
+      "sha256": "a7986b104c146563b6f8f36012625fbf931e04a0e8a88ed09cdf6521691a8c1d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/api-endpoint-builder/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "apify-actor-development",
+      "name": "apify-actor-development",
+      "sha256": "408fa28130b2f1a138ee1f140917fcb6dc12c2f5756fb23fab0d3561704c3cc7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/apify-actor-development/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "app-store-optimization",
+      "name": "app-store-optimization",
+      "sha256": "32329ce71b56114ba33ed0043528a7ba51a0b4465afff762dbe4ae5db4600f9b",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-expo-react-native/skills/app-store-optimization/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "asana-automation",
+      "name": "asana-automation",
+      "sha256": "7c497ba6b8a8f884092deb3bb8d1e50d7d8be3cb04ac0b841a2274cb38ec4d5d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/asana-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "astro",
+      "name": "astro",
+      "sha256": "ec4c6b168218864d9a129bd43b80c304ef94fca7f781e397b97f6b5d05d0397a",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/astro/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "azure-mgmt-apicenter-py",
+      "name": "azure-mgmt-apicenter-py",
+      "sha256": "6fcac0f52e4529048133f875eb795cf6b6ef62e79cb7b8ec03653076bee2d655",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/azure-mgmt-apicenter-py/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "azure-monitor-opentelemetry-py",
+      "name": "azure-monitor-opentelemetry-py",
+      "sha256": "0b1b0a8e54398a0882dd898d3bd840ac7ca18fe782949996d1ecdf9851fe2a3b",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/azure-monitor-opentelemetry-py/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "basecamp-automation",
+      "name": "basecamp-automation",
+      "sha256": "0c960fbf95e0270b5e6107c1bf5dec1764241f7b6236d39d7b9f0714851745a0",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/basecamp-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "business-analyst",
+      "name": "business-analyst",
+      "sha256": "d190e916356edb5a07d8834f26b77c2c2d6628b19f11722ada1d2312dec941d7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/business-analyst/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "cc-skill-security-review",
+      "name": "cc-skill-security-review",
+      "sha256": "cc5e6bf0abd7c287c72b2b60dbb2cb3141ca878597446407bcd9a4626e3e57cd",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-security-developer/skills/cc-skill-security-review/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "changelog-automation",
+      "name": "changelog-automation",
+      "sha256": "fe07a0e65571e3e5d8ed33707b84bf4f729cd2254d67a46428351c7f8294c16d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/changelog-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "circleci-automation",
+      "name": "circleci-automation",
+      "sha256": "a56a3948cf0b4538fda735e47a4bb362ae9e37293e7aace8fb703b8c621db278",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/circleci-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "claude-d3js-skill",
+      "name": "claude-d3js-skill",
+      "sha256": "bbbc7befcc32723558b166fe4eb44ebc004ba7d6c93ab9f385835809045726e6",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/claude-d3js-skill/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "claude-win11-speckit-update-skill",
+      "name": "claude-win11-speckit-update-skill",
+      "sha256": "70350e9f61ace1cc58b9fca37045556ebf8a6ca61530b36b9680a738c55c88f0",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/claude-win11-speckit-update-skill/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "clickup-automation",
+      "name": "clickup-automation",
+      "sha256": "9743e5976a62790ff5e007e9991872331ad50269fb0f095fc4d7d36712487f3f",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/clickup-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "coda-automation",
+      "name": "coda-automation",
+      "sha256": "d5bdf6b22254d6c52adf0bd27451386b5656407b9936ee6ce4565a7b41ace929",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/coda-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "code-documentation-doc-generate",
+      "name": "code-documentation-doc-generate",
+      "sha256": "09dfe9b96f7c70b7e137992a8d27cbbd3e868ea07067e5b358e83760a0d22f08",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/code-documentation-doc-generate/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "context-driven-development",
+      "name": "context-driven-development",
+      "sha256": "0c61ff870be25dddcedba7a7bc5917f4d2b90a9d2b353b9c681ec94a5f025887",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/context-driven-development/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "convertkit-automation",
+      "name": "convertkit-automation",
+      "sha256": "b58ead7ea21527b87d919d301b4189a99c3b989d417bcd1bcb4a367c4efd7447",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/convertkit-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "data-engineering-data-driven-feature",
+      "name": "data-engineering-data-driven-feature",
+      "sha256": "36b2334a07b73f0e429c59bd8d9b759df3f50f8fc7b9303be066bae5ed026f59",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/data-engineering-data-driven-feature/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "data-quality-frameworks",
+      "name": "data-quality-frameworks",
+      "sha256": "89ee1cf8e8f2138c3eab90125bc3f795cb53c886f21442b93efd8d736b61dac8",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/data-quality-frameworks/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "dbt-transformation-patterns",
+      "name": "dbt-transformation-patterns",
+      "sha256": "026b516cf35ec3bea4b1bd65160d8b0f9d16cd44e7fd816babdf8858e599bece",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/dbt-transformation-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "debugging-strategies",
+      "name": "debugging-strategies",
+      "sha256": "4c6419b412899ba416fb2db4ee2cd935100151747fb8c59ebd5c11586c559e58",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/debugging-strategies/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "dependency-management-deps-audit",
+      "name": "dependency-management-deps-audit",
+      "sha256": "0cd7b1a8feae88969d286a6c82c9db54dec6080c004151d17e8bd0d017ccdb33",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/dependency-management-deps-audit/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "docs-architect",
+      "name": "docs-architect",
+      "sha256": "b4ec0b0a5013954ed68f25c80d620f73a1d8e13e3f2207c25e2bfe129573e135",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/docs-architect/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "documentation-generation-doc-generate",
+      "name": "documentation-generation-doc-generate",
+      "sha256": "287f2b69188f8215423b340730080ec75173a1c2662cf0518f0b1a6cfb8f776e",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/documentation-generation-doc-generate/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "docx-official",
+      "name": "docx-official",
+      "sha256": "0d281e1042a3506997c208eea6f7095a4bfcba2d9ff768af0eb497df4d79fea5",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/docx-official/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "dx-optimizer",
+      "name": "dx-optimizer",
+      "sha256": "8cb25fe0fc34708308a25d282b2c715eadde523c9371266857f9b9a4cc0c5a12",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/dx-optimizer/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "electron-development",
+      "name": "electron-development",
+      "sha256": "8dac1d1a8c7335d60671b99a7dc3cb4c69b7a5298906c7bf9aa0b00a5f7d94e0",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/electron-development/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "environment-setup-guide",
+      "name": "environment-setup-guide",
+      "sha256": "b4e02e0a6829bcbb6841b81ef3b183bd0c5c97803602609138a05c4b5831d3d5",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/environment-setup-guide/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "error-debugging-error-trace",
+      "name": "error-debugging-error-trace",
+      "sha256": "a32d197e513efed7c96aaf03d8b2fb133c23cf002635e9ac88a1e21bc8d515f5",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/error-debugging-error-trace/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "ethical-hacking-methodology",
+      "name": "ethical-hacking-methodology",
+      "sha256": "f0d57aa0b97ef6c4725c406e01a10b28f542d3cf72bae946074dd2935a0283cd",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/ethical-hacking-methodology/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "event-store-design",
+      "name": "event-store-design",
+      "sha256": "9e772e985cf01d8c00c74895641d8f76e4487504943bc12fef11a63e63e59ec7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-ddd-evented-architecture/skills/event-store-design/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "free-tool-strategy",
+      "name": "free-tool-strategy",
+      "sha256": "10ffb094e668da7c6f9ae4ad4b28d5953ebda23d74b8d27b1846c9fbdefe7849",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/free-tool-strategy/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "gitlab-automation",
+      "name": "gitlab-automation",
+      "sha256": "9d7a147e53744f9ad531683d7f1189734f50a9eda689edbc408579098a2ebb84",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/gitlab-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "helpdesk-automation",
+      "name": "helpdesk-automation",
+      "sha256": "82bb6dc4e32328bb566d70617fcfb839857712c9b98fea7a18550cb936c81abf",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/helpdesk-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "hig-platforms",
+      "name": "hig-platforms",
+      "sha256": "897e6a075bcc9ef6268f7eaf23f6db2144cb685a85c3484bad6df4fb413852c2",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/hig-platforms/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "hugging-face-datasets",
+      "name": "hugging-face-datasets",
+      "sha256": "204b02977bec12e3d7522541062f6f756c781243153e67e420121b000d9ed3ab",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/hugging-face-datasets/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "hybrid-search-implementation",
+      "name": "hybrid-search-implementation",
+      "sha256": "6a15064eecf6a0a4eea3e6ea89e28a30c1bc114da8cba399ce3cbd1741f19434",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/hybrid-search-implementation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "instagram-automation",
+      "name": "instagram-automation",
+      "sha256": "fb764ad2c193f06cc505e89bd94fc31a44f81b80315ec6cf9b48de4784dc3135",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/instagram-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "intercom-automation",
+      "name": "intercom-automation",
+      "sha256": "699c9c49624e553b52374261eee002b5d0485f301aa37988c585614634d48377",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/intercom-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "jira-automation",
+      "name": "jira-automation",
+      "sha256": "d19c59b9f7bbad489e309daf37fecb144b6253563aa75e76c92860252feec25c",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/jira-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "k6-load-testing",
+      "name": "k6-load-testing",
+      "sha256": "7c664df93ced110a4931bbbb9cea8182d2249b50a290f193b89c3c900c4deaff",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/k6-load-testing/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "klaviyo-automation",
+      "name": "klaviyo-automation",
+      "sha256": "0a27e3351d57e3781ed52d746378dfb7d3e76dcb4206a19eb9e145bdf449fbbb",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/klaviyo-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "linear-automation",
+      "name": "linear-automation",
+      "sha256": "6ebf2cf20360c4710a6f1ccee966d2f2f9f92240c495ddaa8687d4d3dad34a62",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/linear-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "llm-evaluation",
+      "name": "llm-evaluation",
+      "sha256": "1df8590d1a3103fccee6409b4f6a676d94fde05da75be60fc5acfc6b6e315897",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/llm-evaluation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "local-llm-expert",
+      "name": "local-llm-expert",
+      "sha256": "6b2a8d23d1bf512156cbf632ef279d466e3766082eab47b344539363258613a1",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/local-llm-expert/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "make-automation",
+      "name": "make-automation",
+      "sha256": "0d96675b781faa0a129d9ba1a8d81f3bdb1067170ad66bd99a8e5d2a07875e42",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/make-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "mcp-builder",
+      "name": "mcp-builder",
+      "sha256": "c0bd02483acbb365fbbc2370e6b68beba048e5267398a27ceb7332f6cc29b008",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/mcp-builder/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Complete terms in LICENSE.txt"
+    },
+    {
+      "slug": "microsoft-teams-automation",
+      "name": "microsoft-teams-automation",
+      "sha256": "0ac05368630cfacff25bc865bd8a1e28233ae7c49ca4a2da2f8f4a66880a51a4",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/microsoft-teams-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "multi-agent-brainstorming",
+      "name": "multi-agent-brainstorming",
+      "sha256": "e831f2ee813ae8cff0c4d61e7a50fbe7a4d767caa116f6e3690f33eefe94d1e9",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/multi-agent-brainstorming/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "multi-platform-apps-multi-platform",
+      "name": "multi-platform-apps-multi-platform",
+      "sha256": "455ee284e43180c5f49514adf988d3874c33488ae0c961484b5bca845047a546",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/multi-platform-apps-multi-platform/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "nextjs-best-practices",
+      "name": "nextjs-best-practices",
+      "sha256": "3af509749eba2b1d5aa089dec6b8e9a500d9c0a2bc2540de298f60c100d49633",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-web-wizard/skills/nextjs-best-practices/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "observability-monitoring-monitor-setup",
+      "name": "observability-monitoring-monitor-setup",
+      "sha256": "9c773b711e6193673e0309727188faaa4a765fe26c971f0c625290f2bbfefb1d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/observability-monitoring-monitor-setup/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "openapi-spec-generation",
+      "name": "openapi-spec-generation",
+      "sha256": "cc3bec1e9359c8b7fe449cd10a1203f21dcba6e87192cdf5cbbda18ac0a4dd1e",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/openapi-spec-generation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "outlook-calendar-automation",
+      "name": "outlook-calendar-automation",
+      "sha256": "7731ec34dfc1e6f6ee1694c37b8f6342ded6681f0018e245337d243972bf7440",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/outlook-calendar-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "pentest-commands",
+      "name": "pentest-commands",
+      "sha256": "83f3a2b57de1cc60c296a953c0b5bea9b74ac07541d5a22292f7b73e95b274e6",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/pentest-commands/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "playwright-skill",
+      "name": "playwright-skill",
+      "sha256": "ef9ba2dcc28ca6d4d3f4f98013b3ae23b649568efa6f9c02421db11fcf7b1809",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/playwright-skill/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "plotly",
+      "name": "plotly",
+      "sha256": "246ec42385241213a6c86c35fa6e8c77fc10f864f2ebf552cbf91829a7d70953",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/plotly/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT license"
+    },
+    {
+      "slug": "postmark-automation",
+      "name": "postmark-automation",
+      "sha256": "cb36b67f1f6d0e9cb88805a04b4a9890e7e815d6c1376aa36878d28b2bf16bca",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/postmark-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "pptx",
+      "name": "pptx",
+      "sha256": "244082c9c34ad51f5f9f4ff72050a374ed99c00cd252b9bda8f441aca3e02715",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/pptx/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Proprietary. LICENSE.txt has complete terms"
+    },
+    {
+      "slug": "product-manager-toolkit",
+      "name": "product-manager-toolkit",
+      "sha256": "bfca02b636a81c9a76d55ce1bb3063c3cf6a53cd81f1f4994889744d5fe5c077",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/product-manager-toolkit/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "programmatic-seo",
+      "name": "programmatic-seo",
+      "sha256": "26ad754605c840ceb77303a43e561e917b1af3c0eadc7794fd7ba8575ab49caa",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/programmatic-seo/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "pydantic-ai",
+      "name": "pydantic-ai",
+      "sha256": "87aaf887aed358e4205514a7f2df7b6e56fa1f7cf33ab24772fde2afc232ebed",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/pydantic-ai/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "python-development-python-scaffold",
+      "name": "python-development-python-scaffold",
+      "sha256": "c871c7588c83f9497bd77630e2e752c638b97f0a93d4e5b74ddb05ab357c81f8",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/python-development-python-scaffold/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "python-patterns",
+      "name": "python-patterns",
+      "sha256": "9eb3725fbab6d4e98334a732932dece0926bbfd0917ec17e5cf94a1cd0ca9f67",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/python-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "react-state-management",
+      "name": "react-state-management",
+      "sha256": "e91892087c0c56d39e54999516efc49a617c04ea8165ad1555b66bba749921e7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/react-state-management/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "requesting-code-review",
+      "name": "requesting-code-review",
+      "sha256": "64e9c46f526f70669a68b8624fd75c954f177c107f0a989edf2839110f3c2606",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/requesting-code-review/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "revops",
+      "name": "revops",
+      "sha256": "2060113b61dc3d0ba315660374f883cc18e342ac4e637404c62149ef3d48638c",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/revops/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "scikit-learn",
+      "name": "scikit-learn",
+      "sha256": "869d9e39598d9763f6c9e73aea8b557e9c7ee3a43df1a281d89c2898afa8a6ed",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/scikit-learn/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "BSD-3-Clause license"
+    },
+    {
+      "slug": "secrets-management",
+      "name": "secrets-management",
+      "sha256": "d78110c97678bcaf1fef9b1fe6543a40a7bd1198b1136947a5ddffc60e3f5c29",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/secrets-management/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "segment-automation",
+      "name": "segment-automation",
+      "sha256": "d4014941ff045a7956557c1b855cb88c70728b002a3668c589a8544c06a64a55",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/segment-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "senior-architect",
+      "name": "senior-architect",
+      "sha256": "2f9b3138047803242bf0c8c8780e67e036ab72912f8f7f6d01b4cac186431022",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/senior-architect/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "senior-fullstack",
+      "name": "senior-fullstack",
+      "sha256": "e79ee26b7d40a4238048821ec973f2f4f340df0127dfdefa671fa0dfd8b76809",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-full-stack-developer/skills/senior-fullstack/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "sentry-automation",
+      "name": "sentry-automation",
+      "sha256": "5ac50d235ffdcf29440430225ac73ea639ebd68839938e50bc695c23d9a34912",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/sentry-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "shopify-apps",
+      "name": "shopify-apps",
+      "sha256": "f6a44e22a1400804a164853809a5e01e5239bf966cf0f1ebe8fd2710e8ba6b96",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/shopify-apps/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "skill-developer",
+      "name": "skill-developer",
+      "sha256": "15f3ecfd5cfdda66ae1de98e314427588f1b5546a0a3b30c26c60e674bbc5d9e",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/skill-developer/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "stitch-ui-design",
+      "name": "stitch-ui-design",
+      "sha256": "8ea47227e4adbd0608e9fa2bb25e42dc2e4439bb98dd8e3751e83b1ee9a315e7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/stitch-ui-design/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "systems-programming-rust-project",
+      "name": "systems-programming-rust-project",
+      "sha256": "4569df9800536bcf35321e518030a0bfb739c12e51b7ebc8120eeb5794eb6567",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/systems-programming-rust-project/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "templates",
+      "name": "templates",
+      "sha256": "f24540d9219cc4b5750fb28f63b83e1b00d82d992550f8948459202d4d614a5b",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/app-builder/templates/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "theme-factory",
+      "name": "theme-factory",
+      "sha256": "366ee55d92407128fd5f05871d9a6135bfe6fad2146ec2652edf99fc0b0d177b",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/theme-factory/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Complete terms in LICENSE.txt"
+    },
+    {
+      "slug": "threejs-loaders",
+      "name": "threejs-loaders",
+      "sha256": "6254f6f73ec6ccdaed1e7631cadb46718cf06d9aa1740a3c083d7d131594a1d9",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/threejs-loaders/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "tool-use-guardian",
+      "name": "tool-use-guardian",
+      "sha256": "2b26e8c8ea841863285e94618f395e4639b195f5b6dbf96db3fed748ae7faae7",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/tool-use-guardian/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "ui-ux-designer",
+      "name": "ui-ux-designer",
+      "sha256": "4c59236c093f18db0bc6706dd1cc690e097440dfb4a47cb59a0ccd5342813ca4",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/ui-ux-designer/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "web-artifacts-builder",
+      "name": "web-artifacts-builder",
+      "sha256": "81c5002c6643b0de7b8710b00e7a9038daa6fb9b68d59870ee6adb12da8d10f8",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/web-artifacts-builder/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Complete terms in LICENSE.txt"
+    },
+    {
+      "slug": "web-design-guidelines",
+      "name": "web-design-guidelines",
+      "sha256": "0de529691841fd541289a602b45fb5eb3eef7707da6d858c49b54f78a69960e0",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/web-design-guidelines/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "web3-testing",
+      "name": "web3-testing",
+      "sha256": "c684150bbf8e3394b14a35116833af88afa79237a940060fe310109aeb2fe0a2",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/web3-testing/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "webapp-testing",
+      "name": "webapp-testing",
+      "sha256": "51b7349e77ec63b7744a6f63647e7566a0b4d2e301121cc10e8c2113af6556a2",
+      "source_url": "https://raw.githubusercontent.com/anthropics/skills/34040c9c568585f6929bedeaad110ad08f079624/skills/webapp-testing/SKILL.md",
+      "ref": "34040c9c568585f6929bedeaad110ad08f079624",
+      "license": "Complete terms in LICENSE.txt"
+    },
+    {
+      "slug": "wordpress-woocommerce-development",
+      "name": "wordpress-woocommerce-development",
+      "sha256": "b2c297993847f5fe6eeafc6d0451a2388c67b4ec8bfa11f047fe751b9c2a9449",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/wordpress-woocommerce-development/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "youtube-automation",
+      "name": "youtube-automation",
+      "sha256": "8e219dbc98c7319d77f965fc53ddcb177cf56ee839f25a9ba0cfcd3e6ca7569b",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/youtube-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "zoho-crm-automation",
+      "name": "zoho-crm-automation",
+      "sha256": "227c8ec5f131a770faeee5d8506d45ca494487f6613b7830ed6b01d33760f628",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/zoho-crm-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "zoom-automation",
+      "name": "zoom-automation",
+      "sha256": "3189fe7c5a936a659160d0beaf4577aef21ef25d3c8bf7feb3adefdf6cfb9f7c",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/zoom-automation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "kind": "subset",
+  "name": "close-semantics-20",
+  "flavor": "close-semantics",
+  "size": 20,
+  "seed": 5076,
+  "embedding_model": "minishlab/potion-base-8M",
+  "cohesion_mean_cosine": 0.5112,
+  "skills": [
+    {
+      "slug": "ab-test-setup",
+      "name": "ab-test-setup",
+      "sha256": "d3b0236e0246c1020e8dd54cc97c3d1a9505324e0172b83c5fd9426ff7c388c9",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-data-analytics/skills/ab-test-setup/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-endpoint-builder",
+      "name": "api-endpoint-builder",
+      "sha256": "a7986b104c146563b6f8f36012625fbf931e04a0e8a88ed09cdf6521691a8c1d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/api-endpoint-builder/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-security-best-practices",
+      "name": "api-security-best-practices",
+      "sha256": "c674e7f05291e258810f33b9f650615c7e9a7fb50c2da5321ade926843e68351",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/api-security-best-practices/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "api-security-testing",
+      "name": "api-security-testing",
+      "sha256": "7570b8a3faa0ea55279a672de22ff3817b56c58fd9328f867212ec4885b6dc4f",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/api-security-testing/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "auth-implementation-patterns",
+      "name": "auth-implementation-patterns",
+      "sha256": "909a05d4205d85598f1885a0a3f53d4e71547107547d51e09814c22c74e5aa1b",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/auth-implementation-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "cc-skill-security-review",
+      "name": "cc-skill-security-review",
+      "sha256": "cc5e6bf0abd7c287c72b2b60dbb2cb3141ca878597446407bcd9a4626e3e57cd",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-security-developer/skills/cc-skill-security-review/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "data-engineer",
+      "name": "data-engineer",
+      "sha256": "0d3530fe40abde0266f2fbeab56e2aba1ef3abf35e14e96acfb5ed1a24d9e433",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-data-engineering/skills/data-engineer/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "data-engineering-data-driven-feature",
+      "name": "data-engineering-data-driven-feature",
+      "sha256": "36b2334a07b73f0e429c59bd8d9b759df3f50f8fc7b9303be066bae5ed026f59",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/data-engineering-data-driven-feature/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "data-quality-frameworks",
+      "name": "data-quality-frameworks",
+      "sha256": "89ee1cf8e8f2138c3eab90125bc3f795cb53c886f21442b93efd8d736b61dac8",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills/skills/data-quality-frameworks/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "dbos-golang",
+      "name": "dbos-golang",
+      "sha256": "e09b1f269f235cb7d59ce581165d73b68c00fa6f75add33184865ae2b1cabc2d",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/dbos-golang/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "dbt-transformation-patterns",
+      "name": "dbt-transformation-patterns",
+      "sha256": "026b516cf35ec3bea4b1bd65160d8b0f9d16cd44e7fd816babdf8858e599bece",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/dbt-transformation-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "docs-architect",
+      "name": "docs-architect",
+      "sha256": "b4ec0b0a5013954ed68f25c80d620f73a1d8e13e3f2207c25e2bfe129573e135",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/docs-architect/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "e2e-testing-patterns",
+      "name": "e2e-testing-patterns",
+      "sha256": "4594ce244ade5ebb26967738d80b1e3a0b4830d592741a7d513e223e62a51d5f",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/e2e-testing-patterns/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "error-debugging-error-trace",
+      "name": "error-debugging-error-trace",
+      "sha256": "a32d197e513efed7c96aaf03d8b2fb133c23cf002635e9ac88a1e21bc8d515f5",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/error-debugging-error-trace/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "hugging-face-datasets",
+      "name": "hugging-face-datasets",
+      "sha256": "204b02977bec12e3d7522541062f6f756c781243153e67e420121b000d9ed3ab",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/hugging-face-datasets/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "openapi-spec-generation",
+      "name": "openapi-spec-generation",
+      "sha256": "cc3bec1e9359c8b7fe449cd10a1203f21dcba6e87192cdf5cbbda18ac0a4dd1e",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/openapi-spec-generation/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "react-best-practices",
+      "name": "react-best-practices",
+      "sha256": "11eb4e5adf53cb04d6be14952a2ac87d4222310966c208baca3628df5c715585",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-bundle-typescript-javascript/skills/react-best-practices/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "security-compliance-compliance-check",
+      "name": "security-compliance-compliance-check",
+      "sha256": "52bdc682783c3e5355d2db4342d97cb27d88be673815fc5bced65bf026cc966a",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/skills/security-compliance-compliance-check/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "spec-to-code-compliance",
+      "name": "spec-to-code-compliance",
+      "sha256": "0ef55c70dfb319e628f5aae776b8431f7229bbe5bd962f9e437a072d3dc823ba",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/spec-to-code-compliance/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    },
+    {
+      "slug": "web3-testing",
+      "name": "web3-testing",
+      "sha256": "c684150bbf8e3394b14a35116833af88afa79237a940060fe310109aeb2fe0a2",
+      "source_url": "https://raw.githubusercontent.com/ar27111994/antigravity-awesome-skills/a9acd9c0c727224b94c418824197383a6f64bf94/plugins/antigravity-awesome-skills-claude/skills/web3-testing/SKILL.md",
+      "ref": "a9acd9c0c727224b94c418824197383a6f64bf94",
+      "license": "MIT"
+    }
+  ]
+}
