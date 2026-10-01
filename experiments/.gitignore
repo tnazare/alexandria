@@ -5,10 +5,17 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
-# Generated experiment artifacts (reproducible from code + seeds; do not commit)
+# Generated per-run build artifacts (reproducible; do not commit)
 corpus/real/
 corpus/distractor/
 corpus/padding/
+corpus/20/
+corpus/100/
+corpus/500/
 corpus/manifest.json
 results/raw/
 results/computed/
+
+# PERMANENT, COMMITTED data (the frozen superset, embeddings cache, named subsets + task sets):
+#   corpus/superset/   corpus/subsets/   corpus/embeddings/   tasks/subsets/
+# These are intentionally NOT ignored — they are the source of truth for reproducible, comparable runs.

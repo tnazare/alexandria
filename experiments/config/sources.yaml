@@ -1,18 +1,15 @@
-# Pinned harvest sources for the Real_Tier and Distractor_Tier (Requirement 9.2).
+# Pinned harvest sources for the real-skill superset.
 #
 # Each source is pinned to a commit `ref` so a re-harvest yields the identical set. The harvester
-# walks the repo tree at that ref, takes every `**/SKILL.md` under `subpath`, and records provenance
-# (source_url, ref, license, sha256) per skill. Sources it cannot fetch/parse are skipped and logged
-# (Requirement 9.3); malformed skills are never silently included.
+# walks the repo tree at that ref, takes every `**/SKILL.md` under `subpath`, parses frontmatter,
+# records provenance (source_url, ref, license, sha256) per skill, skips-and-logs malformed, and
+# de-dupes by (name, sha256). All skills are real (no synthetic padding tier anymore).
 #
-# `tier` assigns every skill from that source to a corpus tier:
-#   real       - genuine skills eligible to be a Gold_Skill
-#   distractor - realistic but task-wrong skills (never a Gold_Skill)
-#
-# Only `anthropics/skills` is confirmed to ship real SKILL.md files in the standard layout. The large
-# "awesome-skills" repos are link lists, not corpora, so they are NOT listed here; to expand the real
-# tier, add the underlying official/vendor repos (each shipping SKILL.md files) as new entries below,
-# pinned to a commit.
+# The superset builder (build_superset.py) then freezes a deterministic 500-skill set from this pool
+# and commits it as permanent data. anthropics/skills is listed first so its 19 curated skills are
+# always included (they anchor recognizable gold labels); the bulk comes from
+# antigravity-awesome-skills, which ships 4209 real SKILL.md files (MIT-licensed; individual skills
+# carry their own `source:`/license in frontmatter, recorded per skill).
 
 sources:
   - kind: github_repo
@@ -21,14 +18,20 @@ sources:
     subpath: skills
     tier: real
     license: UNKNOWN          # repo ships a non-SPDX license file; recorded per-skill as declared
-    exclude_slugs: []          # e.g. move some real skills to the distractor tier by slug
+    priority: 1               # always include these first in the superset
+    exclude_slugs: []
 
-# To add distractor skills, add entries with `tier: distractor`, e.g. real skills from adjacent
-# domains that should never be a gold answer for the task set:
-#
-#   - kind: github_repo
-#     owner_repo: some-vendor/their-skills
-#     ref: <pinned-sha>
-#     subpath: skills
-#     tier: distractor
-#     license: MIT
+  - kind: github_repo
+    owner_repo: ar27111994/antigravity-awesome-skills
+    ref: a9acd9c0c727224b94c418824197383a6f64bf94   # pinned 2026-09-30
+    subpath: ""               # SKILL.md files live under plugins/.../skills/ and skills/
+    tier: real
+    license: MIT              # repo license; per-skill `source:` recorded from frontmatter
+    priority: 2               # fill the superset up to 500 from here (seeded, deterministic)
+    exclude_slugs: []
+
+# Superset: the permanent 500-skill pool. The smaller named subsets (close/random/sparse at 20/100)
+# are deterministic selections FROM this frozen superset — see build_subsets.py.
+superset:
+  size: 500
+  seed: 1234

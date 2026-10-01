@@ -38,6 +38,7 @@ class Source:
     subpath: str
     tier: Tier
     license: str = "UNKNOWN"
+    priority: int = 100
     exclude_slugs: tuple[str, ...] = ()
 
 
@@ -54,9 +55,17 @@ def load_sources(path: str | Path) -> list[Source]:
             subpath=str(raw.get("subpath", "")).strip("/"),
             tier=Tier(str(raw.get("tier", "real"))),
             license=str(raw.get("license", "UNKNOWN")),
+            priority=int(raw.get("priority", 100)),
             exclude_slugs=tuple(raw.get("exclude_slugs", []) or ()),
         ))
     return sources
+
+
+def load_superset_config(path: str | Path) -> dict:
+    import yaml
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    ss = data.get("superset", {}) or {}
+    return {"size": int(ss.get("size", 500)), "seed": int(ss.get("seed", 1234))}
 
 
 def sha256_hex(text: str) -> str:
@@ -154,6 +163,89 @@ def harvest(sources: list[Source], *, client=None) -> list[HarvestedSkill]:
         if own_client:
             client.close()
     return out
+
+
+def _unique_slug(slug: str, taken: set) -> str:
+    """Return a slug not already in ``taken`` (append -2, -3, ... on collision)."""
+    if slug not in taken:
+        return slug
+    i = 2
+    while f"{slug}-{i}" in taken:
+        i += 1
+    return f"{slug}-{i}"
+
+
+def harvest_superset(sources: list[Source], *, size: int, seed: int, client=None) -> list[HarvestedSkill]:
+    """Build a deterministic ``size``-skill real superset from the sources.
+
+    Lists all SKILL.md paths first (cheap), then selects which to fetch deterministically:
+    sources are consumed in ``priority`` order; a lower-priority source contributes a seeded random
+    sample sized to fill the remaining budget. Only the selected bodies are fetched (so we never
+    download thousands of files). De-dupes by (name, sha256) and makes slugs unique. Returns up to
+    ``size`` skills (fewer only if the pool is smaller).
+    """
+    import random
+    import httpx
+
+    own = client is None
+    client = client or httpx.Client(follow_redirects=True)
+    try:
+        # 1. List candidate paths per source (deterministic order).
+        listed: list[tuple[Source, list[str]]] = []
+        for src in sorted(sources, key=lambda s: s.priority):
+            try:
+                paths = _list_skill_paths(client, src)
+            except Exception as e:  # noqa: BLE001
+                log.warning("skip source %s@%s: %s", src.owner_repo, src.ref, e)
+                continue
+            listed.append((src, paths))
+
+        # 2. Choose a fetch ORDER, priority-first. For lower-priority (bulk) sources, take the full
+        #    path list in a seeded-shuffled order so we can keep pulling candidates until the target
+        #    is met (dedup/malformed skips mean we must over-sample). Deterministic for a given seed.
+        rng = random.Random(seed)
+        ordered: list[tuple[Source, str]] = []
+        for src, paths in listed:
+            paths = [p for p in paths if slug_from_path(p) not in src.exclude_slugs]
+            if src.priority <= 1:
+                ordered += [(src, p) for p in sorted(paths)]   # curated: keep all, stable order
+            else:
+                shuffled = sorted(paths)
+                rng.shuffle(shuffled)                           # seeded deterministic shuffle
+                ordered += [(src, p) for p in shuffled]
+
+        # 3. Fetch in order until we reach ``size`` valid, unique skills (over-sampling past skips).
+        seen: set[tuple[str, str]] = set()
+        taken_slugs: set[str] = set()
+        out: list[HarvestedSkill] = []
+        for src, path in ordered:
+            if len(out) >= size:
+                break
+            raw_url = RAW_BASE.format(owner_repo=src.owner_repo, ref=src.ref, path=path)
+            try:
+                r = client.get(raw_url, timeout=30.0)
+                r.raise_for_status()
+            except Exception as e:  # noqa: BLE001
+                log.warning("skip %s: fetch failed: %s", raw_url, e)
+                continue
+            skill = build_skill(r.text, source=src, path=path, source_url=raw_url)
+            if skill is None:
+                continue
+            key = (skill.name, skill.sha256)
+            if key in seen:
+                continue
+            seen.add(key)
+            uslug = _unique_slug(skill.slug, taken_slugs)
+            taken_slugs.add(uslug)
+            if uslug != skill.slug:
+                skill = HarvestedSkill(slug=uslug, name=skill.name, description=skill.description,
+                                       body=skill.body, tier=skill.tier, source_url=skill.source_url,
+                                       ref=skill.ref, license=skill.license, sha256=skill.sha256)
+            out.append(skill)
+        return out
+    finally:
+        if own:
+            client.close()
 
 
 def write_corpus_files(skills: list[HarvestedSkill], corpus_dir: str | Path) -> None:
