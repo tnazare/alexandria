@@ -9,12 +9,16 @@ __pycache__/
 corpus/real/
 corpus/distractor/
 corpus/padding/
-corpus/20/
-corpus/100/
-corpus/500/
 corpus/manifest.json
 results/raw/
 results/computed/
+
+# Materialized per-run subset corpora (copied from the committed superset at run time; reproducible).
+# Everything under corpus/ EXCEPT the permanent superset/subsets/embeddings is a run artifact.
+corpus/*/
+!corpus/superset/
+!corpus/subsets/
+!corpus/embeddings/
 
 # PERMANENT, COMMITTED data (the frozen superset, embeddings cache, named subsets + task sets):
 #   corpus/superset/   corpus/subsets/   corpus/embeddings/   tasks/subsets/
