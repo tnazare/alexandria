@@ -136,6 +136,34 @@ def write_env(run_dir: Path, env: dict) -> Path:
     return p
 
 
+def cell_key(condition: str, library_size: int, task_id: str, rep: int) -> tuple:
+    """Composite key uniquely identifying one matrix cell (for resume/skip)."""
+    return (condition, int(library_size), task_id, int(rep))
+
+
+def completed_cells(run_dir: Path) -> set:
+    """Set of cell keys already recorded in a run's records.jsonl (empty if none).
+
+    Used to resume a quota-interrupted run: cells already present are skipped so a re-run only
+    executes the remaining matrix and appends to the same file (Requirement 7.4 — raw is the source
+    of truth, so dedup is keyed off it, not a separate checkpoint).
+    """
+    path = run_dir / "records.jsonl"
+    done = set()
+    if not path.is_file():
+        return done
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        done.add(cell_key(r.get("condition"), r.get("library_size"), r.get("task_id"), r.get("rep")))
+    return done
+
+
 # --- orchestration (live) --------------------------------------------------------------------
 # The matrix executor is thin over the tested building blocks. It needs the docker stack and the
 # `claude` CLI, so it is exercised by the opt-in smoke test and the manual full run — not the
@@ -181,6 +209,7 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
     )
     from harness.tokenizer import Tokenizer
 
+    resuming = run_id is not None
     run_id = run_id or new_run_id()
     run_dir = results_root / "raw" / run_id
     writer = RawWriter(run_dir)
@@ -191,8 +220,13 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
     by_id = {t.id: t for t in task_set.tasks}
     reps = list(range(cfg.warmup + cfg.nrep))  # rep < warmup are warmup runs
 
-    write_env(run_dir, build_env(cfg, model_id=cfg.model_id, model_version=None,
-                                 extra={"note": "matrix run"}))
+    # Resume support: skip cells already recorded; only (re)write env.json on a fresh run.
+    done = completed_cells(run_dir)
+    if resuming:
+        print(f"Resuming {run_id}: {len(done)} cells already complete, skipping them.", flush=True)
+    else:
+        write_env(run_dir, build_env(cfg, model_id=cfg.model_id, model_version=None,
+                                     extra={"note": "matrix run"}))
 
     for size in cfg.library_sizes:
         # A per-size corpus must already be built under corpus_root/<size>; halt if absent.
@@ -207,10 +241,10 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
                                  provision_native, run_claude, parse_claude_json,
                                  extract_chosen_skill, reported_usage,
                                  measure_matched_skill_load, measure_preload, native_task_tokens,
-                                 tempfile)
+                                 tempfile, done)
             elif condition == Condition.ALEXANDRIA.value:
                 _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
-                                     size, provision_alexandria, alexandria_task_tokens)
+                                     size, provision_alexandria, alexandria_task_tokens, done)
 
     return writer.records_path
 
@@ -218,7 +252,13 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_root: Path,
 def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, name_to_slug,
                      size, provision_native, run_claude, parse_claude_json, extract_chosen_skill,
                      reported_usage, measure_matched_skill_load, measure_preload,
-                     native_task_tokens, tempfile) -> None:
+                     native_task_tokens, tempfile, done) -> None:
+    # Resume: if every (task, rep) in this cell is already recorded, skip provisioning entirely.
+    pending = [(t, rep) for t in order for rep in reps
+               if cell_key(Condition.NATIVE.value, size, t, rep) not in done]
+    if not pending:
+        print(f"  [native N={size}] all cells already complete — skipping", flush=True)
+        return
     with tempfile.TemporaryDirectory(prefix="native-ws-") as ws:
         workspace = Path(ws)
         provision_native(corpus_dir, workspace)  # halts on mismatch
@@ -227,6 +267,8 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
         for task_id in order:
             task = by_id[task_id]
             for rep in reps:
+                if cell_key(Condition.NATIVE.value, size, task_id, rep) in done:
+                    continue
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
                                          model_id=cfg.model_id, effort=cfg.effort,
                                          allowed_tools=["Skill"],
@@ -266,9 +308,16 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
 
 
 def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,
-                         provision_alexandria, alexandria_task_tokens) -> None:
+                         provision_alexandria, alexandria_task_tokens, done) -> None:
     from harness.alexandria_client import AlexandriaClient
     from harness.run_alexandria import run_task
+
+    # Resume: if every (task, rep) in this cell is already recorded, skip provisioning entirely.
+    pending = [(t, rep) for t in order for rep in reps
+               if cell_key(Condition.ALEXANDRIA.value, size, t, rep) not in done]
+    if not pending:
+        print(f"  [alexandria N={size}] all cells already complete — skipping", flush=True)
+        return
 
     acfg = cfg.alexandria()
     provision_alexandria(acfg, corpus_dir)  # halts on failure
@@ -285,6 +334,8 @@ def _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, 
     for task_id in order:
         task = by_id[task_id]
         for rep in reps:
+            if cell_key(Condition.ALEXANDRIA.value, size, task_id, rep) in done:
+                continue
             rec = run_task(
                 task_id=task_id, prompt=task.prompt, gold_skill=task.gold_skill,
                 library_size=size, content_hash=manifest.content_hash, rep=rep,
@@ -343,6 +394,9 @@ def main() -> int:
     parser.add_argument("--corpus", default="corpus")
     parser.add_argument("--sources", default="config/sources.yaml")
     parser.add_argument("--task-set", default="tasks/task_set.v1.json")
+    parser.add_argument("--resume", default=None, metavar="RUN_ID",
+                        help="Resume an interrupted run: skip cells already in "
+                             "results/raw/<RUN_ID>/records.jsonl and append the rest.")
     parser.add_argument("--print-env", action="store_true",
                         help="Print the captured env and exit (no runs).")
     parser.add_argument("--build-only", action="store_true",
@@ -357,6 +411,22 @@ def main() -> int:
         cfg.raw["nrep"] = args.nrep
     if args.warmup is not None:
         cfg.raw["warmup"] = args.warmup
+
+    # On resume, inherit the original run's matrix shape from its env.json so cell keys align with
+    # what was already recorded (sizes/nrep/warmup/conditions must match the interrupted run).
+    if args.resume:
+        env_path = Path(args.results) / "raw" / args.resume / "env.json"
+        if not env_path.is_file():
+            print(f"ERROR: --resume {args.resume}: no env.json at {env_path}", flush=True)
+            return 2
+        orig = json.loads(env_path.read_text(encoding="utf-8"))
+        cfg.raw["library_sizes"] = orig["library_sizes"]
+        cfg.raw["nrep"] = orig["nrep"]
+        cfg.raw["warmup"] = orig["warmup"]
+        cfg.raw["conditions"] = orig["conditions"]
+        print(f"Resume: inheriting matrix shape from {args.resume} "
+              f"(sizes={orig['library_sizes']} nrep={orig['nrep']} warmup={orig['warmup']})",
+              flush=True)
 
     env = build_env(cfg, model_id=cfg.model_id, model_version=None)
     if args.print_env:
@@ -383,7 +453,7 @@ def main() -> int:
     aborted = False
     try:
         records_path = run_matrix(cfg, results_root=Path(args.results), corpus_root=corpus_root,
-                                  task_set=task_set)
+                                  task_set=task_set, run_id=args.resume)
     except QuotaExhaustedError as e:
         aborted = True
         print(f"\n*** ABORTED: {e}", flush=True)

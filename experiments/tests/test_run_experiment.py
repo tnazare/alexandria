@@ -96,3 +96,41 @@ class TestIdMaps:
         n2s = native_name_to_slug(m)
         assert n2s["Xlsx"] == "xlsx"
         assert n2s["xlsx"] == "xlsx"
+
+
+class TestResume:
+    def test_cell_key_is_stable(self):
+        from harness.run_experiment import cell_key
+        assert cell_key("native", 20, "t001", 0) == cell_key("native", "20", "t001", 0)
+        assert cell_key("native", 20, "t001", 0) != cell_key("alexandria", 20, "t001", 0)
+
+    def test_completed_cells_reads_recorded_keys(self, tmp_path):
+        import json
+        from harness.run_experiment import cell_key, completed_cells
+        run_dir = tmp_path / "run-x"
+        run_dir.mkdir()
+        rows = [
+            {"condition": "alexandria", "library_size": 20, "task_id": "t001", "rep": 0},
+            {"condition": "native", "library_size": 20, "task_id": "t002", "rep": 1},
+        ]
+        (run_dir / "records.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        done = completed_cells(run_dir)
+        assert cell_key("alexandria", 20, "t001", 0) in done
+        assert cell_key("native", 20, "t002", 1) in done
+        assert cell_key("native", 20, "t999", 0) not in done
+
+    def test_completed_cells_empty_when_no_file(self, tmp_path):
+        from harness.run_experiment import completed_cells
+        assert completed_cells(tmp_path / "nope") == set()
+
+    def test_completed_cells_tolerates_bad_lines(self, tmp_path):
+        from harness.run_experiment import cell_key, completed_cells
+        run_dir = tmp_path / "run-y"
+        run_dir.mkdir()
+        (run_dir / "records.jsonl").write_text(
+            '{"condition":"native","library_size":100,"task_id":"t001","rep":0}\n'
+            "not json\n\n", encoding="utf-8")
+        done = completed_cells(run_dir)
+        assert cell_key("native", 100, "t001", 0) in done
+        assert len(done) == 1
