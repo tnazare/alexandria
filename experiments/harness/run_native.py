@@ -46,25 +46,23 @@ def extract_chosen_skill(transcript: Any) -> Optional[str]:
 
 
 def _iter_tool_use_blocks(transcript: Any):
-    """Yield every tool_use content block found anywhere in a Claude Code JSON transcript."""
-    messages: list[Any] = []
-    if isinstance(transcript, dict):
-        # A single result object may hold messages under common keys, or be a message itself.
-        for key in ("messages", "transcript", "output"):
-            if isinstance(transcript.get(key), list):
-                messages.extend(transcript[key])
-        messages.append(transcript)
-    elif isinstance(transcript, list):
-        messages.extend(transcript)
+    """Yield every tool_use block found anywhere in a Claude Code transcript (fully recursive).
 
-    for msg in messages:
-        if not isinstance(msg, dict):
-            continue
-        content = msg.get("content")
-        if isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") in ("tool_use", "server_tool_use"):
-                    yield block
+    Works for both the single ``--output-format json`` result object and a ``stream-json`` list of
+    events (each wrapping ``message.content[]`` blocks). Recurses through dicts/lists so a tool_use
+    block is found regardless of nesting depth.
+    """
+    def walk(node: Any):
+        if isinstance(node, dict):
+            if node.get("type") in ("tool_use", "server_tool_use"):
+                yield node
+            for v in node.values():
+                yield from walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                yield from walk(v)
+
+    yield from walk(transcript)
 
 
 def measure_matched_skill_load(skill_md: Path) -> tuple[float, dict]:
@@ -114,6 +112,32 @@ def parse_claude_json(stdout: str) -> dict:
         return {}
 
 
+def parse_claude_stream(stdout: str) -> tuple[list[dict], dict]:
+    """Parse ``--output-format stream-json`` stdout into (events, final_result).
+
+    stream-json emits one JSON object per line (system init, assistant/user messages with content
+    blocks, and a terminal ``result`` event). Returns all parsed events plus the final ``result``
+    event (the summary object, same shape the plain ``json`` format returns). Tolerant of blank or
+    non-JSON lines.
+    """
+    events: list[dict] = []
+    final: dict = {}
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(ev, dict):
+            continue
+        events.append(ev)
+        if ev.get("type") == "result":
+            final = ev
+    return events, final
+
+
 def reported_usage(result: dict) -> Optional[dict]:
     """Extract Claude's own usage block if present (corroborating token metric, Requirement 3.4)."""
     if isinstance(result.get("usage"), dict):
@@ -154,7 +178,8 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
                model_id: Optional[str] = None, effort: Optional[str] = None, timeout: float = 300.0,
                mcp_config: Optional[Path] = None, allowed_tools: Optional[list[str]] = None,
                strict_mcp_config: bool = False,
-               append_system_prompt: Optional[str] = None) -> tuple[dict, float]:
+               append_system_prompt: Optional[str] = None,
+               stream: bool = False) -> tuple[dict, float]:
     """Invoke ``claude -p`` headless in ``workspace``; return (parsed_result, end_to_end_ms).
 
     Headless Claude Code does NOT auto-load a project ``.mcp.json`` and denies tool calls without a
@@ -164,9 +189,17 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
 
     ``model_id`` and ``effort`` are pinned for experiment validity (Requirement 6.4) and recorded in
     ``env.json``. ``effort`` is one of low/medium/high/xhigh/max.
+
+    When ``stream=True``, uses ``--output-format stream-json --verbose`` so tool_use events (the
+    native ``Skill`` dispatcher invocation) are observable; the plain ``json`` format only returns the
+    final summary and hides tool calls. The returned dict is the final ``result`` event with the full
+    event list attached under ``_events`` so ``extract_chosen_skill`` can see the tool_use blocks.
     """
-    args = [command, "-p", prompt, "--output-format", "json",
+    out_format = "stream-json" if stream else "json"
+    args = [command, "-p", prompt, "--output-format", out_format,
             "--permission-mode", "bypassPermissions"]
+    if stream:
+        args += ["--verbose"]  # required for stream-json in -p mode
     if model_id:
         args += ["--model", model_id]
     if effort:
@@ -182,7 +215,15 @@ def run_claude(prompt: str, workspace: Path, *, command: str = "claude",
     start = time.perf_counter()
     proc = subprocess.run(args, cwd=str(workspace), capture_output=True, text=True, timeout=timeout)
     elapsed_ms = (time.perf_counter() - start) * 1000.0
-    result = parse_claude_json(proc.stdout)
-    if not result and proc.returncode != 0:
-        result = {"_error": proc.stderr.strip(), "_returncode": proc.returncode}
+
+    if stream:
+        events, final = parse_claude_stream(proc.stdout)
+        result = dict(final) if final else {}
+        result["_events"] = events  # so tool_use blocks are discoverable by extract_chosen_skill
+        if not events and proc.returncode != 0:
+            result = {"_error": proc.stderr.strip(), "_returncode": proc.returncode}
+    else:
+        result = parse_claude_json(proc.stdout)
+        if not result and proc.returncode != 0:
+            result = {"_error": proc.stderr.strip(), "_returncode": proc.returncode}
     return result, elapsed_ms

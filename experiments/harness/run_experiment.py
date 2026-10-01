@@ -213,7 +213,8 @@ def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, coun
                 result, e2e = run_claude(task.prompt, workspace, command=cfg.claude_command,
                                          model_id=cfg.model_id, effort=cfg.effort,
                                          allowed_tools=["Skill"],
-                                         append_system_prompt=cfg.system_prompt("native"))
+                                         append_system_prompt=cfg.system_prompt("native"),
+                                         stream=True)
                 chosen_name = extract_chosen_skill(result)
                 chosen_slug = name_to_slug.get(chosen_name) if chosen_name else None
                 consulted = chosen_name is not None

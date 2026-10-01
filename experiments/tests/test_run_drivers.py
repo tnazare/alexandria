@@ -104,6 +104,28 @@ class TestNativeTranscript:
         assert extract_chosen_skill({}) is None
         assert extract_chosen_skill([]) is None
 
+    def test_extracts_from_stream_json_shape(self):
+        # The real stream-json shape: a tool_use block with name "Skill" and input.skill, nested
+        # under an assistant event's message.content, attached as _events on the result.
+        from harness.run_native import parse_claude_stream
+        lines = "\n".join([
+            '{"type":"system","subtype":"init","skills":["pdf","xlsx"]}',
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill",'
+            '"input":{"skill":"pdf"},"id":"t1"}]}}',
+            '{"type":"result","result":"done","usage":{"input_tokens":5}}',
+        ])
+        events, final = parse_claude_stream(lines)
+        assert final.get("result") == "done"
+        assert len(events) == 3
+        result = {"_events": events}
+        assert extract_chosen_skill(result) == "pdf"
+
+    def test_stream_parser_tolerates_blank_and_bad_lines(self):
+        from harness.run_native import parse_claude_stream
+        events, final = parse_claude_stream('\n{"type":"result","result":"x"}\nnot json\n')
+        assert final.get("result") == "x"
+        assert len(events) == 1
+
 
 class TestClaudeJson:
     def test_parses_plain_json(self):
