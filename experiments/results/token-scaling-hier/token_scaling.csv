@@ -1,0 +1,6 @@
+n,categories,native_resident,native_total,alexandria_resident,alexandria_total,catalog_resident,catalog_total,hierarchical_resident,hierarchical_per_task,hierarchical_total,ratio_native_over_alx,ratio_native_over_catalog,ratio_catalog_over_hier_resident
+20,4,820,2101,200,1766,1012,2293,147,1570,1717,1.19,0.916,6.884
+50,7,1948,3252,200,1789,2324,3628,180,1569,1749,1.818,0.896,12.911
+100,10,3849,5290,200,1926,4531,5972,194,1778,1972,2.747,0.886,23.356
+200,14,8260,10094,200,2319,9573,11407,240,2651,2891,4.353,0.885,39.888
+500,22,19124,20819,200,2180,22259,23954,310,2674,2984,9.55,0.869,71.803

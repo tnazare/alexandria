@@ -140,6 +140,62 @@ def catalog_task_tokens(
     return TokenBreakdown(resident=resident, per_task=per_task)
 
 
+# --- hierarchical-disclosure condition (sub-linear resident cost) ----------------------------
+# Hierarchical disclosure keeps only C category *headers* resident; a skill's catalog line is
+# disclosed only when its category is opened. Resident cost is O(C) (~sqrt(N)) instead of O(N),
+# while selection still begins from resident text (the headers) — preserving catalog's compliance.
+# Two tools: list_category(category) discloses one category's lines; fetch_skill(id) returns a body.
+
+LIST_CATEGORY_SCHEMA = (
+    "list_category: List the skills in one category from the resident Category Index. "
+    "Pass the category label; returns that category's skills as 'id: name — description' lines. "
+    'inputSchema: {"type":"object","properties":{"category":{"type":"string"}},'
+    '"required":["category"]}'
+)
+
+
+def category_header_line(label: str, member_count: int, summary: str = "") -> str:
+    """One resident category header: ``label (n): summary`` (the model picks a category from these)."""
+    base = f"{label} ({member_count})"
+    return f"{base}: {summary}" if summary else base
+
+
+def hierarchical_resident_tokens(
+    count: Counter,
+    category_headers: list[tuple[str, int, str]],
+) -> int:
+    """Resident cost: list_category + fetch schemas + Σ category *headers* only (O(C), ~sqrt(N)).
+
+    ``category_headers`` is a list of ``(label, member_count, summary)`` — the only skill-derived
+    text that stays resident. The per-skill catalog lines are NOT resident; they are disclosed per
+    category on demand (see :func:`hierarchical_task_tokens`).
+    """
+    total = count(LIST_CATEGORY_SCHEMA) + count(FETCH_BY_ID_SCHEMA)
+    for label, n, summary in category_headers:
+        total += count(category_header_line(label, n, summary))
+    return total
+
+
+def hierarchical_task_tokens(
+    count: Counter,
+    category_headers: list[tuple[str, int, str]],
+    *,
+    opened_category_lines: list[str],
+    fetched_body: str,
+) -> TokenBreakdown:
+    """Per-task cost: resident headers + the opened category's disclosed lines + one fetched body.
+
+    ``opened_category_lines`` are the ``id: name — description`` rows of the single category the agent
+    opened (empty if it never opened one); ``fetched_body`` is the one skill body it fetched (empty if
+    none). This is the hierarchical analogue of catalog's resident-catalog + body: here the per-skill
+    lines are a *per-task* cost (only one category's worth), which is what bends resident cost
+    sub-linear.
+    """
+    resident = hierarchical_resident_tokens(count, category_headers)
+    per_task = count("\n".join(opened_category_lines)) + count(fetched_body)
+    return TokenBreakdown(resident=resident, per_task=per_task)
+
+
 def native_resident_tokens(count: Counter, manifest: CorpusManifest, corpus_dir: Path) -> int:
     """Native resident cost: Σ frontmatter (name + description) over all N skills (Requirement 3.3).
 

@@ -46,12 +46,15 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
 
+from harness.categorize import categorize, suggest_k
 from harness.frontmatter import parse_frontmatter
 from harness.measure_tokens import (
     FETCH_BY_ID_SCHEMA,
     RESOLVE_SKILL_SCHEMA,
     alexandria_resident_tokens,
     catalog_line,
+    category_header_line,
+    hierarchical_resident_tokens,
 )
 from harness.tokenizer import Tokenizer
 
@@ -102,6 +105,10 @@ class ScalingPoint:
     catalog_resident: int       # one fetch schema + Σ compact catalog lines (grows in N, like native)
     catalog_per_task: int       # median fetched body (one fetch)
     catalog_total: int
+    hierarchical_resident: int  # two schemas + Σ category HEADERS only (O(C) ~ sqrt(N))
+    hierarchical_per_task: int  # one opened category's lines + median fetched body
+    hierarchical_total: int
+    categories: int             # C used at this N (diagnostic)
 
     @property
     def ratio_native_over_alx(self) -> float:
@@ -110,6 +117,12 @@ class ScalingPoint:
     @property
     def ratio_native_over_catalog(self) -> float:
         return self.native_total / self.catalog_total if self.catalog_total else float("inf")
+
+    @property
+    def ratio_catalog_over_hier_resident(self) -> float:
+        """How much the hierarchical scheme shrinks *resident* cost vs the flat catalog."""
+        return (self.catalog_resident / self.hierarchical_resident
+                if self.hierarchical_resident else float("inf"))
 
 
 def _sample(skills: list[SupersetSkill], n: int, seed: int) -> list[SupersetSkill]:
@@ -133,7 +146,8 @@ def _resolve_result_text(candidates: list[SupersetSkill]) -> str:
     return "candidates:\n" + "\n".join(lines)
 
 
-def compute_point(skills: list[SupersetSkill], n: int, seed: int, count) -> ScalingPoint:
+def compute_point(skills: list[SupersetSkill], n: int, seed: int, count,
+                  embeddings_cache: Optional[dict] = None) -> ScalingPoint:
     """Compute the token model at size N using a representative (median-body) disclosure."""
     sample = _sample(skills, n, seed)
 
@@ -161,6 +175,27 @@ def compute_point(skills: list[SupersetSkill], n: int, seed: int, count) -> Scal
     )
     catalog_per_task = median_body  # one fetched body, same as native's disclosure
 
+    # Hierarchical: cluster the sample into C ~ sqrt(N) categories (deterministic k-means over the
+    # committed embeddings). Only the C category HEADERS stay resident; one opened category's lines
+    # + one body are the per-task cost. by_slug lets us look up a member's catalog line + name/desc.
+    by_slug = {s.slug: s for s in sample}
+    k = suggest_k(n)
+    cat = categorize([s.slug for s in sample], k=k, seed=seed, cache=embeddings_cache)
+    # Resident headers: "label (count): <summary>" — summary is the label-term string, cheap & stable.
+    headers = [(c.label, len(c.slugs), c.label.replace("-", " ")) for c in cat.categories]
+    hier_resident = hierarchical_resident_tokens(count, headers)
+    # Per-task: the agent opens ONE category. Model the *median-sized* category's disclosed lines so
+    # the per-task cost is representative rather than best/worst case. Pick by position in the
+    # size-sorted category list (robust to even counts / repeated sizes).
+    cats_by_size = sorted(cat.categories, key=lambda c: (len(c.slugs), c.label))
+    median_cat = cats_by_size[len(cats_by_size) // 2] if cats_by_size else None
+    opened_lines = []
+    if median_cat:
+        for slug in median_cat.slugs:
+            s = by_slug[slug]
+            opened_lines.append(catalog_line(s.slug, s.name, s.description))
+    hier_per_task = count("\n".join(opened_lines)) + median_body
+
     return ScalingPoint(
         n=n,
         native_resident=native_resident,
@@ -172,6 +207,10 @@ def compute_point(skills: list[SupersetSkill], n: int, seed: int, count) -> Scal
         catalog_resident=catalog_resident,
         catalog_per_task=catalog_per_task,
         catalog_total=catalog_resident + catalog_per_task,
+        hierarchical_resident=hier_resident,
+        hierarchical_per_task=hier_per_task,
+        hierarchical_total=hier_resident + hier_per_task,
+        categories=len(cat.categories),
     )
 
 
@@ -184,9 +223,13 @@ def crossover_n(points: list[ScalingPoint]) -> Optional[int]:
 
 
 def run(superset_dir: Path, sizes: list[int], seed: int, encoding: str) -> dict:
+    from harness.categorize import load_embeddings
+
     tok = Tokenizer(encoding)
     skills = load_superset(superset_dir)
-    points = [compute_point(skills, n, seed, tok.count) for n in sorted(sizes)]
+    cache = load_embeddings()
+    points = [compute_point(skills, n, seed, tok.count, embeddings_cache=cache)
+              for n in sorted(sizes)]
     return {
         "encoding": encoding,
         "seed": seed,
@@ -196,22 +239,26 @@ def run(superset_dir: Path, sizes: list[int], seed: int, encoding: str) -> dict:
         "points": [asdict(p) | {
             "ratio_native_over_alx": round(p.ratio_native_over_alx, 3),
             "ratio_native_over_catalog": round(p.ratio_native_over_catalog, 3),
+            "ratio_catalog_over_hier_resident": round(p.ratio_catalog_over_hier_resident, 3),
         } for p in points],
     }
 
 
 def _write_csv(result: dict, path: Path) -> None:
-    header = ("n,native_resident,native_per_task,native_total,"
-              "alexandria_resident,alexandria_per_task,alexandria_total,"
-              "catalog_resident,catalog_per_task,catalog_total,"
-              "ratio_native_over_alx,ratio_native_over_catalog")
+    header = ("n,categories,native_resident,native_total,"
+              "alexandria_resident,alexandria_total,"
+              "catalog_resident,catalog_total,"
+              "hierarchical_resident,hierarchical_per_task,hierarchical_total,"
+              "ratio_native_over_alx,ratio_native_over_catalog,ratio_catalog_over_hier_resident")
     rows = [header]
     for p in result["points"]:
         rows.append(
-            f"{p['n']},{p['native_resident']},{p['native_per_task']},{p['native_total']},"
-            f"{p['alexandria_resident']},{p['alexandria_per_task']},{p['alexandria_total']},"
-            f"{p['catalog_resident']},{p['catalog_per_task']},{p['catalog_total']},"
-            f"{p['ratio_native_over_alx']},{p['ratio_native_over_catalog']}"
+            f"{p['n']},{p['categories']},{p['native_resident']},{p['native_total']},"
+            f"{p['alexandria_resident']},{p['alexandria_total']},"
+            f"{p['catalog_resident']},{p['catalog_total']},"
+            f"{p['hierarchical_resident']},{p['hierarchical_per_task']},{p['hierarchical_total']},"
+            f"{p['ratio_native_over_alx']},{p['ratio_native_over_catalog']},"
+            f"{p['ratio_catalog_over_hier_resident']}"
         )
     path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
@@ -219,14 +266,16 @@ def _write_csv(result: dict, path: Path) -> None:
 def _print_table(result: dict) -> None:
     print(f"\nToken-scaling curve (encoding={result['encoding']}, seed={result['seed']}, "
           f"superset={result['superset_size']})")
-    print("Context tokens to service one task — resident (always in ctx) + per-task (one body).\n")
-    print(f"{'N':>5} | {'native_tot':>10} | {'catalog_tot':>11} | {'alx_tot':>8} | "
-          f"{'nat/cat':>8} {'nat/alx':>8}")
-    print("-" * 64)
+    print("Context tokens to service one task — resident (always in ctx) + per-task (one body).")
+    print("hier = hierarchical disclosure (C category headers resident, one category opened per task).\n")
+    print(f"{'N':>5} {'C':>3} | {'nat_res':>8} {'cat_res':>8} {'hier_res':>8} | "
+          f"{'nat_tot':>8} {'cat_tot':>8} {'hier_tot':>8} | {'cat_res/hier':>12}")
+    print("-" * 86)
     for p in result["points"]:
-        print(f"{p['n']:>5} | {p['native_total']:>10} | {p['catalog_total']:>11} | "
-              f"{p['alexandria_total']:>8} | "
-              f"{p['ratio_native_over_catalog']:>8} {p['ratio_native_over_alx']:>8}")
+        print(f"{p['n']:>5} {p['categories']:>3} | "
+              f"{p['native_resident']:>8} {p['catalog_resident']:>8} {p['hierarchical_resident']:>8} | "
+              f"{p['native_total']:>8} {p['catalog_total']:>8} {p['hierarchical_total']:>8} | "
+              f"{p['ratio_catalog_over_hier_resident']:>12}")
     xo = result["crossover_n"]
     print()
     if xo is None:
