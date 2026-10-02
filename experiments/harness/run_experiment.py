@@ -245,8 +245,69 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, s
         elif condition == Condition.CATALOG.value:
             _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
                               size, subset_name, done)
+        elif condition == Condition.HIERARCHICAL.value:
+            _run_hierarchical_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
+                                   size, subset_name, done)
 
     return writer.records_path
+
+
+def _run_hierarchical_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,
+                           subset_name, done) -> None:
+    """Hierarchical condition: resident category index + local list_category/fetch_skill server.
+
+    No backend. Categories are derived once (seeded k-means over committed embeddings); the resident
+    index + the label->slugs map drive the system prompt and the local server respectively.
+    """
+    from harness.provision_hierarchical import (
+        build_categorization, build_category_index_text, category_headers_for_tokens,
+        hierarchical_id_to_slug, label_to_slugs as build_label_to_slugs,
+    )
+    from harness.provision_hierarchical import hierarchical_system_prompt as compose_hier_prompt
+    from harness.run_hierarchical import run_task as run_hier_task
+
+    pending = [(t, rep) for t in order for rep in reps
+               if cell_key(Condition.HIERARCHICAL.value, size, t, rep) not in done]
+    if not pending:
+        print(f"  [hierarchical N={size}] all cells already complete — skipping", flush=True)
+        return
+
+    cat = build_categorization(corpus_dir, manifest, seed=cfg.padding_seed)
+    index_text = build_category_index_text(cat)
+    sys_prompt = compose_hier_prompt(cfg.system_prompt("hierarchical") or "", index_text)
+    l2s = build_label_to_slugs(cat)
+    headers = category_headers_for_tokens(cat)
+    id_to_slug = hierarchical_id_to_slug(cat)
+    print(f"  [hierarchical N={size}] {len(cat.categories)} categories derived", flush=True)
+
+    for task_id in order:
+        task = by_id[task_id]
+        for rep in reps:
+            if cell_key(Condition.HIERARCHICAL.value, size, task_id, rep) in done:
+                continue
+            rec = run_hier_task(
+                task_id=task_id, prompt=task.prompt, gold_skill=task.gold_skill,
+                library_size=size, content_hash=manifest.content_hash, rep=rep,
+                is_warmup=(rep < cfg.warmup), corpus_dir=corpus_dir, manifest=manifest,
+                hierarchical_system_prompt=sys_prompt, label_to_slugs=l2s,
+                category_headers=headers, id_to_slug=id_to_slug, count=count,
+                experiment_version=cfg.experiment_version, run_id=writer.run_dir.name,
+                claude_command=cfg.claude_command, model_id=cfg.model_id, effort=cfg.effort,
+                disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
+            )
+            rec.notes = f"subset={subset_name};{rec.notes}"
+            u = rec.reported_usage or {}
+            real = (int(u.get("input_tokens", 0) or 0) + int(u.get("cache_read_input_tokens", 0) or 0)
+                    + int(u.get("output_tokens", 0) or 0)) > 0
+            if not real:
+                raise QuotaExhaustedError(
+                    f"hierarchical {task_id} rep={rep} returned zero token work — likely Claude "
+                    f"quota/rate-limit exhausted. Aborting to avoid poisoning the dataset. "
+                    f"Resume after the quota resets; records written so far are valid.")
+            print(f"  [hierarchical N={size}] {task_id} rep={rep} "
+                  f"consulted={rec.consulted} chosen={rec.chosen_skill} "
+                  f"tok={rec.context_token_cost} {rec.notes.split(';')[-1]}", flush=True)
+            writer.write(rec)
 
 
 def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,

@@ -8,6 +8,7 @@ tests use a trivial whitespace counter.
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 from harness.categorize import Categorization, Category, categorize, suggest_k
 from harness.measure_tokens import (
@@ -108,3 +109,110 @@ class TestHierarchicalTokenModel:
     def test_header_line_shapes(self):
         assert category_header_line("auth", 3, "login identity") == "auth (3): login identity"
         assert category_header_line("auth", 3) == "auth (3)"
+
+
+def _write_corpus(tmp_path, slugs):
+    """Materialize a real-only corpus + manifest (mirrors test_catalog helper)."""
+    from harness.build_corpus import compute_content_hash
+    from harness.models import CorpusManifest, ManifestEntry, Tier
+
+    corpus = tmp_path / "corpus"
+    entries = []
+    for slug in slugs:
+        d = corpus / Tier.REAL.value / slug
+        d.mkdir(parents=True, exist_ok=True)
+        desc = " ".join(["d"] * 5)
+        body = " ".join(["b"] * 40)
+        (d / "SKILL.md").write_text(f"---\nname: {slug}\ndescription: {desc}\n---\n# {slug}\n{body}\n",
+                                    encoding="utf-8")
+        entries.append(ManifestEntry(slug=slug, tier=Tier.REAL, name=slug, sha256=f"s-{slug}"))
+    manifest = CorpusManifest(experiment_version="v1", library_size=len(entries), seed=1,
+                              content_hash=compute_content_hash(entries), skills=entries)
+    return manifest, corpus
+
+
+class TestHierarchicalServerHandling:
+    def _setup(self, tmp_path):
+        manifest, corpus = _write_corpus(tmp_path, ["pdf", "xlsx", "auth"])
+        label_to_slugs = {"docs": ["pdf", "xlsx"], "security": ["auth"]}
+        from harness.hierarchical_server import HierarchicalCapture
+        return manifest, corpus, label_to_slugs, HierarchicalCapture()
+
+    def test_tools_list_advertises_both_tools(self, tmp_path):
+        from harness.hierarchical_server import handle_message
+        manifest, corpus, l2s, cap = self._setup(tmp_path)
+        resp = handle_message({"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                              corpus, manifest, l2s, cap)
+        assert [t["name"] for t in resp["result"]["tools"]] == ["list_category", "fetch_skill"]
+
+    def test_list_category_discloses_lines_and_records_open(self, tmp_path):
+        from harness.hierarchical_server import handle_message
+        manifest, corpus, l2s, cap = self._setup(tmp_path)
+        resp = handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                               "params": {"name": "list_category", "arguments": {"category": "docs"}}},
+                              corpus, manifest, l2s, cap)
+        text = resp["result"]["content"][0]["text"]
+        assert "pdf: " in text and "xlsx: " in text   # the category's lines disclosed
+        assert "auth" not in text                      # other category not disclosed
+        assert cap.opened_categories == ["docs"]       # open recorded for compliance
+
+    def test_list_unknown_category_is_error_with_hint(self, tmp_path):
+        from harness.hierarchical_server import handle_message
+        manifest, corpus, l2s, cap = self._setup(tmp_path)
+        resp = handle_message({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                               "params": {"name": "list_category", "arguments": {"category": "nope"}}},
+                              corpus, manifest, l2s, cap)
+        assert resp["result"]["isError"] is True
+        assert cap.opened_categories == ["nope"]       # still records the attempt
+
+    def test_fetch_skill_returns_body_and_captures_id(self, tmp_path):
+        from harness.hierarchical_server import handle_message
+        manifest, corpus, l2s, cap = self._setup(tmp_path)
+        resp = handle_message({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                               "params": {"name": "fetch_skill", "arguments": {"id": "pdf"}}},
+                              corpus, manifest, l2s, cap)
+        assert "# pdf" in resp["result"]["content"][0]["text"]
+        assert cap.fetched_id == "pdf"
+
+    def test_retrieval_latency_sums_list_and_fetch(self, tmp_path):
+        from harness.hierarchical_server import handle_message
+        manifest, corpus, l2s, cap = self._setup(tmp_path)
+        handle_message({"id": 5, "method": "tools/call",
+                        "params": {"name": "list_category", "arguments": {"category": "docs"}}},
+                       corpus, manifest, l2s, cap)
+        handle_message({"id": 6, "method": "tools/call",
+                        "params": {"name": "fetch_skill", "arguments": {"id": "pdf"}}},
+                       corpus, manifest, l2s, cap)
+        assert cap.list_latency_ms is not None and cap.fetch_latency_ms is not None
+        assert cap.retrieval_latency_ms() == cap.list_latency_ms + cap.fetch_latency_ms
+
+
+class TestHierarchicalProvision:
+    def test_category_index_and_maps_from_real_corpus(self, tmp_path):
+        # Uses the committed embeddings via categorize; pick slugs known to be in the superset.
+        from harness.build_corpus import materialize_subset
+        from harness.provision_hierarchical import (
+            build_categorization, build_category_index_text, hierarchical_id_to_slug,
+            hierarchical_system_prompt, label_to_slugs,
+        )
+        import os
+        # Run from the experiments dir so corpus/embeddings resolve.
+        cwd = os.getcwd()
+        try:
+            os.chdir(Path(__file__).resolve().parent.parent)
+            corpus = Path("corpus/random-20")
+            manifest = materialize_subset("random-20", out_dir=corpus)
+            cat = build_categorization(corpus, manifest, seed=1234)
+            assert len(cat.categories) >= 2
+            index = build_category_index_text(cat)
+            assert index.count("\n") + 1 == len(cat.categories)   # one header per category
+            l2s = label_to_slugs(cat)
+            # Every skill appears in exactly one category.
+            all_slugs = [s for slugs in l2s.values() for s in slugs]
+            assert sorted(all_slugs) == sorted(e.slug for e in manifest.skills)
+            # id map is identity over all slugs; system prompt carries the index.
+            assert set(hierarchical_id_to_slug(cat)) == set(all_slugs)
+            prompt = hierarchical_system_prompt("Review the index.", index)
+            assert "Category Index" in prompt and "Review the index." in prompt
+        finally:
+            os.chdir(cwd)

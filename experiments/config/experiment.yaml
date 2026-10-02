@@ -28,6 +28,7 @@ seeds:
 # catalog (resident compact catalog in-prompt + local on-demand fetch_skill(id); needs no stack).
 # - [alexandria, native]  : the original server-side vs native comparison (needs the docker stack).
 # - [catalog, native]     : resident-catalog vs native A/B (no stack; see results/run-20261002-095819.md).
+# - [hierarchical, catalog, native] : three-way (hierarchical adds a category-open hop; no stack).
 conditions: [alexandria, native]
 
 # Model + effort under test. Both are pinned and recorded per run; a mid-experiment change
@@ -96,3 +97,12 @@ system_prompt:
     call the fetch_skill tool with that skill's id to get its instructions. Then STOP: state which
     skill you would use and end your turn. Do NOT actually perform the task, and do NOT create, write,
     edit, run, or open any files or commands. If no catalog skill applies, simply say so and stop.
+  hierarchical: >
+    IMPORTANT: Below is a Category Index of reusable governed skills, as "label (count): summary".
+    Before doing anything else, you MUST review it and decide which category best fits the user's
+    task. This is mandatory even if you think you already know how to do the task. Call the
+    list_category tool with that category's label to see its skills (as "id: name — description"). If
+    one applies, call the fetch_skill tool with that skill's id to get its instructions. Then STOP:
+    state which skill you would use and end your turn. Do NOT actually perform the task, and do NOT
+    create, write, edit, run, or open any files or commands. If no category or skill applies, simply
+    say so and stop.
