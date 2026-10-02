@@ -63,6 +63,24 @@ class TokenBreakdown:
         return self.resident + self.per_task
 
 
+# --- catalog condition schema (one fetch tool; constant in N) --------------------------------
+# The catalog condition injects a compact resident catalog (id: name — description per skill) into
+# the system prompt, like native's preload, then fetches ONE body on demand via a single local tool.
+# It has no resolve_skill step (selection happens over the resident catalog, as in native), so its
+# resident tool cost is just this one schema.
+
+FETCH_BY_ID_SCHEMA = (
+    "fetch_skill: Fetch the full instructions for one skill chosen from the resident Skill Catalog. "
+    "Pass the catalog id of the skill you selected. Returns the skill's SKILL.md body. "
+    'inputSchema: {"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}'
+)
+
+
+def catalog_line(skill_id: str, name: str, description: str) -> str:
+    """One resident catalog entry: ``id: name — description`` (the model selects an id from these)."""
+    return f"{skill_id}: {name} — {description}"
+
+
 def alexandria_resident_tokens(count: Counter) -> int:
     """Resident cost for Alexandria: the two tool schemas. Independent of N (Requirement 3.2)."""
     return count(RESOLVE_SKILL_SCHEMA) + count(FETCH_SKILL_SCHEMA)
@@ -77,6 +95,48 @@ def alexandria_task_tokens(
     """Alexandria per-task cost: resident schemas + resolve result payload + fetched body."""
     resident = alexandria_resident_tokens(count)
     per_task = count(resolve_result_text) + count(fetched_body)
+    return TokenBreakdown(resident=resident, per_task=per_task)
+
+
+def catalog_resident_tokens(count: Counter, manifest: CorpusManifest, corpus_dir: Path) -> int:
+    """Catalog resident cost: the one fetch schema + Σ compact catalog lines over all N skills.
+
+    Like native, every skill's name+description is resident so the model can select without a
+    retrieval round-trip (high consult compliance). Unlike native, the per-skill line is a compact
+    ``id: name — description`` lookup row rather than Claude's full preload framing, and there is a
+    single fetch tool instead of a flat body preload. Grows with N (the catalog), but carries only
+    one schema and no body until a fetch.
+    """
+    total = count(FETCH_BY_ID_SCHEMA)
+    for entry in manifest.skills:
+        skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
+        fm, _ = parse_frontmatter(skill_md.read_text(encoding="utf-8"))
+        name = str(fm.get("name") or entry.name or "")
+        description = str(fm.get("description") or "")
+        total += count(catalog_line(entry.slug, name, description))
+    return total
+
+
+def catalog_task_tokens(
+    count: Counter,
+    manifest: CorpusManifest,
+    corpus_dir: Path,
+    *,
+    matched_slug: Optional[str],
+) -> TokenBreakdown:
+    """Catalog per-task cost: resident catalog + full body of the fetched skill (one fetch).
+
+    If ``matched_slug`` is None (no skill applies / none fetched), per-task disclosure is 0 — only
+    the resident catalog is in context. Mirrors native's progressive disclosure, but the resident
+    part is the compact catalog rather than the full-description preload.
+    """
+    resident = catalog_resident_tokens(count, manifest, corpus_dir)
+    per_task = 0
+    if matched_slug:
+        entry = next((e for e in manifest.skills if e.slug == matched_slug), None)
+        if entry is not None:
+            skill_md = corpus_dir / entry.tier.value / entry.slug / "SKILL.md"
+            per_task = count(skill_md.read_text(encoding="utf-8"))
     return TokenBreakdown(resident=resident, per_task=per_task)
 
 

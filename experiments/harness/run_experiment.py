@@ -242,8 +242,62 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, s
         elif condition == Condition.ALEXANDRIA.value:
             _run_alexandria_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
                                  size, subset_name, provision_alexandria, alexandria_task_tokens, done)
+        elif condition == Condition.CATALOG.value:
+            _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
+                              size, subset_name, done)
 
     return writer.records_path
+
+
+def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,
+                      subset_name, done) -> None:
+    """Catalog condition: resident catalog in the system prompt + a local on-demand fetch server.
+
+    No backend and no per-skill workspace install — the catalog text is built once from the corpus
+    and the single fetch is served locally. So this cell only needs the corpus files already
+    materialized for the subset.
+    """
+    from harness.provision_catalog import build_catalog_text, catalog_id_to_slug
+    from harness.provision_catalog import catalog_system_prompt as compose_catalog_prompt
+    from harness.run_catalog import run_task as run_catalog_task
+
+    pending = [(t, rep) for t in order for rep in reps
+               if cell_key(Condition.CATALOG.value, size, t, rep) not in done]
+    if not pending:
+        print(f"  [catalog N={size}] all cells already complete — skipping", flush=True)
+        return
+
+    catalog_text = build_catalog_text(corpus_dir, manifest)  # halts if a body is missing
+    sys_prompt = compose_catalog_prompt(cfg.system_prompt("catalog") or "", catalog_text)
+    id_to_slug = catalog_id_to_slug(manifest)
+
+    for task_id in order:
+        task = by_id[task_id]
+        for rep in reps:
+            if cell_key(Condition.CATALOG.value, size, task_id, rep) in done:
+                continue
+            rec = run_catalog_task(
+                task_id=task_id, prompt=task.prompt, gold_skill=task.gold_skill,
+                library_size=size, content_hash=manifest.content_hash, rep=rep,
+                is_warmup=(rep < cfg.warmup), corpus_dir=corpus_dir, manifest=manifest,
+                catalog_system_prompt=sys_prompt, id_to_slug=id_to_slug, count=count,
+                experiment_version=cfg.experiment_version, run_id=writer.run_dir.name,
+                claude_command=cfg.claude_command, model_id=cfg.model_id, effort=cfg.effort,
+                disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
+            )
+            rec.notes = f"subset={subset_name}"
+            u = rec.reported_usage or {}
+            real = (int(u.get("input_tokens", 0) or 0) + int(u.get("cache_read_input_tokens", 0) or 0)
+                    + int(u.get("output_tokens", 0) or 0)) > 0
+            if not real:
+                raise QuotaExhaustedError(
+                    f"catalog {task_id} rep={rep} returned zero token work — likely Claude "
+                    f"quota/rate-limit exhausted. Aborting to avoid poisoning the dataset. "
+                    f"Resume after the quota resets; records written so far are valid.")
+            print(f"  [catalog N={size}] {task_id} rep={rep} "
+                  f"consulted={rec.consulted} chosen={rec.chosen_skill} "
+                  f"tok={rec.context_token_cost}", flush=True)
+            writer.write(rec)
 
 
 def _run_native_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, name_to_slug,

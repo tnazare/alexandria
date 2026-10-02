@@ -26,6 +26,7 @@ class Condition(str, Enum):
 
     ALEXANDRIA = "alexandria"  # server-side MCP: resolve_skill + fetch_skill
     NATIVE = "native"          # client-side .claude/skills/ (preload + progressive disclosure)
+    CATALOG = "catalog"        # resident compact catalog in prompt + single on-demand fetch_skill(id)
 
 
 @dataclass(frozen=True)

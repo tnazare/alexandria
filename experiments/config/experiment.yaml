@@ -24,7 +24,10 @@ seeds:
   padding: 1234
   order: 5678
 
-# Conditions to run. First pass: Claude Code only, both mechanisms.
+# Conditions to run. Any of: alexandria (server-side resolve+fetch), native (.claude/skills preload),
+# catalog (resident compact catalog in-prompt + local on-demand fetch_skill(id); needs no stack).
+# - [alexandria, native]  : the original server-side vs native comparison (needs the docker stack).
+# - [catalog, native]     : resident-catalog vs native A/B (no stack; see results/run-20261002-095819.md).
 conditions: [alexandria, native]
 
 # Model + effort under test. Both are pinned and recorded per run; a mid-experiment change
@@ -86,3 +89,10 @@ system_prompt:
     think you already know how to do the task. After invoking the relevant Skill, STOP: state which
     skill you would use and end your turn. Do NOT actually perform the task, and do NOT create, write,
     edit, run, or open any files or commands. If no relevant Skill applies, simply say so and stop.
+  catalog: >
+    IMPORTANT: Below is a Skill Catalog listing reusable governed skills as "id: name — description".
+    Before doing anything else, you MUST review it and decide whether one applies to the user's task.
+    This is mandatory even if you think you already know how to do the task. If one applies, you MUST
+    call the fetch_skill tool with that skill's id to get its instructions. Then STOP: state which
+    skill you would use and end your turn. Do NOT actually perform the task, and do NOT create, write,
+    edit, run, or open any files or commands. If no catalog skill applies, simply say so and stop.
