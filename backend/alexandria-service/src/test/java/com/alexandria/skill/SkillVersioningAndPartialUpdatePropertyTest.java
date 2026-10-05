@@ -386,7 +386,8 @@ class SkillVersioningAndPartialUpdatePropertyTest {
         SkillServiceImpl service = new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
 
         return new MultiSaveTestFixture(service, versionCaptor);
     }
@@ -472,7 +473,8 @@ class SkillVersioningAndPartialUpdatePropertyTest {
         SkillServiceImpl service = new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
 
         return new MultiSaveTestFixture(service, versionCaptor);
     }
@@ -537,7 +539,8 @@ class SkillVersioningAndPartialUpdatePropertyTest {
         SkillServiceImpl service = new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
 
         return new TestFixture(service, skillVersionRepository);
     }

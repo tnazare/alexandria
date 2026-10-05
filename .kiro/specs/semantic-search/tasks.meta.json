@@ -1,0 +1,175 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Feature flag scaffolding (no behavior change)": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400263
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867406848
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867623827
+      }
+    ],
+    "2. SearchStrategy abstraction over existing FTS (still FTS-only at runtime)": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400417
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867630781
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867920123
+      }
+    ],
+    "3. pgvector infra: migration + docker image": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400527
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867928411
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790871845502
+      }
+    ],
+    "4. Embedding provider abstraction": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400646
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790871849397
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790872538651
+      }
+    ],
+    "5. EmbeddingService: source assembly, hashing, upsert, backfill": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400774
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790872542111
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790872974034
+      }
+    ],
+    "6. Semantic retrieval query (ACL-correct)": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400851
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790872978418
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790873680792
+      }
+    ],
+    "7. Hybrid fusion": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867400929
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790873684091
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790874421899
+      }
+    ],
+    "8. Backend exposes active mode for benchmark attribution": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867401013
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790874425397
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790874721214
+      }
+    ],
+    "9. Harness: per-run mode selection + recording": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867401179
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790874724297
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790875754411
+      }
+    ],
+    "10. End-to-end verification (quota-gated)": [
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790867401250
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790875761110
+      },
+      {
+        "executionId": "2f7f3f6e-040e-463a-be09-04df7851ff55",
+        "chatSessionId": "sess_05d9d245-9ea1-4c2f-ad99-42b85ad26ef5",
+        "timestamp": 1790879810745
+      }
+    ]
+  }
+}

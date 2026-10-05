@@ -13,6 +13,11 @@ import com.alexandria.agent.dto.SkillRef;
 import com.alexandria.agent.render.FetchContext;
 import com.alexandria.agent.render.FetchResult;
 import com.alexandria.agent.render.SkillFetchRendererRegistry;
+import com.alexandria.agent.search.FtsStrategy;
+import com.alexandria.agent.search.MatchMechanism;
+import com.alexandria.agent.search.SearchOutcome;
+import com.alexandria.agent.search.SearchStrategy;
+import com.alexandria.agent.search.SearchStrategySelector;
 import com.alexandria.audit.AuditService;
 import com.alexandria.auth.AlexandriaUserDetails;
 import com.alexandria.config.ResolverPolicy;
@@ -29,7 +34,6 @@ import com.alexandria.usage.UsageEventService;
 import com.alexandria.user.entity.Role;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -51,7 +56,6 @@ import java.util.UUID;
  * Task 3. Fetch is added in Task 2.</p>
  */
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ResolverServiceImpl implements ResolverService {
 
@@ -67,6 +71,62 @@ public class ResolverServiceImpl implements ResolverService {
     private final AuditService auditService;
     private final ResolverPolicy resolverPolicy;
     private final ObservationRegistry observationRegistry;
+    private final SearchStrategySelector searchStrategySelector;
+
+    /**
+     * Primary (Spring-wired) constructor. The {@link SearchStrategySelector} picks the active
+     * retrieval strategy from {@code alexandria.search.mode}; {@code resolverRepository} remains for
+     * version resolution and fetch.
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public ResolverServiceImpl(
+            SkillResolverRepository resolverRepository,
+            TeamRepository teamRepository,
+            ResolverProperties properties,
+            SkillService skillService,
+            SkillVariantService variantService,
+            SkillFetchRendererRegistry rendererRegistry,
+            UsageEventService usageEventService,
+            AuditService auditService,
+            ResolverPolicy resolverPolicy,
+            ObservationRegistry observationRegistry,
+            SearchStrategySelector searchStrategySelector) {
+        this.resolverRepository = resolverRepository;
+        this.teamRepository = teamRepository;
+        this.properties = properties;
+        this.skillService = skillService;
+        this.variantService = variantService;
+        this.rendererRegistry = rendererRegistry;
+        this.usageEventService = usageEventService;
+        this.auditService = auditService;
+        this.resolverPolicy = resolverPolicy;
+        this.observationRegistry = observationRegistry;
+        this.searchStrategySelector = searchStrategySelector;
+    }
+
+    /**
+     * Backward-compatible constructor without an explicit selector. Defaults to full-text search
+     * over the supplied {@code resolverRepository} — the behavior before the strategy seam existed.
+     * Preserved so callers that construct the service directly (e.g. unit tests exercising the FTS
+     * path) keep working unchanged.
+     */
+    public ResolverServiceImpl(
+            SkillResolverRepository resolverRepository,
+            TeamRepository teamRepository,
+            ResolverProperties properties,
+            SkillService skillService,
+            SkillVariantService variantService,
+            SkillFetchRendererRegistry rendererRegistry,
+            UsageEventService usageEventService,
+            AuditService auditService,
+            ResolverPolicy resolverPolicy,
+            ObservationRegistry observationRegistry) {
+        this(resolverRepository, teamRepository, properties, skillService, variantService,
+                rendererRegistry, usageEventService, auditService, resolverPolicy, observationRegistry,
+                new SearchStrategySelector(
+                        new com.alexandria.config.SearchProperties("fts", null, null, null),
+                        java.util.List.of(new FtsStrategy(resolverRepository))));
+    }
 
     @Override
     public ResolveResponse resolve(ResolveRequest request, AlexandriaUserDetails identity) {
@@ -90,8 +150,13 @@ public class ResolverServiceImpl implements ResolverService {
         // Narrow bypass: only Org_Admin sees beyond visibility rules, matching SkillServiceImpl.list.
         boolean isOrgAdmin = identity.role() == Role.Org_Admin;
 
-        List<CandidateProjection> candidates = resolverRepository.findVisibleCandidates(
+        // Select the active retrieval strategy once from alexandria.search.mode. The outcome carries
+        // both the ranked candidates and the mechanism(s) that surfaced each, so matchReasons can be
+        // honest about why a skill ranked (R5.4).
+        SearchStrategy strategy = searchStrategySelector.active();
+        SearchOutcome outcome = strategy.find(
                 identity.organizationId(), identity.userId(), isOrgAdmin, includeArchived, query, limit);
+        List<CandidateProjection> candidates = outcome.candidates();
 
         String referenceMode = resolveReferenceMode(request.referenceMode());
 
@@ -103,7 +168,8 @@ public class ResolverServiceImpl implements ResolverService {
             if (resolved == null) {
                 continue;
             }
-            results.add(toResult(c, request.context(), resolved, identity.organizationId()));
+            results.add(toResult(c, request.context(), resolved, identity.organizationId(),
+                    outcome.mechanismsFor(c.getSkillId())));
         }
 
         Capabilities capabilities = new Capabilities(true, true, false, false);
@@ -180,7 +246,8 @@ public class ResolverServiceImpl implements ResolverService {
     }
 
     private ResolveResult toResult(CandidateProjection c, ResolveContext context,
-                                   ResolvedRef resolved, UUID orgId) {
+                                   ResolvedRef resolved, UUID orgId,
+                                   Set<MatchMechanism> mechanisms) {
         boolean deprecated = "Deprecated".equals(c.getLifecycleStatus());
         Governance governance = new Governance(
                 c.getLifecycleStatus(),
@@ -209,7 +276,7 @@ public class ResolverServiceImpl implements ResolverService {
                 c.getDescription(),
                 c.getScore(),
                 governance,
-                matchReasons(c, context),
+                matchReasons(c, context, mechanisms),
                 resolution,
                 delivery,
                 null,
@@ -243,12 +310,21 @@ public class ResolverServiceImpl implements ResolverService {
     }
 
     /**
-     * Builds short, human-readable reasons a candidate was returned, from the overlap between the
-     * request context and the candidate. Kept deterministic and side-effect free.
+     * Builds short, human-readable reasons a candidate was returned. Leads with the actual retrieval
+     * mechanism(s) that surfaced the candidate (R5.4) — FTS, semantic, or both under hybrid — rather
+     * than the former hardcoded "Matched full-text search", then adds governance/context reasons from
+     * the overlap between the request context and the candidate. Kept deterministic (mechanisms are
+     * emitted in enum order) and side-effect free.
      */
-    private List<String> matchReasons(CandidateProjection c, ResolveContext context) {
+    private List<String> matchReasons(CandidateProjection c, ResolveContext context,
+                                      Set<MatchMechanism> mechanisms) {
         List<String> reasons = new ArrayList<>();
-        reasons.add("Matched full-text search");
+        // Emit in enum declaration order (FTS, SEMANTIC) for stable, reproducible output.
+        for (MatchMechanism mechanism : MatchMechanism.values()) {
+            if (mechanisms.contains(mechanism)) {
+                reasons.add(mechanism.reason());
+            }
+        }
         if (isApproved(c.getLifecycleStatus())) {
             reasons.add("Approval state: " + c.getLifecycleStatus());
         }

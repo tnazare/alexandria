@@ -2,6 +2,7 @@ package com.alexandria.skill;
 
 import com.alexandria.audit.AuditService;
 import com.alexandria.auth.AlexandriaUserDetails;
+import com.alexandria.embedding.EmbeddingService;
 import com.alexandria.skill.entity.SkillEntity;
 import com.alexandria.skill.entity.SkillTagEntity;
 import com.alexandria.skill.entity.SkillVersionEntity;
@@ -43,6 +44,7 @@ public class SkillServiceImpl implements SkillService {
     private final SkillTagRepository skillTagRepository;
     private final TaxonomyEntryRepository taxonomyEntryRepository;
     private final AuditService auditService;
+    private final EmbeddingService embeddingService;
 
     @Override
     @Transactional
@@ -562,6 +564,10 @@ public class SkillServiceImpl implements SkillService {
      * name and description columns in the DB are current. Must NOT be called from
      * within {@code handleTagUpdate} — call it once at the {@code create}/{@code update}
      * boundary after all changes are applied.</p>
+     *
+     * <p>Also triggers {@link EmbeddingService#reindex(UUID)} at this same boundary so the semantic
+     * embedding stays in lockstep with the FTS vector (R3.4). Reindex is a no-op under the default
+     * {@code fts} mode, so FTS-only deployments are unaffected.</p>
      */
     private void rebuildSearchVector(SkillEntity skill) {
         // Gather active tag values
@@ -590,6 +596,11 @@ public class SkillServiceImpl implements SkillService {
         }
 
         skillRepository.rebuildSearchVector(skill.getId(), tagValues, instructions);
+
+        // Keep the semantic embedding in lockstep with the FTS vector at the same write boundary
+        // (R3.4). A no-op when retrieval mode is fts (the default), so FTS-only deployments are
+        // unaffected; a hash-skip when the assembled source text is unchanged.
+        embeddingService.reindex(skill.getId());
     }
 
     /**

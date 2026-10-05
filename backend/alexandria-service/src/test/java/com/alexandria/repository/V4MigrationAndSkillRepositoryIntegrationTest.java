@@ -63,7 +63,7 @@ class V4MigrationAndSkillRepositoryIntegrationTest {
 
     @Container
     @SuppressWarnings("resource")
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("pgvector/pgvector:pg16")
             .withDatabaseName("alexandria_test")
             .withUsername("test")
             .withPassword("test");

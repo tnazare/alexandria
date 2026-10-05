@@ -35,6 +35,23 @@ alexandria:
     client-id: ${OIDC_CLIENT_ID}
   organization:
     default-id: ${ALEXANDRIA_DEFAULT_ORG_ID:00000000-0000-0000-0000-000000000001}
+  search:
+    # Retrieval mode for the agent Skill Resolver: fts | semantic | hybrid.
+    # Defaults to fts (current behavior, zero change on existing deployments).
+    mode: ${ALEXANDRIA_SEARCH_MODE:fts}
+    embedding-dim: ${ALEXANDRIA_EMBEDDING_DIM:256}
+    # Embedding source: local (offline, deterministic, default) | http (provider-agnostic REST).
+    embedding-provider: ${ALEXANDRIA_EMBEDDING_PROVIDER:local}
+    # Only used when embedding-provider=http. Points at any embedding endpoint; no vendor hardcoded.
+    embedding-http:
+      url: ${ALEXANDRIA_EMBEDDING_HTTP_URL:}
+      model: ${ALEXANDRIA_EMBEDDING_HTTP_MODEL:default}
+      api-key: ${ALEXANDRIA_EMBEDDING_HTTP_API_KEY:}
+    hybrid:
+      fusion: ${ALEXANDRIA_SEARCH_HYBRID_FUSION:rrf}
+      fts-weight: ${ALEXANDRIA_SEARCH_HYBRID_FTS_WEIGHT:0.5}
+      semantic-weight: ${ALEXANDRIA_SEARCH_HYBRID_SEMANTIC_WEIGHT:0.5}
+      rrf-k: ${ALEXANDRIA_SEARCH_HYBRID_RRF_K:60}
 
 server:
   port: 8080

@@ -32,7 +32,9 @@ services:
         }
 
   postgres:
-    image: postgres:16-alpine
+    # pgvector-enabled Postgres so `CREATE EXTENSION vector` (V9) succeeds in local dev and the
+    # benchmark stack. Drop-in replacement for postgres:16 (R2.4).
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: alexandria
       POSTGRES_USER: alexandria
@@ -60,6 +62,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: alexandria
       OIDC_ISSUER_URI: http://heptastadion:9000/alexandria
       OIDC_CLIENT_ID: alexandria-client
+      ALEXANDRIA_SEARCH_MODE: ${ALEXANDRIA_SEARCH_MODE:-fts}
       # Use jwk-set-uri directly to avoid issuer mismatch between Docker internal
       # hostname (heptastadion) and browser-facing hostname (localhost)
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://heptastadion:9000/alexandria/jwks

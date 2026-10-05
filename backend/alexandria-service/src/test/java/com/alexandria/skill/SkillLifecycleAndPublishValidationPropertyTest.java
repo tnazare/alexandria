@@ -262,7 +262,8 @@ class SkillLifecycleAndPublishValidationPropertyTest {
         return new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
     }
 
     private SkillServiceImpl setupDraftEditFixture(LifecycleInput input) {
@@ -323,7 +324,8 @@ class SkillLifecycleAndPublishValidationPropertyTest {
         return new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
     }
 
     private SkillServiceImpl setupPublishFixture(PublishInput input, boolean completeMetadata) {
@@ -406,7 +408,8 @@ class SkillLifecycleAndPublishValidationPropertyTest {
         return new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
     }
 
     private SkillServiceImpl setupMetadataFixture(MetadataInput input) {
@@ -493,7 +496,8 @@ class SkillLifecycleAndPublishValidationPropertyTest {
         return new SkillServiceImpl(
                 skillRepository, skillVersionRepository, skillVariantRepository,
                 skillAccessGrantRepository, skillSlugGenerator, teamRepository,
-                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService);
+                teamMemberRepository, skillTagRepository, taxonomyEntryRepository, auditService,
+                mock(com.alexandria.embedding.EmbeddingService.class));
     }
 
     // ======================== Providers ========================

@@ -133,6 +133,29 @@ class ResolverServicePropertyTest {
     }
 
     @Test
+    void matchReasonsReportFtsMechanismUnderDefaultMode() {
+        // The backward-compatible constructor wires the FTS strategy, which tags every candidate
+        // with MatchMechanism.FTS. matchReasons must surface that honestly (R5.4) rather than a
+        // hardcoded string decoupled from the mechanism.
+        SkillResolverRepository repo = mock(SkillResolverRepository.class);
+        TeamRepository teams = mock(TeamRepository.class);
+        when(teams.findByIdAndOrganizationId(any(), any())).thenReturn(Optional.empty());
+        // Stable-identity candidate (fixed ids) so the mechanism map keyed by skillId lines up with
+        // the same candidate during result assembly.
+        when(repo.findVisibleCandidates(any(), any(), anyBoolean(), anyBoolean(), anyString(), anyInt()))
+                .thenReturn(List.of(stableCandidate()));
+
+        ResolveResponse response = newService(repo, teams)
+                .resolve(new ResolveRequest("integration tests", null, null, "pinned", null),
+                        identity(Role.Skill_Consumer));
+
+        assertThat(response.results()).hasSize(1);
+        assertThat(response.results().get(0).matchReasons())
+                .contains("Matched full-text search")
+                .doesNotContain("Matched semantic search");
+    }
+
+    @Test
     void nullLimitUsesDefault() {
         SkillResolverRepository repo = mock(SkillResolverRepository.class);
         TeamRepository teams = mock(TeamRepository.class);
@@ -154,6 +177,25 @@ class ResolverServicePropertyTest {
             list.add(candidate("Skill " + i, "Desc " + i, "Published", "low", "organization"));
         }
         return list;
+    }
+
+    /** A candidate with stable (fixed) identity, unlike {@link #candidate} which randomizes ids. */
+    private CandidateProjection stableCandidate() {
+        UUID skillId = UUID.randomUUID();
+        UUID versionId = UUID.randomUUID();
+        return new CandidateProjection() {
+            public UUID getSkillId() { return skillId; }
+            public UUID getSkillVersionId() { return versionId; }
+            public String getName() { return "Skill"; }
+            public String getDescription() { return "Desc"; }
+            public String getSlug() { return "slug"; }
+            public String getLifecycleStatus() { return "Published"; }
+            public String getRiskLevel() { return "low"; }
+            public String getVisibility() { return "organization"; }
+            public UUID getOwnerTeamId() { return null; }
+            public String getDeprecationReason() { return null; }
+            public double getScore() { return 0.5; }
+        };
     }
 
     private CandidateProjection candidate(String name, String desc, String lifecycle,

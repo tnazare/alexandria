@@ -33,7 +33,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties({OidcProperties.class, OrganizationProperties.class, ResolverProperties.class})
+@EnableConfigurationProperties({OidcProperties.class, OrganizationProperties.class, ResolverProperties.class, SearchProperties.class})
 @RequiredArgsConstructor
 public class SecurityConfig {
 

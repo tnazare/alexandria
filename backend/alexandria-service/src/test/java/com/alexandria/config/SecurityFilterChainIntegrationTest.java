@@ -107,6 +107,18 @@ class SecurityFilterChainIntegrationTest {
     }
 
     @Test
+    @DisplayName("Unauthenticated /actuator/info reports the active search mode for benchmark attribution")
+    void unauthenticatedActuatorInfoReportsSearchMode() throws Exception {
+        // R7.1 (server side) + R1.4: the harness reads the active retrieval mode from the public
+        // info endpoint to verify+record a run, rather than trusting the operator. Default is fts.
+        mockMvc.perform(get("/actuator/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.search.mode").value("fts"))
+                .andExpect(jsonPath("$.search.embeddingProvider").value("local"))
+                .andExpect(jsonPath("$.search.embeddingDim").value(256));
+    }
+
+    @Test
     @DisplayName("Unauthenticated requests to /api/users get 401")
     void unauthenticatedRequestToApiUsersGets401() throws Exception {
         mockMvc.perform(get("/api/users"))

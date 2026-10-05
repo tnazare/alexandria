@@ -74,8 +74,36 @@ pytest
 Full experiment (needs the running `docker compose` stack + the `claude` CLI + API spend):
 
 ```bash
-python -m harness.run_experiment --config config/experiment.yaml
+python -m harness.run_experiment --config config/experiment.yaml --subset close-semantics-20
 ```
+
+### Choosing the retrieval mode (`--search-mode`)
+
+The alexandria condition can serve queries via `fts`, `semantic`, or `hybrid` retrieval. Mode is a
+controlled variable — one mode per run — so results compare cleanly across modes. The run recipe:
+
+1. **Set the backend's mode and restart it.** The mode is a backend setting, so point the running
+   stack at the mode you want and restart it so it takes effect:
+
+   ```bash
+   ALEXANDRIA_SEARCH_MODE=semantic docker compose up -d --force-recreate backend
+   # (or set ALEXANDRIA_SEARCH_MODE in the backend's env and restart that process)
+   ```
+
+2. **Run the harness with a matching `--search-mode`:**
+
+   ```bash
+   python -m harness.run_experiment --config config/experiment.yaml \
+       --subset close-semantics-20 --search-mode semantic
+   ```
+
+The harness reads the backend's actual active mode from `GET {alexandria.host}/actuator/info`
+(`$.search.mode`) and **aborts the run before any work** if it doesn't match `--search-mode`, so a
+run can never be mislabeled. The selected mode is recorded into `results/raw/<run-id>/env.json` as
+`search_mode`, making each run attributable to `fts` / `semantic` / `hybrid`. The native condition is
+unchanged; the comparison becomes `alexandria-{fts,semantic,hybrid}` × `native`, one mode per run.
+
+Omit `--search-mode` for a native-only run or when you don't need the backend-mode check.
 
 See `PROTOCOL.md` for the step-by-step procedure and the meaning of every flag.
 

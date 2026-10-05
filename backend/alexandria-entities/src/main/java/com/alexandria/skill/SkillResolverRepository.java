@@ -73,6 +73,66 @@ public interface SkillResolverRepository extends JpaRepository<SkillEntity, UUID
     );
 
     /**
+     * Semantic sibling of {@link #findVisibleCandidates}: ranks ACL-visible, non-Blocked candidates
+     * by vector distance to the query embedding rather than by full-text relevance.
+     *
+     * <p>The organization filter, visibility disjunction, {@code lifecycle_status <> 'Blocked'},
+     * archived predicate, and {@code current_version_id IS NOT NULL} are copied <strong>verbatim</strong>
+     * from {@link #findVisibleCandidates} so the two retrieval modes enforce the identical ACL — an
+     * integration test guards this parity so the copies cannot drift (R4.4). A semantic query must
+     * never surface a skill the FTS query would hide.</p>
+     *
+     * <p>The {@code JOIN skill_embeddings} naturally excludes skills with no embedding yet (R4.3):
+     * un-backfilled skills simply do not participate in semantic ranking rather than crashing or
+     * leaking. Candidates are ordered by cosine distance ({@code embedding <=> queryVec}) with the
+     * same deterministic tiebreak as FTS ({@code updated_at DESC, id}); the score is reported as
+     * {@code 1 - distance} so a higher score means more similar, matching the FTS score orientation.</p>
+     *
+     * @param queryVec the query embedding serialized as a pgvector literal, e.g. {@code [0.1,0.2,...]},
+     *                 cast to {@code vector} in SQL
+     */
+    @Query(value = """
+        SELECT s.id AS skillId,
+               s.current_version_id AS skillVersionId,
+               s.name AS name,
+               s.description AS description,
+               s.slug AS slug,
+               s.lifecycle_status AS lifecycleStatus,
+               s.risk_level AS riskLevel,
+               s.visibility AS visibility,
+               s.owner_team_id AS ownerTeamId,
+               s.deprecation_reason AS deprecationReason,
+               1 - (e.embedding <=> CAST(:queryVec AS vector)) AS score
+        FROM skills s
+        JOIN skill_embeddings e ON e.skill_id = s.id
+        WHERE s.organization_id = :orgId
+          AND (
+            s.visibility = 'organization'
+            OR (s.visibility = 'team' AND s.owner_team_id IN (
+                SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
+            OR (s.visibility = 'private' AND s.created_by = :userId)
+            OR (s.visibility = 'restricted' AND (
+                s.created_by = :userId
+                OR EXISTS (SELECT 1 FROM skill_access_grants sag
+                           WHERE sag.skill_id = s.id AND sag.user_id = :userId)))
+            OR :isOrgAdmin = true
+          )
+          AND s.lifecycle_status <> 'Blocked'
+          AND (:includeArchived = true OR s.lifecycle_status <> 'Archived')
+          AND s.current_version_id IS NOT NULL
+        ORDER BY e.embedding <=> CAST(:queryVec AS vector), s.updated_at DESC, s.id
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<CandidateProjection> findVisibleCandidatesSemantic(
+            @Param("orgId") UUID orgId,
+            @Param("userId") UUID userId,
+            @Param("isOrgAdmin") boolean isOrgAdmin,
+            @Param("includeArchived") boolean includeArchived,
+            @Param("queryVec") String queryVec,
+            @Param("limit") int limit
+    );
+
+    /**
      * Loads a skill version by id, scoped to an organization via its parent skill, for fetch.
      * Returns empty when the version does not exist or belongs to another organization. The caller
      * still re-checks per-user visibility via the application layer before rendering.

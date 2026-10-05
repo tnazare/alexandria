@@ -41,7 +41,7 @@ class UserProvisioningIdempotencyPropertyTest {
 
     @SuppressWarnings("resource")
     private static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>("postgres:16-alpine")
+            new PostgreSQLContainer<>("pgvector/pgvector:pg16")
                     .withDatabaseName("alexandria_test")
                     .withUsername("test")
                     .withPassword("test");

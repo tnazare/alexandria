@@ -49,7 +49,7 @@ class AuditCompletenessPropertyTest {
 
     @SuppressWarnings("resource")
     private static final org.testcontainers.containers.PostgreSQLContainer<?> POSTGRES =
-            new org.testcontainers.containers.PostgreSQLContainer<>("postgres:16-alpine")
+            new org.testcontainers.containers.PostgreSQLContainer<>("pgvector/pgvector:pg16")
                     .withDatabaseName("alexandria_test")
                     .withUsername("test")
                     .withPassword("test");

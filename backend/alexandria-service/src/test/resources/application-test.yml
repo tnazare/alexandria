@@ -5,7 +5,9 @@ spring:
     # TC_REUSABLE reuses a single PostgreSQL container across all test contexts (paired with
     # testcontainers.reuse.enable=true), avoiding a per-context container startup that can time out
     # under Docker resource contention.
-    url: jdbc:tc:postgresql:16:///alexandria?TC_REUSABLE=true
+    # Uses the pgvector image (jdbc:tc:pgvector:pg16) so migration V9's `CREATE EXTENSION vector`
+    # succeeds — a plain postgres image would fail every context that runs Flyway.
+    url: jdbc:tc:pgvector:pg16:///alexandria?TC_REUSABLE=true
     driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
     hikari:
       # The suite loads many @SpringBootTest contexts, each with its own pool, all sharing one

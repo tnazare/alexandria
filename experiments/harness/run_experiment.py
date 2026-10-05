@@ -17,6 +17,8 @@ import platform
 import random
 import sys
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -24,6 +26,8 @@ from typing import Optional
 from harness.build_corpus import load_manifest
 from harness.config import ExperimentConfig
 from harness.models import CorpusManifest, Condition, RunRecord, Tier
+
+VALID_SEARCH_MODES = ("fts", "semantic", "hybrid")
 
 
 # --- pure helpers (unit-tested) --------------------------------------------------------------
@@ -63,6 +67,79 @@ def build_env(cfg: ExperimentConfig, *, model_id: Optional[str], model_version: 
     if extra:
         env.update(extra)
     return env
+
+
+# --- backend search-mode read + verify (Requirements 7.1) ------------------------------------
+# The operator sets ALEXANDRIA_SEARCH_MODE on the backend and restarts it, then runs the harness
+# with a matching --search-mode. Rather than trust that pairing, the harness reads the mode the
+# backend actually reports and aborts on mismatch, so a run can never be mislabeled (R7.1).
+
+
+class SearchModeMismatchError(RuntimeError):
+    """Raised when --search-mode disagrees with the backend's reported active mode (R7.1).
+
+    Aborting here (before any matrix cell runs) guarantees a run's env.json label always matches the
+    retrieval strategy that actually served the queries — the "mislabeled run" risk is closed.
+    """
+
+
+def actuator_info_url(host: str) -> str:
+    """Derive the actuator info URL from the alexandria base host the harness already uses.
+
+    Reuses the same ``host`` the alexandria condition talks to (``cfg.alexandria().host``) so there
+    is a single source of truth for where the backend lives.
+    """
+    return f"{host.rstrip('/')}/actuator/info"
+
+
+def fetch_backend_search_mode(host: str, *, timeout: int = 30) -> Optional[str]:
+    """GET ``{host}/actuator/info`` and return ``$.search.mode`` (``None`` if absent/unreadable).
+
+    Unauthenticated endpoint (per the backend contract). Returns ``None`` when the info block has no
+    ``search.mode`` field so the caller can decide how to handle an older/unexpected backend.
+    """
+    url = actuator_info_url(host)
+    req = urllib.request.Request(url, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        body = resp.read().decode("utf-8")
+    info = json.loads(body) if body.strip() else {}
+    search = info.get("search") if isinstance(info, dict) else None
+    if not isinstance(search, dict):
+        return None
+    mode = search.get("mode")
+    return str(mode) if mode is not None else None
+
+
+def verify_search_mode(expected: Optional[str], host: str,
+                       fetch=fetch_backend_search_mode) -> Optional[str]:
+    """Assert the backend's active mode matches ``expected``; return the verified mode.
+
+    - ``expected is None`` → verification is skipped (no ``--search-mode`` was passed); returns None.
+    - Backend reports a mode that differs from ``expected`` → raise ``SearchModeMismatchError``.
+    - Backend doesn't report a mode (older/unexpected build) → raise with a clear hint.
+    - Backend unreachable → raise with a clear hint.
+
+    ``fetch`` is injectable so tests can supply the backend's reported mode without a live server.
+    """
+    if expected is None:
+        return None
+    try:
+        actual = fetch(host)
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        raise SearchModeMismatchError(
+            f"could not read the backend's active search mode from {actuator_info_url(host)} "
+            f"to verify --search-mode={expected}: {e}. Is the backend running at {host}?") from e
+    if actual is None:
+        raise SearchModeMismatchError(
+            f"backend at {actuator_info_url(host)} did not report $.search.mode, so --search-mode="
+            f"{expected} cannot be verified. Upgrade the backend or omit --search-mode.")
+    if actual != expected:
+        raise SearchModeMismatchError(
+            f"search-mode mismatch: harness was told --search-mode={expected} but the backend "
+            f"reports $.search.mode={actual}. Set ALEXANDRIA_SEARCH_MODE={expected} on the backend "
+            f"and restart it (or re-run the harness with --search-mode={actual}). Aborting so the "
+            f"run is never mislabeled.")
+    return actual
 
 
 def ordered_tasks(task_ids: list[str], seed: int) -> list[str]:
@@ -188,13 +265,17 @@ DISALLOWED_TOOLS = [
 
 
 def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, subset_name: str,
-               task_set, run_id: Optional[str] = None) -> Path:
+               task_set, run_id: Optional[str] = None, search_mode: Optional[str] = None) -> Path:
     """Execute the (condition × task × rep) matrix for ONE named subset; return the records path.
 
     A run operates on a single frozen subset (e.g. ``close-semantics-20``); its already-materialized
     corpus lives at ``corpus_dir``. The subset name is recorded as ``library_size``-style key via the
     manifest's size, and each record carries the subset name. Halts on provisioning failure or a
     zero-token (quota) run. Live-only imports are deferred.
+
+    ``search_mode`` (fts|semantic|hybrid), when set, is recorded into ``env.json`` and verified
+    against the backend's reported active mode before the alexandria condition runs (R7.1). It is
+    only relevant to the alexandria condition; a native-only run skips the backend verification.
     """
     import tempfile
 
@@ -225,7 +306,15 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, s
         print(f"Resuming {run_id}: {len(done)} cells already complete, skipping them.", flush=True)
     else:
         write_env(run_dir, build_env(cfg, model_id=cfg.model_id, model_version=None,
-                                     extra={"note": "subset run", "subset": subset_name}))
+                                     extra={"note": "subset run", "subset": subset_name,
+                                            "search_mode": search_mode}))
+
+    # Verify the backend's active search mode matches --search-mode BEFORE any alexandria cell runs,
+    # so a mislabeled run never happens (R7.1). Skipped when the alexandria condition isn't in play
+    # (native-only run has no backend to check) or when no --search-mode was passed.
+    if search_mode is not None and Condition.ALEXANDRIA.value in cfg.conditions:
+        verified = verify_search_mode(search_mode, cfg.alexandria().host)
+        print(f"Backend search mode verified: {verified} (matches --search-mode)", flush=True)
 
     manifest = load_manifest(corpus_dir / "manifest.json")
     size = manifest.library_size
@@ -493,6 +582,12 @@ def main() -> int:
     parser.add_argument("--resume", default=None, metavar="RUN_ID",
                         help="Resume an interrupted run: skip cells already in "
                              "results/raw/<RUN_ID>/records.jsonl and append the rest.")
+    parser.add_argument("--search-mode", choices=VALID_SEARCH_MODES, default=None,
+                        help="Retrieval mode this run exercises (fts|semantic|hybrid). Recorded into "
+                             "env.json and verified against the backend's reported $.search.mode "
+                             "before the alexandria condition runs (aborts on mismatch). The operator "
+                             "must set ALEXANDRIA_SEARCH_MODE to the same value and restart the "
+                             "backend first. Omit for a native-only run or to skip verification.")
     parser.add_argument("--print-env", action="store_true",
                         help="Print the captured env and exit (no runs).")
     parser.add_argument("--materialize-only", action="store_true",
@@ -506,8 +601,10 @@ def main() -> int:
         cfg.raw["warmup"] = args.warmup
 
     subset_name = args.subset
+    search_mode = args.search_mode
 
-    # On resume, inherit matrix shape + subset from the original run's env.json.
+    # On resume, inherit matrix shape + subset + search mode from the original run's env.json so the
+    # resumed cells stay attributable to the same mode (R7.1).
     if args.resume:
         env_path = Path(args.results) / "raw" / args.resume / "env.json"
         if not env_path.is_file():
@@ -518,10 +615,12 @@ def main() -> int:
         cfg.raw["warmup"] = orig["warmup"]
         cfg.raw["conditions"] = orig["conditions"]
         subset_name = orig.get("subset", subset_name)
+        search_mode = orig.get("search_mode", search_mode)
         print(f"Resume: inheriting from {args.resume} (subset={subset_name} nrep={orig['nrep']} "
-              f"warmup={orig['warmup']})", flush=True)
+              f"warmup={orig['warmup']} search_mode={search_mode})", flush=True)
 
-    env = build_env(cfg, model_id=cfg.model_id, model_version=None, extra={"subset": subset_name})
+    env = build_env(cfg, model_id=cfg.model_id, model_version=None,
+                    extra={"subset": subset_name, "search_mode": search_mode})
     if args.print_env:
         print(json.dumps(env, indent=2))
         return 0
@@ -547,7 +646,11 @@ def main() -> int:
     aborted = False
     try:
         records_path = run_matrix(cfg, results_root=Path(args.results), corpus_dir=corpus_dir,
-                                  subset_name=subset_name, task_set=task_set, run_id=args.resume)
+                                  subset_name=subset_name, task_set=task_set, run_id=args.resume,
+                                  search_mode=search_mode)
+    except SearchModeMismatchError as e:
+        print(f"\n*** ABORTED: {e}", flush=True)
+        return 2
     except QuotaExhaustedError as e:
         aborted = True
         print(f"\n*** ABORTED: {e}", flush=True)

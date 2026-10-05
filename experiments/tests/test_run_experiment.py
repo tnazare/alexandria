@@ -6,13 +6,18 @@ resolver-identity -> slug maps. The live matrix executor is covered by the opt-i
 
 from __future__ import annotations
 
+import pytest
+
 from harness.config import ExperimentConfig
 from harness.models import CorpusManifest, ManifestEntry, Tier
 from harness.run_experiment import (
+    SearchModeMismatchError,
+    actuator_info_url,
     build_env,
     build_id_to_slug,
     native_name_to_slug,
     ordered_tasks,
+    verify_search_mode,
 )
 
 
@@ -64,6 +69,102 @@ class TestEnv:
         assert env["library_sizes"] == [20, 100]
         assert env["nrep"] == 5 and env["warmup"] == 1 and env["k"] == 5
         assert env["tokenizer_encoding"] == "cl100k_base"
+
+
+class TestSearchMode:
+    def test_env_carries_selected_mode(self):
+        # The selected mode flows into env.json via the `extra` block (Requirement 7.1).
+        env = build_env(_cfg(), model_id="m", model_version=None,
+                        extra={"subset": "close-semantics-20", "search_mode": "semantic"})
+        assert env["search_mode"] == "semantic"
+
+    def test_env_mode_is_none_when_not_selected(self):
+        env = build_env(_cfg(), model_id="m", model_version=None,
+                        extra={"subset": "close-semantics-20", "search_mode": None})
+        assert env["search_mode"] is None
+
+    def test_actuator_url_derived_from_host(self):
+        assert actuator_info_url("http://localhost:8080") == "http://localhost:8080/actuator/info"
+        # trailing slash on host is normalized
+        assert actuator_info_url("http://localhost:8080/") == "http://localhost:8080/actuator/info"
+
+    def test_verify_passes_when_modes_match(self):
+        # Backend reports the same mode the harness was told → returns the verified mode, no raise.
+        verified = verify_search_mode("semantic", "http://backend",
+                                      fetch=lambda host: "semantic")
+        assert verified == "semantic"
+
+    def test_verify_aborts_on_mismatch(self):
+        # Backend reports a different mode → the run aborts so it is never mislabeled (Requirement 7.1).
+        with pytest.raises(SearchModeMismatchError) as exc:
+            verify_search_mode("semantic", "http://backend", fetch=lambda host: "fts")
+        msg = str(exc.value)
+        assert "semantic" in msg and "fts" in msg  # clear error names both sides
+
+    def test_verify_skipped_when_no_mode_selected(self):
+        # No --search-mode → verification is skipped (native-only or opt-out); fetch not called.
+        def _boom(host):
+            raise AssertionError("fetch must not be called when expected is None")
+        assert verify_search_mode(None, "http://backend", fetch=_boom) is None
+
+    def test_verify_aborts_when_backend_reports_no_mode(self):
+        # Older/unexpected backend that doesn't surface $.search.mode cannot be verified.
+        with pytest.raises(SearchModeMismatchError):
+            verify_search_mode("hybrid", "http://backend", fetch=lambda host: None)
+
+    def test_verify_aborts_when_backend_unreachable(self):
+        import urllib.error
+
+        def _down(host):
+            raise urllib.error.URLError("connection refused")
+        with pytest.raises(SearchModeMismatchError):
+            verify_search_mode("fts", "http://backend", fetch=_down)
+
+    def test_fetch_reads_search_mode_from_actuator_info(self, monkeypatch):
+        # Mock the HTTP GET so we parse $.search.mode without a live backend.
+        import io
+        import json
+        import urllib.request
+        from harness import run_experiment as rx
+
+        class _Resp(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                self.close()
+
+        captured = {}
+
+        def _fake_urlopen(req, timeout=None):
+            captured["url"] = req.full_url
+            payload = {"search": {"mode": "hybrid", "embeddingProvider": "local",
+                                  "embeddingDim": 256}}
+            return _Resp(json.dumps(payload).encode("utf-8"))
+
+        monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+        mode = rx.fetch_backend_search_mode("http://localhost:8080")
+        assert mode == "hybrid"
+        assert captured["url"] == "http://localhost:8080/actuator/info"
+
+    def test_fetch_returns_none_when_search_block_absent(self, monkeypatch):
+        import io
+        import json
+        import urllib.request
+        from harness import run_experiment as rx
+
+        class _Resp(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                self.close()
+
+        def _fake_urlopen(req, timeout=None):
+            return _Resp(json.dumps({"app": {"name": "alexandria"}}).encode("utf-8"))
+
+        monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
+        assert rx.fetch_backend_search_mode("http://localhost:8080") is None
 
 
 class TestOrdering:
