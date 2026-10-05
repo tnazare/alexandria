@@ -52,6 +52,20 @@ alexandria:
       fts-weight: ${ALEXANDRIA_SEARCH_HYBRID_FTS_WEIGHT:0.5}
       semantic-weight: ${ALEXANDRIA_SEARCH_HYBRID_SEMANTIC_WEIGHT:0.5}
       rrf-k: ${ALEXANDRIA_SEARCH_HYBRID_RRF_K:60}
+  catalog:
+    # Resident Skill Catalog exposed as an MCP resource (alexandria://catalog). OFF by default:
+    # when false the MCP endpoint advertises tools only and resources/* is method-not-found,
+    # exactly today's behavior. See the skill-catalog spec.
+    enabled: ${ALEXANDRIA_CATALOG_ENABLED:false}
+    # Payload cap on catalog lines; the resident catalog grows ~linearly in N, so this is the
+    # context-budget lever.
+    max-entries: ${ALEXANDRIA_CATALOG_MAX_ENTRIES:500}
+    # Annotate each catalog line with lifecycle/risk governance.
+    include-governance: ${ALEXANDRIA_CATALOG_INCLUDE_GOVERNANCE:false}
+    # Narrow the catalog within the caller's ACL: all | approved_only.
+    lifecycle-scope: ${ALEXANDRIA_CATALOG_LIFECYCLE_SCOPE:all}
+    # List archived skills by default.
+    include-archived-default: ${ALEXANDRIA_CATALOG_INCLUDE_ARCHIVED:false}
 
 server:
   port: 8080

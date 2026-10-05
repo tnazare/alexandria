@@ -5,7 +5,7 @@ Each task is incremental, test-backed, and leaves the system green. The feature 
 mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw verify`
 (integration/Testcontainers) per the tech-stack commands.
 
-- [ ] 1. Feature flag scaffolding (no behavior change)
+- [x] 1. Feature flag scaffolding (no behavior change)
   - Add `CatalogProperties` `@ConfigurationProperties(prefix = "alexandria.catalog")` record:
     `enabled` (default `false`), `maxEntries` (default 500), `includeGovernance` (default `false`),
     `lifecycleScope` (default `all`; validate ∈ {`all`,`approved_only`} in the compact constructor,
