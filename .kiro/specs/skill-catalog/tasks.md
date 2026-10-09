@@ -15,7 +15,7 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Requirements: R4.1, R4.2, R4.3, R4.4, R4.5_
   - _Tests: unit for default-off, valid scope values, unknown scope → throw._
 
-- [ ] 2. ACL-scoped catalog listing query (no search term)
+- [x] 2. ACL-scoped catalog listing query (no search term)
   - Add `findVisibleCatalogEntries(orgId, userId, isOrgAdmin, includeArchived, approvedOnly, limit)`
     to `SkillResolverRepository`: copy the `findVisibleCandidates` visibility disjunction +
     `lifecycle_status <> 'Blocked'` + archived exclusion + `current_version_id IS NOT NULL` verbatim;

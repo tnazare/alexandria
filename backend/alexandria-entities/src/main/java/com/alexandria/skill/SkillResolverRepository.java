@@ -180,4 +180,58 @@ public interface SkillResolverRepository extends JpaRepository<SkillEntity, UUID
         LIMIT 1
         """, nativeQuery = true)
     java.util.Optional<UUID> findLatestPublishedVersionId(@Param("skillId") UUID skillId);
+
+    /**
+     * Lists ACL-visible, non-Blocked skills for the resident Skill Catalog — <strong>without</strong>
+     * requiring a full-text or semantic match (unlike {@link #findVisibleCandidates}, which gates on
+     * {@code search_vector @@ plainto_tsquery}). This powers the catalog MCP resource: the full set
+     * the caller may see, as compact lines, so skill selection can be resident in the agent's context.
+     *
+     * <p>The visibility disjunction and the {@code lifecycle_status <> 'Blocked'}, archived-exclusion,
+     * and {@code current_version_id IS NOT NULL} predicates are copied <strong>verbatim</strong> from
+     * {@link #findVisibleCandidates} so a catalog can never surface a skill the resolver would hide
+     * (R1.2). An integration test guards this ACL parity so the copies cannot drift (R1.5).</p>
+     *
+     * <p>The only additions are the optional {@code approvedOnly} lifecycle narrowing (R6) and a
+     * deterministic {@code name ASC, id} ordering (R1.4) so the resident catalog is byte-stable for a
+     * given org/caller/skill-set. The projection is a slim catalog line (R1.3). Callers typically pass
+     * {@code limit = maxEntries + 1} to detect truncation (R5.2).</p>
+     */
+    @Query(value = """
+        SELECT s.id AS skillId,
+               s.current_version_id AS skillVersionId,
+               s.name AS name,
+               s.description AS description,
+               s.lifecycle_status AS lifecycleStatus,
+               s.risk_level AS riskLevel,
+               s.visibility AS visibility
+        FROM skills s
+        WHERE s.organization_id = :orgId
+          AND (
+            s.visibility = 'organization'
+            OR (s.visibility = 'team' AND s.owner_team_id IN (
+                SELECT tm.team_id FROM team_members tm WHERE tm.user_id = :userId))
+            OR (s.visibility = 'private' AND s.created_by = :userId)
+            OR (s.visibility = 'restricted' AND (
+                s.created_by = :userId
+                OR EXISTS (SELECT 1 FROM skill_access_grants sag
+                           WHERE sag.skill_id = s.id AND sag.user_id = :userId)))
+            OR :isOrgAdmin = true
+          )
+          AND s.lifecycle_status <> 'Blocked'
+          AND (:includeArchived = true OR s.lifecycle_status <> 'Archived')
+          AND s.current_version_id IS NOT NULL
+          AND (:approvedOnly = false
+               OR s.lifecycle_status IN ('Company_Approved', 'Team_Approved'))
+        ORDER BY s.name ASC, s.id
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<CatalogEntryProjection> findVisibleCatalogEntries(
+            @Param("orgId") UUID orgId,
+            @Param("userId") UUID userId,
+            @Param("isOrgAdmin") boolean isOrgAdmin,
+            @Param("includeArchived") boolean includeArchived,
+            @Param("approvedOnly") boolean approvedOnly,
+            @Param("limit") int limit
+    );
 }
