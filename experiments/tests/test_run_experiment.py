@@ -83,6 +83,19 @@ class TestSearchMode:
                         extra={"subset": "close-semantics-20", "search_mode": None})
         assert env["search_mode"] is None
 
+
+class TestCatalogSource:
+    def test_env_carries_catalog_source(self):
+        # The catalog source flows into env.json via the `extra` block for attribution (R9.2).
+        env = build_env(_cfg(), model_id="m", model_version=None,
+                        extra={"subset": "random-20", "catalog_source": "backend"})
+        assert env["catalog_source"] == "backend"
+
+    def test_env_catalog_source_defaults_local(self):
+        env = build_env(_cfg(), model_id="m", model_version=None,
+                        extra={"subset": "random-20", "catalog_source": "local"})
+        assert env["catalog_source"] == "local"
+
     def test_actuator_url_derived_from_host(self):
         assert actuator_info_url("http://localhost:8080") == "http://localhost:8080/actuator/info"
         # trailing slash on host is normalized

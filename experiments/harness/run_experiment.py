@@ -265,7 +265,8 @@ DISALLOWED_TOOLS = [
 
 
 def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, subset_name: str,
-               task_set, run_id: Optional[str] = None, search_mode: Optional[str] = None) -> Path:
+               task_set, run_id: Optional[str] = None, search_mode: Optional[str] = None,
+               catalog_source: str = "local") -> Path:
     """Execute the (condition × task × rep) matrix for ONE named subset; return the records path.
 
     A run operates on a single frozen subset (e.g. ``close-semantics-20``); its already-materialized
@@ -307,7 +308,8 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, s
     else:
         write_env(run_dir, build_env(cfg, model_id=cfg.model_id, model_version=None,
                                      extra={"note": "subset run", "subset": subset_name,
-                                            "search_mode": search_mode}))
+                                            "search_mode": search_mode,
+                                            "catalog_source": catalog_source}))
 
     # Verify the backend's active search mode matches --search-mode BEFORE any alexandria cell runs,
     # so a mislabeled run never happens (R7.1). Skipped when the alexandria condition isn't in play
@@ -333,7 +335,7 @@ def run_matrix(cfg: ExperimentConfig, *, results_root: Path, corpus_dir: Path, s
                                  size, subset_name, provision_alexandria, alexandria_task_tokens, done)
         elif condition == Condition.CATALOG.value:
             _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
-                              size, subset_name, done)
+                              size, subset_name, done, catalog_source=catalog_source)
         elif condition == Condition.HIERARCHICAL.value:
             _run_hierarchical_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count,
                                    size, subset_name, done)
@@ -400,12 +402,13 @@ def _run_hierarchical_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer
 
 
 def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, count, size,
-                      subset_name, done) -> None:
+                      subset_name, done, catalog_source="local") -> None:
     """Catalog condition: resident catalog in the system prompt + a local on-demand fetch server.
 
-    No backend and no per-skill workspace install — the catalog text is built once from the corpus
-    and the single fetch is served locally. So this cell only needs the corpus files already
-    materialized for the subset.
+    With ``catalog_source="local"`` the resident catalog text is built from the corpus; with
+    ``catalog_source="backend"`` it is read from the running backend's ``alexandria://catalog`` MCP
+    resource (R9) — the product path. Either way the single ``fetch_skill`` body retrieval + chosen-id
+    capture are served locally, so scoring stays consistent.
     """
     from harness.provision_catalog import build_catalog_text, catalog_id_to_slug
     from harness.provision_catalog import catalog_system_prompt as compose_catalog_prompt
@@ -417,9 +420,24 @@ def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, cou
         print(f"  [catalog N={size}] all cells already complete — skipping", flush=True)
         return
 
-    catalog_text = build_catalog_text(corpus_dir, manifest)  # halts if a body is missing
-    sys_prompt = compose_catalog_prompt(cfg.system_prompt("catalog") or "", catalog_text)
     id_to_slug = catalog_id_to_slug(manifest)
+    directive = cfg.system_prompt("catalog") or ""
+    if catalog_source == "backend":
+        # Read the resident catalog from the real product MCP resource (R9.1). The directive is
+        # prepended; the backend already renders its own header, so we just supply the consult
+        # instruction around the backend-rendered lines.
+        from harness.backend_catalog import fetch_backend_catalog_text
+        acfg = cfg.alexandria()
+        from harness.alexandria_client import AlexandriaClient
+        bearer = AlexandriaClient(acfg).token()
+        mcp_url = f"{acfg.host}/api/agent/v1/mcp"
+        backend_text = fetch_backend_catalog_text(mcp_url, bearer)
+        sys_prompt = f"{' '.join(directive.split())}\n\n{backend_text}".strip()
+        print(f"  [catalog N={size}] catalog_source=backend ({len(backend_text)} chars from "
+              f"{mcp_url})", flush=True)
+    else:
+        catalog_text = build_catalog_text(corpus_dir, manifest)  # halts if a body is missing
+        sys_prompt = compose_catalog_prompt(directive, catalog_text)
 
     for task_id in order:
         task = by_id[task_id]
@@ -431,11 +449,12 @@ def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, cou
                 library_size=size, content_hash=manifest.content_hash, rep=rep,
                 is_warmup=(rep < cfg.warmup), corpus_dir=corpus_dir, manifest=manifest,
                 catalog_system_prompt=sys_prompt, id_to_slug=id_to_slug, count=count,
+                catalog_source=catalog_source,
                 experiment_version=cfg.experiment_version, run_id=writer.run_dir.name,
                 claude_command=cfg.claude_command, model_id=cfg.model_id, effort=cfg.effort,
                 disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
             )
-            rec.notes = f"subset={subset_name}"
+            rec.notes = f"subset={subset_name};catalog_source={catalog_source}"
             u = rec.reported_usage or {}
             real = (int(u.get("input_tokens", 0) or 0) + int(u.get("cache_read_input_tokens", 0) or 0)
                     + int(u.get("output_tokens", 0) or 0)) > 0
@@ -588,6 +607,12 @@ def main() -> int:
                              "before the alexandria condition runs (aborts on mismatch). The operator "
                              "must set ALEXANDRIA_SEARCH_MODE to the same value and restart the "
                              "backend first. Omit for a native-only run or to skip verification.")
+    parser.add_argument("--catalog-source", choices=("local", "backend"), default="local",
+                        help="Where the catalog condition's resident catalog comes from: 'local' "
+                             "(built from the corpus by the local catalog_server, default) or "
+                             "'backend' (read the alexandria://catalog MCP resource from the running "
+                             "stack — the product path, requires alexandria.catalog.enabled=true). "
+                             "Recorded into env.json; corpus/tasks/scoring are unchanged (R9).")
     parser.add_argument("--print-env", action="store_true",
                         help="Print the captured env and exit (no runs).")
     parser.add_argument("--materialize-only", action="store_true",
@@ -602,9 +627,10 @@ def main() -> int:
 
     subset_name = args.subset
     search_mode = args.search_mode
+    catalog_source = args.catalog_source
 
-    # On resume, inherit matrix shape + subset + search mode from the original run's env.json so the
-    # resumed cells stay attributable to the same mode (R7.1).
+    # On resume, inherit matrix shape + subset + search mode + catalog source from the original run's
+    # env.json so the resumed cells stay attributable to the same configuration (R7.1, R9.2).
     if args.resume:
         env_path = Path(args.results) / "raw" / args.resume / "env.json"
         if not env_path.is_file():
@@ -616,11 +642,14 @@ def main() -> int:
         cfg.raw["conditions"] = orig["conditions"]
         subset_name = orig.get("subset", subset_name)
         search_mode = orig.get("search_mode", search_mode)
+        catalog_source = orig.get("catalog_source", catalog_source)
         print(f"Resume: inheriting from {args.resume} (subset={subset_name} nrep={orig['nrep']} "
-              f"warmup={orig['warmup']} search_mode={search_mode})", flush=True)
+              f"warmup={orig['warmup']} search_mode={search_mode} catalog_source={catalog_source})",
+              flush=True)
 
     env = build_env(cfg, model_id=cfg.model_id, model_version=None,
-                    extra={"subset": subset_name, "search_mode": search_mode})
+                    extra={"subset": subset_name, "search_mode": search_mode,
+                           "catalog_source": catalog_source})
     if args.print_env:
         print(json.dumps(env, indent=2))
         return 0
@@ -647,7 +676,7 @@ def main() -> int:
     try:
         records_path = run_matrix(cfg, results_root=Path(args.results), corpus_dir=corpus_dir,
                                   subset_name=subset_name, task_set=task_set, run_id=args.resume,
-                                  search_mode=search_mode)
+                                  search_mode=search_mode, catalog_source=catalog_source)
     except SearchModeMismatchError as e:
         print(f"\n*** ABORTED: {e}", flush=True)
         return 2

@@ -61,7 +61,7 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Requirements: R4.5, R7.1, R7.3_
   - _Tests: info field present reflects config; read logs counts not content._
 
-- [ ] 7. Harness: source the catalog from the backend resource
+- [x] 7. Harness: source the catalog from the backend resource
   - Add a `--catalog-source {local,backend}` switch to the harness: `local` keeps
     `catalog_server.py`; `backend` reads `alexandria://catalog` via the capture proxy against the
     running stack and injects it as the resident catalog. Record `catalog_source` in `env.json`.

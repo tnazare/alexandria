@@ -44,6 +44,7 @@ def run_task(
     catalog_system_prompt: str,
     id_to_slug: dict[str, str],
     count,
+    catalog_source: str = "local",
     experiment_version: str = "v1",
     run_id: str = "adhoc",
     claude_command: str = "claude",
@@ -54,10 +55,14 @@ def run_task(
 ) -> RunRecord:
     """Execute one catalog-condition run and return its RunRecord.
 
-    ``catalog_system_prompt`` is the composed directive + resident catalog (see
-    :func:`harness.provision_catalog.catalog_system_prompt`). ``id_to_slug`` maps the fetched catalog
-    id to a corpus slug (identity, since the id is the slug). ``count`` is a tokenizer counter used to
-    fill Context_Token_Cost from the catalog token model.
+    ``catalog_system_prompt`` is the composed directive + resident catalog. With
+    ``catalog_source="local"`` it is built from the corpus by
+    :func:`harness.provision_catalog.catalog_system_prompt`; with ``catalog_source="backend"`` the
+    resident catalog text is read from the running backend's ``alexandria://catalog`` MCP resource
+    (R9) — the product path — and composed into the prompt by the caller. Either way the single
+    ``fetch_skill`` body retrieval and chosen-id capture are served by the local
+    :mod:`harness.catalog_server`, so scoring (slug id-space) stays consistent across sources.
+    ``catalog_source`` is recorded on the RunRecord for attribution (R9.2).
     """
     server = CatalogServer(Path(corpus_dir), manifest)
     server.start()
@@ -99,6 +104,7 @@ def run_task(
             model_id=model_id,
             model_version=(reported_model(result) if isinstance(result, dict) else None),
             seed=seed,
+            notes=f"catalog_source={catalog_source}",
         )
     finally:
         server.stop()
