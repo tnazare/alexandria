@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Optional
 
 from harness.catalog_server import CatalogServer
+from harness.mcp_proxy import McpCaptureProxy
 from harness.models import Condition, CorpusManifest, RunRecord
 from harness.run_alexandria import write_mcp_config
 from harness.run_native import reported_model, reported_usage, run_claude
@@ -45,6 +46,9 @@ def run_task(
     id_to_slug: dict[str, str],
     count,
     catalog_source: str = "local",
+    backend_mcp_url: Optional[str] = None,
+    backend_bearer: Optional[str] = None,
+    versionid_to_slug: Optional[dict[str, str]] = None,
     experiment_version: str = "v1",
     run_id: str = "adhoc",
     claude_command: str = "claude",
@@ -63,7 +67,22 @@ def run_task(
     ``fetch_skill`` body retrieval and chosen-id capture are served by the local
     :mod:`harness.catalog_server`, so scoring (slug id-space) stays consistent across sources.
     ``catalog_source`` is recorded on the RunRecord for attribution (R9.2).
+
+    When ``catalog_source="backend"``, the single ``fetch_skill`` is routed to the REAL backend
+    through the capture proxy (the full product path: catalog resource + governed fetch), and the
+    fetched ``skillVersionId`` is mapped to a slug via ``versionid_to_slug`` for scoring. Otherwise
+    the local corpus-backed fetch server is used.
     """
+    if catalog_source == "backend":
+        return _run_backend_fetch(
+            task_id=task_id, prompt=prompt, gold_skill=gold_skill, library_size=library_size,
+            content_hash=content_hash, rep=rep, is_warmup=is_warmup, corpus_dir=Path(corpus_dir),
+            manifest=manifest, catalog_system_prompt=catalog_system_prompt, count=count,
+            backend_mcp_url=backend_mcp_url, backend_bearer=backend_bearer,
+            versionid_to_slug=versionid_to_slug or {}, experiment_version=experiment_version,
+            run_id=run_id, claude_command=claude_command, model_id=model_id, effort=effort,
+            disallowed_tools=disallowed_tools, seed=seed)
+
     server = CatalogServer(Path(corpus_dir), manifest)
     server.start()
     try:
@@ -108,6 +127,53 @@ def run_task(
         )
     finally:
         server.stop()
+
+
+def _run_backend_fetch(
+    *, task_id, prompt, gold_skill, library_size, content_hash, rep, is_warmup, corpus_dir,
+    manifest, catalog_system_prompt, count, backend_mcp_url, backend_bearer, versionid_to_slug,
+    experiment_version, run_id, claude_command, model_id, effort, disallowed_tools, seed,
+) -> RunRecord:
+    """Backend-sourced catalog run: resident catalog from the backend resource + real backend fetch.
+
+    The resident catalog (``catalog_system_prompt``) was rendered by the product
+    ``alexandria://catalog`` resource; ``fetch_skill`` is forwarded to the real backend through the
+    capture proxy, so the whole path is the product. The fetched ``skillVersionId`` is scored via
+    ``versionid_to_slug``.
+    """
+    proxy = McpCaptureProxy(backend_mcp_url, bearer_token=backend_bearer)
+    proxy.start()
+    try:
+        with tempfile.TemporaryDirectory(prefix="catalog-be-") as ws:
+            workspace = Path(ws)
+            mcp_cfg = write_mcp_config(workspace, proxy.endpoint)
+            result, e2e_ms = run_claude(
+                prompt, workspace, command=claude_command, model_id=model_id, effort=effort,
+                mcp_config=mcp_cfg, strict_mcp_config=True,
+                allowed_tools=["mcp__alexandria__fetch_skill"],
+                disallowed_tools=disallowed_tools,
+                append_system_prompt=catalog_system_prompt,
+            )
+
+        cap = proxy.capture
+        consulted = cap.fetch_version_id is not None
+        chosen_slug = versionid_to_slug.get(cap.fetch_version_id) if cap.fetch_version_id else None
+        token_cost = _catalog_token_cost(count, manifest, Path(corpus_dir), chosen_slug=chosen_slug)
+
+        return RunRecord(
+            run_id=run_id, experiment_version=experiment_version, condition=Condition.CATALOG.value,
+            library_size=library_size, content_hash=content_hash, task_id=task_id,
+            gold_skill=gold_skill, rep=rep, is_warmup=is_warmup, chosen_skill=chosen_slug,
+            resolve_candidates=None, consulted=consulted,
+            retrieval_latency_ms=cap.retrieval_latency_ms(), end_to_end_latency_ms=e2e_ms,
+            context_token_cost=token_cost,
+            reported_usage=reported_usage(result) if isinstance(result, dict) else None,
+            model_id=model_id,
+            model_version=(reported_model(result) if isinstance(result, dict) else None),
+            seed=seed, notes="catalog_source=backend",
+        )
+    finally:
+        proxy.stop()
 
 
 def _catalog_token_cost(count, manifest, corpus_dir: Path, *, chosen_slug: Optional[str]) -> int:

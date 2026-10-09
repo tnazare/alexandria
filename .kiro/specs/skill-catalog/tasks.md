@@ -74,10 +74,13 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
     alexandria-service test` = 504 tests, 0 failures with `alexandria.catalog.enabled` unset; the
     catalog work is fully additive and off by default. Harness wiring verified offline:
     `--catalog-source backend` parses and records into `env.json` (no API spend).
-  - **Deferred (quota-gated live portion):** once Claude quota resets, a smoke run of `random-20`
-    with `--catalog-source backend` against a stack running `ALEXANDRIA_CATALOG_ENABLED=true`, to
-    confirm the real `alexandria://catalog` resource reproduces the resident-catalog compliance
-    behavior and the run is attributed. (Not run during the quota freeze, per the spec.)
+  - **Live end-to-end (R9) — done:** `random-20` nrep=3 with `--catalog-source backend` against a
+    stack running `ALEXANDRIA_CATALOG_ENABLED=true` (rebuilt from this spec's code). The real
+    `alexandria://catalog` MCP resource reproduced the resident-catalog win: catalog model-choice
+    0.833 vs native 0.700 (+0.133), compliance-driven, matching the local simulation (+0.18). Fetch
+    routed through the backend; 20/20 catalog versionIds scored. See
+    `experiments/results/run-20261009-132631.md`. A versionId→slug mapping fix (titleize(slug), the
+    convention the backend loader uses) was needed in the harness backend path.
   - _Requirements: R8.1, R8.2, R8.3, R9_
 
 ## Suggested commit boundaries

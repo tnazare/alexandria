@@ -64,6 +64,27 @@ def test_backend_catalog_available_true_when_advertised(monkeypatch):
     assert bc.backend_catalog_available("http://localhost:8080/api/agent/v1/mcp", "bearer") is True
 
 
+def test_parse_versionid_name_pairs_extracts_id_and_name():
+    text = (
+        "# Skill Catalog\n"
+        "These are reusable governed skills, one per line as `id: name — description`. ...\n"
+        "498ddb14-c653-47b4-b49d-ae96dc70109f: Ab Test Setup \u2014 Structured guide for A/B tests.\n"
+        "7f2a1b33-0000-4000-8000-000000000001: Web Scraper \u2014 Scrape pages reliably.\n"
+        "_Catalog truncated to 2 entries._\n"
+    )
+    pairs = bc.parse_versionid_name_pairs(text)
+    assert pairs == [
+        ("498ddb14-c653-47b4-b49d-ae96dc70109f", "Ab Test Setup"),
+        ("7f2a1b33-0000-4000-8000-000000000001", "Web Scraper"),
+    ]
+
+
+def test_parse_versionid_name_pairs_skips_header_and_prose():
+    # The header sentence contains ": " but its id-part has spaces, so it is skipped.
+    text = "These are reusable governed skills: pick one.\nvid-1: Name \u2014 desc\n"
+    assert bc.parse_versionid_name_pairs(text) == [("vid-1", "Name")]
+
+
 def test_backend_catalog_available_false_when_absent(monkeypatch):
     import urllib.request
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen_factory({

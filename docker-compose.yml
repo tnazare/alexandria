@@ -63,6 +63,7 @@ services:
       OIDC_ISSUER_URI: http://heptastadion:9000/alexandria
       OIDC_CLIENT_ID: alexandria-client
       ALEXANDRIA_SEARCH_MODE: ${ALEXANDRIA_SEARCH_MODE:-fts}
+      ALEXANDRIA_CATALOG_ENABLED: ${ALEXANDRIA_CATALOG_ENABLED:-false}
       # Use jwk-set-uri directly to avoid issuer mismatch between Docker internal
       # hostname (heptastadion) and browser-facing hostname (localhost)
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://heptastadion:9000/alexandria/jwks

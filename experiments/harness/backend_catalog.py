@@ -66,6 +66,28 @@ def fetch_backend_catalog_text(mcp_url: str, bearer: str, uri: str = CATALOG_URI
     return text
 
 
+def parse_versionid_name_pairs(catalog_text: str) -> list[tuple[str, str]]:
+    """Parse ``versionId: Name — description`` lines into ``(versionId, name)`` pairs.
+
+    Skips the Markdown header and any non-line text. The id is everything before the first ``: `` and
+    the name is between that and the em dash (``\u2014``). Used to build a versionId->slug map so the
+    harness can score a backend-sourced catalog against the slug id-space it already knows.
+    """
+    pairs: list[tuple[str, str]] = []
+    for raw in catalog_text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or line.startswith("_") or ": " not in line:
+            continue
+        vid, rest = line.split(": ", 1)
+        vid = vid.strip()
+        # A UUID versionId has no spaces; skip prose/header lines that happen to contain ": ".
+        if " " in vid:
+            continue
+        name = rest.split("\u2014", 1)[0].strip() if "\u2014" in rest else rest.strip()
+        pairs.append((vid, name))
+    return pairs
+
+
 def backend_catalog_available(mcp_url: str, bearer: str) -> bool:
     """True if the backend advertises the catalog resource via resources/list (catalog enabled)."""
     try:

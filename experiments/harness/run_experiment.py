@@ -422,19 +422,34 @@ def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, cou
 
     id_to_slug = catalog_id_to_slug(manifest)
     directive = cfg.system_prompt("catalog") or ""
+    backend_mcp_url = backend_bearer = None
+    versionid_to_slug: dict = {}
     if catalog_source == "backend":
         # Read the resident catalog from the real product MCP resource (R9.1). The directive is
         # prepended; the backend already renders its own header, so we just supply the consult
-        # instruction around the backend-rendered lines.
-        from harness.backend_catalog import fetch_backend_catalog_text
-        acfg = cfg.alexandria()
+        # instruction around the backend-rendered lines. fetch_skill is routed to the real backend
+        # (see run_catalog backend path), and the fetched versionId is scored via versionid_to_slug.
+        from harness.backend_catalog import fetch_backend_catalog_text, parse_versionid_name_pairs
         from harness.alexandria_client import AlexandriaClient
-        bearer = AlexandriaClient(acfg).token()
-        mcp_url = f"{acfg.host}/api/agent/v1/mcp"
-        backend_text = fetch_backend_catalog_text(mcp_url, bearer)
+        acfg = cfg.alexandria()
+        backend_bearer = AlexandriaClient(acfg).token()
+        backend_mcp_url = f"{acfg.host}/api/agent/v1/mcp"
+        backend_text = fetch_backend_catalog_text(backend_mcp_url, backend_bearer)
         sys_prompt = f"{' '.join(directive.split())}\n\n{backend_text}".strip()
+        # Map the backend catalog's versionId line-ids to corpus slugs via display name. The backend
+        # loader set each skill's display name to titleize(slug) (same convention the alexandria
+        # condition relies on), so match the backend-rendered name against titleize(slug), not the
+        # raw manifest name.
+        from harness.provision_alexandria import _titleize
+        title_to_slug = {_titleize(e.slug): e.slug for e in manifest.skills}
+        for vid, name in parse_versionid_name_pairs(backend_text):
+            slug = title_to_slug.get(name)
+            if slug:
+                versionid_to_slug[vid] = slug
+        mapped = len(versionid_to_slug)
         print(f"  [catalog N={size}] catalog_source=backend ({len(backend_text)} chars from "
-              f"{mcp_url})", flush=True)
+              f"{backend_mcp_url}; mapped {mapped}/{len(manifest.skills)} versionIds->slugs)",
+              flush=True)
     else:
         catalog_text = build_catalog_text(corpus_dir, manifest)  # halts if a body is missing
         sys_prompt = compose_catalog_prompt(directive, catalog_text)
@@ -449,7 +464,8 @@ def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, cou
                 library_size=size, content_hash=manifest.content_hash, rep=rep,
                 is_warmup=(rep < cfg.warmup), corpus_dir=corpus_dir, manifest=manifest,
                 catalog_system_prompt=sys_prompt, id_to_slug=id_to_slug, count=count,
-                catalog_source=catalog_source,
+                catalog_source=catalog_source, backend_mcp_url=backend_mcp_url,
+                backend_bearer=backend_bearer, versionid_to_slug=versionid_to_slug,
                 experiment_version=cfg.experiment_version, run_id=writer.run_dir.name,
                 claude_command=cfg.claude_command, model_id=cfg.model_id, effort=cfg.effort,
                 disallowed_tools=DISALLOWED_TOOLS, seed=cfg.order_seed,
