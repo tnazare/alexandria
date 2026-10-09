@@ -1,10 +1,14 @@
 package com.alexandria.agent.mcp;
 
 import com.alexandria.agent.ResolverService;
+import com.alexandria.agent.catalog.CatalogResult;
+import com.alexandria.agent.catalog.CatalogRenderer;
+import com.alexandria.agent.catalog.CatalogService;
 import com.alexandria.agent.dto.ResolveRequest;
 import com.alexandria.agent.dto.ResolveResponse;
 import com.alexandria.agent.render.FetchResult;
 import com.alexandria.auth.AlexandriaUserDetails;
+import com.alexandria.config.CatalogProperties;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -19,6 +23,13 @@ import java.util.UUID;
  * JSON-RPC 2.0 dispatcher for the MCP endpoint. Handles {@code initialize}, {@code tools/list}, and
  * {@code tools/call} for the resolver's two tools, delegating to {@link ResolverService} with the
  * caller's authenticated identity so ACL and governance are enforced per identity.
+ *
+ * <p>When {@code alexandria.catalog.enabled} is true, it additionally advertises a {@code resources}
+ * capability and handles {@code resources/list} / {@code resources/read} to serve the resident Skill
+ * Catalog ({@code alexandria://catalog}) — a compact, ACL-scoped listing the client loads into the
+ * agent's context so skill selection is resident (see the skill-catalog spec). When disabled (the
+ * default), the server behaves exactly as before: tools only, and {@code resources/*} is
+ * method-not-found.</p>
  */
 @Slf4j
 @Service
@@ -28,6 +39,7 @@ public class McpToolService {
     private static final String PROTOCOL_VERSION = "2025-06-18";
     private static final String RESOLVE_TOOL = "resolve_skill";
     private static final String FETCH_TOOL = "fetch_skill";
+    private static final String CATALOG_URI = "alexandria://catalog";
 
     // JSON-RPC error codes.
     private static final int METHOD_NOT_FOUND = -32601;
@@ -35,8 +47,15 @@ public class McpToolService {
     private static final int INTERNAL_ERROR = -32603;
 
     private final ResolverService resolverService;
+    private final CatalogService catalogService;
+    private final CatalogRenderer catalogRenderer;
+    private final CatalogProperties catalogProperties;
     // A dedicated mapper for JSON-RPC assembly; independent of the web layer's HTTP mapper.
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private boolean catalogEnabled() {
+        return Boolean.TRUE.equals(catalogProperties.enabled());
+    }
 
     public JsonNode handle(JsonNode request, AlexandriaUserDetails identity) {
         JsonNode idNode = request.get("id");
@@ -47,6 +66,12 @@ public class McpToolService {
                 case "initialize" -> success(idNode, initializeResult());
                 case "tools/list" -> success(idNode, toolsListResult());
                 case "tools/call" -> handleToolCall(idNode, request.path("params"), identity);
+                case "resources/list" -> catalogEnabled()
+                        ? success(idNode, resourcesListResult())
+                        : error(idNode, METHOD_NOT_FOUND, "Method not found: " + method);
+                case "resources/read" -> catalogEnabled()
+                        ? handleResourcesRead(idNode, request.path("params"), identity)
+                        : error(idNode, METHOD_NOT_FOUND, "Method not found: " + method);
                 case "notifications/initialized", "ping" -> success(idNode, objectMapper.createObjectNode());
                 default -> error(idNode, METHOD_NOT_FOUND, "Method not found: " + method);
             };
@@ -63,10 +88,52 @@ public class McpToolService {
         result.put("protocolVersion", PROTOCOL_VERSION);
         ObjectNode caps = result.putObject("capabilities");
         caps.putObject("tools");
+        // Advertise the resources capability only when the resident catalog is enabled, so a
+        // default deployment is byte-identical to the tools-only server (R4.2, R8.1).
+        if (catalogEnabled()) {
+            caps.putObject("resources");
+        }
         ObjectNode serverInfo = result.putObject("serverInfo");
         serverInfo.put("name", "alexandria-skill-resolver");
         serverInfo.put("version", "1.0");
         return result;
+    }
+
+    /** Advertises the single resident catalog resource (R3.2). */
+    private JsonNode resourcesListResult() {
+        ObjectNode result = objectMapper.createObjectNode();
+        ArrayNode resources = result.putArray("resources");
+        ObjectNode catalog = resources.addObject();
+        catalog.put("uri", CATALOG_URI);
+        catalog.put("name", "Skill Catalog");
+        catalog.put("description",
+                "Reusable governed skills you are allowed to see, as 'id: name — description' lines. "
+                + "Load this into context and select a skill id to fetch_skill, rather than searching.");
+        catalog.put("mimeType", "text/markdown");
+        return result;
+    }
+
+    /** Serves the resident catalog text for the authenticated identity (R3.3, R3.4). */
+    private JsonNode handleResourcesRead(JsonNode idNode, JsonNode params,
+                                         AlexandriaUserDetails identity) {
+        String uri = params.path("uri").asText("");
+        if (!CATALOG_URI.equals(uri)) {
+            return error(idNode, INVALID_PARAMS, "Unknown resource uri: " + uri);
+        }
+        if (identity == null) {
+            // No catalog content for an unauthenticated caller (R3.4).
+            return error(idNode, INVALID_PARAMS, "Authentication required to read the skill catalog");
+        }
+        CatalogResult catalog = catalogService.catalog(identity, null, null);
+        String text = catalogRenderer.render(catalog);
+
+        ObjectNode result = objectMapper.createObjectNode();
+        ArrayNode contents = result.putArray("contents");
+        ObjectNode content = contents.addObject();
+        content.put("uri", CATALOG_URI);
+        content.put("mimeType", "text/markdown");
+        content.put("text", text);
+        return success(idNode, result);
     }
 
     private JsonNode toolsListResult() {

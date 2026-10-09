@@ -44,7 +44,7 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Requirements: R3.3, R3.5, R5.2_
   - _Tests: line/header/truncation formatting; determinism; governance annotation on/off._
 
-- [ ] 5. MCP resources capability + resources/list + resources/read (flag-gated)
+- [x] 5. MCP resources capability + resources/list + resources/read (flag-gated)
   - In `McpToolService`: when `catalog.enabled`, add a `resources` capability in `initializeResult()`
     and handle `resources/list` (one `alexandria://catalog` resource) and `resources/read` (validate
     uri; call `CatalogService` with the `SecurityContextHolder` identity; return
