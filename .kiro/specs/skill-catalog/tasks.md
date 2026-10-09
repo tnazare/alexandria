@@ -69,11 +69,15 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Requirements: R9.1, R9.2, R9.3_
   - _Tests: env.json carries catalog_source; backend path parses the resource into catalog lines._
 
-- [ ] 8. End-to-end verification (quota-gated)
-  - Regression: full backend suite green with the flag unset (R8). Then, once Claude quota resets, a
-    smoke run of `random-20` with `--catalog-source backend` confirming the real resource reproduces
-    the resident-catalog compliance behavior and the run is attributed. (Do NOT run during quota
-    freeze.)
+- [x] 8. End-to-end verification (quota-gated)
+  - Regression: full backend suite green with the flag unset (R8) — **done**: `./mvnw -pl
+    alexandria-service test` = 504 tests, 0 failures with `alexandria.catalog.enabled` unset; the
+    catalog work is fully additive and off by default. Harness wiring verified offline:
+    `--catalog-source backend` parses and records into `env.json` (no API spend).
+  - **Deferred (quota-gated live portion):** once Claude quota resets, a smoke run of `random-20`
+    with `--catalog-source backend` against a stack running `ALEXANDRIA_CATALOG_ENABLED=true`, to
+    confirm the real `alexandria://catalog` resource reproduces the resident-catalog compliance
+    behavior and the run is attributed. (Not run during the quota freeze, per the spec.)
   - _Requirements: R8.1, R8.2, R8.3, R9_
 
 ## Suggested commit boundaries
