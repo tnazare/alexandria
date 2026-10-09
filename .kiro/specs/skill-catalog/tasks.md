@@ -27,7 +27,7 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Tests (Testcontainers): correct sets per visibility/org-admin; excludes Blocked/Archived/
     version-less; **ACL parity** vs `findVisibleCandidates` (R1.5); deterministic ordering._
 
-- [ ] 3. CatalogService (ACL + governance + bounds + scoping)
+- [x] 3. CatalogService (ACL + governance + bounds + scoping)
   - Add `CatalogService.catalog(identity, includeArchived, limit)` returning
     `CatalogResult(entries, truncated, totalReturned)`. Derive `isOrgAdmin` (narrow bypass, as
     `doResolve`); clamp `limit` to `maxEntries`; query `maxEntries + 1` to detect truncation; apply
