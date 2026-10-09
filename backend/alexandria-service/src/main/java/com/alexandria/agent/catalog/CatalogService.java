@@ -69,8 +69,9 @@ public class CatalogService {
                     r.getLifecycleStatus(), r.getRiskLevel(), r.getVisibility()));
         }
 
-        // Observability: counts only, never content (R7.1, R7.3).
-        log.debug("Served skill catalog: org={} entries={} truncated={} scope={} includeArchived={}",
+        // Observability (R7.1): one record per catalog read, counts/ids only — never skill names or
+        // descriptions (R7.3). INFO so it is visible in default operator logs.
+        log.info("Served skill catalog: org={} entries={} truncated={} scope={} includeArchived={}",
                 identity.organizationId(), entries.size(), truncated,
                 catalogProperties.lifecycleScope(), archived);
 

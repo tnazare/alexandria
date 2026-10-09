@@ -54,7 +54,7 @@ mode is explicitly enabled. Build/verify with `./mvnw test` (unit) and `./mvnw v
   - _Tests: flag off → tools-only + resources/* → -32601; flag on → list/read return catalog for the
     authenticated identity, nothing for unauthenticated; resolve/fetch byte-unchanged._
 
-- [ ] 6. Info contributor + observability
+- [x] 6. Info contributor + observability
   - Add `CatalogInfoContributor` publishing `catalog.enabled` (+ `maxEntries`, `lifecycleScope`) on
     `/actuator/info` (mirror `SearchModeInfoContributor`). Add a metric/log on `resources/read`
     (entry count, truncated, caller org — counts/ids only, never content).
