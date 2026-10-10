@@ -436,19 +436,16 @@ def _run_catalog_cell(cfg, manifest, corpus_dir, order, by_id, reps, writer, cou
         backend_mcp_url = f"{acfg.host}/api/agent/v1/mcp"
         backend_text = fetch_backend_catalog_text(backend_mcp_url, backend_bearer)
         sys_prompt = f"{' '.join(directive.split())}\n\n{backend_text}".strip()
-        # Map the backend catalog's versionId line-ids to corpus slugs via display name. The backend
-        # loader set each skill's display name to titleize(slug) (same convention the alexandria
-        # condition relies on), so match the backend-rendered name against titleize(slug), not the
-        # raw manifest name.
-        from harness.provision_alexandria import _titleize
-        title_to_slug = {_titleize(e.slug): e.slug for e in manifest.skills}
-        for vid, name in parse_versionid_name_pairs(backend_text):
-            slug = title_to_slug.get(name)
-            if slug:
-                versionid_to_slug[vid] = slug
+        # The backend catalog now advertises the SLUG as each line's id (fetched via skillSlug), so
+        # the captured fetch id is already a corpus slug — scoring is slug->slug identity. Build the
+        # map over the slugs the backend actually rendered, so an unknown id scores as a miss.
+        known_slugs = {e.slug for e in manifest.skills}
+        for slug_id, _name in parse_versionid_name_pairs(backend_text):
+            if slug_id in known_slugs:
+                versionid_to_slug[slug_id] = slug_id
         mapped = len(versionid_to_slug)
         print(f"  [catalog N={size}] catalog_source=backend ({len(backend_text)} chars from "
-              f"{backend_mcp_url}; mapped {mapped}/{len(manifest.skills)} versionIds->slugs)",
+              f"{backend_mcp_url}; mapped {mapped}/{len(manifest.skills)} slugs)",
               flush=True)
     else:
         catalog_text = build_catalog_text(corpus_dir, manifest)  # halts if a body is missing

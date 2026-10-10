@@ -102,12 +102,17 @@ def extract_versionid_to_name(response: dict) -> dict[str, str]:
 
 
 def extract_fetch_version_id(msg: dict) -> Optional[str]:
-    """From a fetch_skill tools/call request, return the requested skillVersionId argument."""
+    """From a fetch_skill tools/call request, return the requested skill identifier.
+
+    Returns ``skillVersionId`` (alexandria/resolve path, a UUID) or ``skillSlug`` (catalog path, the
+    slug the resident catalog advertises) — whichever the caller sent. The captured value is scored
+    downstream by the appropriate id map (versionId->slug or slug->slug identity).
+    """
     if classify_message(msg) != "tools/call:fetch_skill":
         return None
     args = (msg.get("params") or {}).get("arguments") or {}
-    vid = args.get("skillVersionId")
-    return str(vid) if vid else None
+    ident = args.get("skillSlug") or args.get("skillVersionId")
+    return str(ident) if ident else None
 
 
 # --- capture log -----------------------------------------------------------------------------
