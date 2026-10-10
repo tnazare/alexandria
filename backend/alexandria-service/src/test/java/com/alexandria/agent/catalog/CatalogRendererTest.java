@@ -22,67 +22,72 @@ class CatalogRendererTest {
                 new CatalogProperties(true, 500, includeGovernance, "all", false));
     }
 
-    private static CatalogEntry entry(String name, String desc) {
-        return new CatalogEntry(UUID.randomUUID(), VID, name, desc, "Published", "low", "organization");
+    private static CatalogEntry entry(String slug, String name, String desc) {
+        return new CatalogEntry(UUID.randomUUID(), VID, slug, name, desc, "Published", "low",
+                "organization");
     }
 
     @Test
-    void lineMatchesBenchmarkFormatWithEmDash() {
-        // Benchmark catalog_line: "{id}: {name} — {description}" (em dash, U+2014).
-        String line = renderer(false).line(entry("PDF Tools", "Work with PDFs"));
-        assertThat(line).isEqualTo(VID + ": PDF Tools \u2014 Work with PDFs");
+    void lineUsesSlugAsIdWithEmDash() {
+        // Line is "{slug}: {name} — {description}" (em dash, U+2014) — slug id, not the UUID, to cut
+        // resident token cost.
+        String line = renderer(false).line(entry("pdf-tools", "PDF Tools", "Work with PDFs"));
+        assertThat(line).isEqualTo("pdf-tools: PDF Tools \u2014 Work with PDFs");
     }
 
     @Test
-    void lineUsesVersionIdAsTheFetchId() {
-        String line = renderer(false).line(entry("A", "b"));
-        assertThat(line).startsWith(VID.toString() + ": ");
+    void lineDoesNotCarryTheVersionIdUuid() {
+        String line = renderer(false).line(entry("pdf-tools", "A", "b"));
+        assertThat(line).startsWith("pdf-tools: ");
+        assertThat(line).doesNotContain(VID.toString());  // the UUID is NOT resident (token saving)
     }
 
     @Test
     void governanceAnnotationAppendedOnlyWhenEnabled() {
-        assertThat(renderer(false).line(entry("A", "b"))).doesNotContain("[");
-        assertThat(renderer(true).line(entry("A", "b"))).endsWith(" [Published/low]");
+        assertThat(renderer(false).line(entry("a", "A", "b"))).doesNotContain("[");
+        assertThat(renderer(true).line(entry("a", "A", "b"))).endsWith(" [Published/low]");
     }
 
     @Test
     void governanceAnnotationUsesDashForMissingFields() {
-        CatalogEntry e = new CatalogEntry(UUID.randomUUID(), VID, "A", "b", "Published", null, "team");
+        CatalogEntry e = new CatalogEntry(UUID.randomUUID(), VID, "a", "A", "b", "Published", null,
+                "team");
         assertThat(renderer(true).line(e)).endsWith(" [Published/-]");
     }
 
     @Test
     void renderIncludesHeaderAndFetchInstruction() {
         String out = renderer(false).render(
-                new CatalogResult(List.of(entry("A", "b")), false, 1));
+                new CatalogResult(List.of(entry("a-slug", "A", "b")), false, 1));
         assertThat(out).contains("# Skill Catalog");
         assertThat(out).contains("fetch_skill");
-        assertThat(out).contains("id: name \u2014 description");
-        assertThat(out).contains(VID + ": A \u2014 b");
+        assertThat(out).contains("slug: name \u2014 description");
+        assertThat(out).contains("a-slug: A \u2014 b");
     }
 
     @Test
     void renderAppendsTruncationNoteWhenTruncated() {
         String notTruncated = renderer(false).render(
-                new CatalogResult(List.of(entry("A", "b")), false, 1));
+                new CatalogResult(List.of(entry("a", "A", "b")), false, 1));
         assertThat(notTruncated).doesNotContain("truncated");
 
         String truncated = renderer(false).render(
-                new CatalogResult(List.of(entry("A", "b")), true, 1));
+                new CatalogResult(List.of(entry("a", "A", "b")), true, 1));
         assertThat(truncated).contains("truncated");
     }
 
     @Test
     void renderIsDeterministic() {
         CatalogResult result = new CatalogResult(
-                List.of(entry("A", "a"), entry("B", "b")), false, 2);
+                List.of(entry("a", "A", "a"), entry("b", "B", "b")), false, 2);
         CatalogRenderer r = renderer(true);
         assertThat(r.render(result)).isEqualTo(r.render(result));
     }
 
     @Test
     void handlesNullNameAndDescriptionGracefully() {
-        CatalogEntry e = new CatalogEntry(UUID.randomUUID(), VID, null, null, "Published", "low", "org");
-        assertThat(renderer(false).line(e)).isEqualTo(VID + ":  \u2014 ");
+        CatalogEntry e = new CatalogEntry(UUID.randomUUID(), VID, "the-slug", null, null, "Published",
+                "low", "org");
+        assertThat(renderer(false).line(e)).isEqualTo("the-slug:  \u2014 ");
     }
 }

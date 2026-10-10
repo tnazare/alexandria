@@ -18,6 +18,8 @@ public interface CatalogEntryProjection {
 
     UUID getSkillVersionId();
 
+    String getSlug();
+
     String getName();
 
     String getDescription();

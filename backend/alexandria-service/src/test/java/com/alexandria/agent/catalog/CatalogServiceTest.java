@@ -33,12 +33,14 @@ class CatalogServiceTest {
 
     @Mock
     private SkillResolverRepository resolverRepository;
+    @Mock
+    private com.alexandria.skill.SkillRepository skillRepository;
 
     private final UUID orgId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
 
     private CatalogService serviceWith(CatalogProperties props) {
-        return new CatalogService(resolverRepository, props);
+        return new CatalogService(resolverRepository, skillRepository, props);
     }
 
     private AlexandriaUserDetails identity(Role role) {
@@ -52,6 +54,7 @@ class CatalogServiceTest {
         return new CatalogEntryProjection() {
             public UUID getSkillId() { return skillId; }
             public UUID getSkillVersionId() { return versionId; }
+            public String getSlug() { return name.toLowerCase().replace(' ', '-'); }
             public String getName() { return name; }
             public String getDescription() { return "desc of " + name; }
             public String getLifecycleStatus() { return "Published"; }
@@ -191,7 +194,43 @@ class CatalogServiceTest {
 
         assertThat(result.entries()).singleElement().satisfies(entry -> {
             assertThat(entry.skillVersionId()).isEqualTo(e.getSkillVersionId());
+            assertThat(entry.slug()).isEqualTo("alpha");
             assertThat(entry.name()).isEqualTo("alpha");
         });
+    }
+
+    @Test
+    void resolveSlugToVersionIdReturnsCurrentVersionOrgScoped() {
+        UUID vid = UUID.randomUUID();
+        var skill = new com.alexandria.skill.entity.SkillEntity();
+        skill.setCurrentVersionId(vid);
+        when(skillRepository.findByOrganizationIdAndSlug(orgId, "pdf-tools"))
+                .thenReturn(java.util.Optional.of(skill));
+        CatalogService service = serviceWith(props(true, 500, "all", false));
+
+        assertThat(service.resolveSlugToVersionId(identity(Role.Skill_Consumer), "pdf-tools"))
+                .contains(vid);
+    }
+
+    @Test
+    void resolveSlugToVersionIdEmptyWhenAbsentOrBlank() {
+        when(skillRepository.findByOrganizationIdAndSlug(orgId, "ghost"))
+                .thenReturn(java.util.Optional.empty());
+        CatalogService service = serviceWith(props(true, 500, "all", false));
+
+        assertThat(service.resolveSlugToVersionId(identity(Role.Skill_Consumer), "ghost")).isEmpty();
+        assertThat(service.resolveSlugToVersionId(identity(Role.Skill_Consumer), "  ")).isEmpty();
+        assertThat(service.resolveSlugToVersionId(identity(Role.Skill_Consumer), null)).isEmpty();
+    }
+
+    @Test
+    void resolveSlugToVersionIdEmptyWhenSkillHasNoCurrentVersion() {
+        var skill = new com.alexandria.skill.entity.SkillEntity();  // currentVersionId null
+        when(skillRepository.findByOrganizationIdAndSlug(orgId, "versionless"))
+                .thenReturn(java.util.Optional.of(skill));
+        CatalogService service = serviceWith(props(true, 500, "all", false));
+
+        assertThat(service.resolveSlugToVersionId(identity(Role.Skill_Consumer), "versionless"))
+                .isEmpty();
     }
 }

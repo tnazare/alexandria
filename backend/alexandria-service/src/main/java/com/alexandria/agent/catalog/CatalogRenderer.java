@@ -30,8 +30,8 @@ public class CatalogRenderer {
         StringBuilder sb = new StringBuilder();
         sb.append("# Skill Catalog\n\n");
         sb.append("These are reusable governed skills, one per line as ");
-        sb.append("`id: name \u2014 description`. Pick the id that best fits the task and call the ");
-        sb.append("`fetch_skill` tool with it to get the full instructions. ");
+        sb.append("`slug: name \u2014 description`. Pick the slug that best fits the task and call the ");
+        sb.append("`fetch_skill` tool with that slug to get the full instructions. ");
         sb.append("If none applies, do not fetch.\n\n");
 
         for (CatalogEntry e : result.entries()) {
@@ -47,12 +47,19 @@ public class CatalogRenderer {
         return sb.toString();
     }
 
-    /** One catalog line: {@code id: name — description}, optionally with a governance annotation. */
+    /** One catalog line: {@code slug: name — description}, optionally with a governance annotation.
+     *
+     * <p>The id is the skill's <strong>slug</strong>, not its {@code skillVersionId} UUID: a slug is
+     * shorter and semantically useful, which cuts the resident token cost (~13 tokens/skill saved vs
+     * a UUID) so the catalog's per-line overhead approaches native's name+description floor. The agent
+     * passes the slug to {@code fetch_skill} ({@code skillSlug}), which resolves it to the current
+     * version server-side.</p>
+     */
     String line(CatalogEntry e) {
         String name = e.name() == null ? "" : e.name();
         String description = e.description() == null ? "" : e.description();
         StringBuilder line = new StringBuilder()
-                .append(e.skillVersionId()).append(": ").append(name).append(SEP).append(description);
+                .append(e.slug()).append(": ").append(name).append(SEP).append(description);
         if (includeGovernance) {
             line.append(" [").append(nullToDash(e.lifecycleStatus()))
                     .append('/').append(nullToDash(e.riskLevel())).append(']');

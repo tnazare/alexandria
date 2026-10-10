@@ -183,14 +183,20 @@ public class McpToolService {
         ObjectNode props = schema.putObject("properties");
         ObjectNode versionId = props.putObject("skillVersionId");
         versionId.put("type", "string");
-        versionId.put("description", "The skillVersionId from a resolve_skill candidate's ref.");
+        versionId.put("description", "The skillVersionId from a resolve_skill candidate's ref. "
+                + "Provide this OR skillSlug.");
+        ObjectNode skillSlug = props.putObject("skillSlug");
+        skillSlug.put("type", "string");
+        skillSlug.put("description", "The slug id from a Skill Catalog line (e.g. 'pdf-tools'). "
+                + "Resolved to the skill's current version. Provide this OR skillVersionId.");
         ObjectNode toolParam = props.putObject("tool");
         toolParam.put("type", "string");
         toolParam.put("description", "Optional preferred tool variant; falls back to canonical instructions.");
         ObjectNode format = props.putObject("format");
         format.put("type", "string");
         format.put("description", "Output format: agent_skill (default) or alexandria_native.");
-        schema.putArray("required").add("skillVersionId");
+        // Neither is strictly required alone: exactly one of skillVersionId / skillSlug must be given
+        // (validated in callFetch), so no top-level "required" is declared.
         return tool;
     }
 
@@ -221,11 +227,27 @@ public class McpToolService {
 
     private JsonNode callFetch(JsonNode idNode, JsonNode arguments, AlexandriaUserDetails identity) {
         String versionIdRaw = arguments.path("skillVersionId").asText("");
+        String slug = arguments.path("skillSlug").asText("");
         UUID versionId;
-        try {
-            versionId = UUID.fromString(versionIdRaw);
-        } catch (IllegalArgumentException e) {
-            return error(idNode, INVALID_PARAMS, "skillVersionId must be a valid UUID");
+        if (!slug.isBlank()) {
+            // Catalog path: resolve the compact slug id to the current version, org-scoped. fetch()
+            // still enforces per-user visibility/governance on the resolved version (anti-enumeration).
+            if (identity == null) {
+                return error(idNode, INVALID_PARAMS, "Authentication required to fetch by slug");
+            }
+            var resolved = catalogService.resolveSlugToVersionId(identity, slug);
+            if (resolved.isEmpty()) {
+                // Same 404-style message a hidden/absent version yields; no existence disclosure.
+                return error(idNode, INVALID_PARAMS, "Skill not found for slug: " + slug);
+            }
+            versionId = resolved.get();
+        } else {
+            try {
+                versionId = UUID.fromString(versionIdRaw);
+            } catch (IllegalArgumentException e) {
+                return error(idNode, INVALID_PARAMS,
+                        "Provide skillSlug, or skillVersionId as a valid UUID");
+            }
         }
         String tool = arguments.path("tool").isMissingNode() ? null : arguments.path("tool").asText(null);
         String format = arguments.path("format").isMissingNode() ? "agent_skill"

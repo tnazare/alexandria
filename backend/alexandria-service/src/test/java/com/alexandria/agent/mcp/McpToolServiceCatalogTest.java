@@ -107,7 +107,7 @@ class McpToolServiceCatalogTest {
     void resourcesReadReturnsRenderedCatalogForAuthenticatedIdentity() {
         UUID vid = UUID.randomUUID();
         when(catalogService.catalog(any(), any(), any())).thenReturn(new CatalogResult(
-                List.of(new CatalogEntry(UUID.randomUUID(), vid, "PDF", "work with pdfs",
+                List.of(new CatalogEntry(UUID.randomUUID(), vid, "pdf-tools", "PDF", "work with pdfs",
                         "Published", "low", "organization")),
                 false, 1));
 
@@ -120,7 +120,7 @@ class McpToolServiceCatalogTest {
         assertThat(contents.get(0).path("mimeType").asText()).isEqualTo("text/markdown");
         String text = contents.get(0).path("text").asText();
         assertThat(text).contains("# Skill Catalog");
-        assertThat(text).contains(vid + ": PDF \u2014 work with pdfs");
+        assertThat(text).contains("pdf-tools: PDF \u2014 work with pdfs");
     }
 
     @Test

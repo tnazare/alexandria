@@ -10,6 +10,7 @@ import java.util.UUID;
 public record CatalogEntry(
         UUID skillId,
         UUID skillVersionId,
+        String slug,
         String name,
         String description,
         String lifecycleStatus,

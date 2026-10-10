@@ -200,6 +200,7 @@ public interface SkillResolverRepository extends JpaRepository<SkillEntity, UUID
     @Query(value = """
         SELECT s.id AS skillId,
                s.current_version_id AS skillVersionId,
+               s.slug AS slug,
                s.name AS name,
                s.description AS description,
                s.lifecycle_status AS lifecycleStatus,
