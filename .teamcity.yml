@@ -1,0 +1,107 @@
+jobs:
+  Job1:
+    name: Java Compile
+    steps:
+      - type: maven
+        name: Backend compile
+        goals: compile
+        pom-location: backend/pom.xml
+        runner-arguments: -B -pl alexandria-api,alexandria-entities,alexandria-service -am
+        maven-version: bundled-3-9
+        jdk-home: '%env.JDK_25_0%'
+    enable-dependency-cache: true
+    runs-on: Linux-Small
+  Job2:
+    name: Java Verify
+    dependencies:
+      - Job1
+    steps:
+      - type: maven
+        name: Verify
+        goals: verify
+        pom-location: backend/pom.xml
+        jdk-home: '%env.JDK_25_0%'
+    enable-dependency-cache: true
+    runs-on: self-hosted
+  Job3:
+    name: Frontend Build
+    steps:
+      - type: node-js
+        name: Build frontend
+        node-version: '22'
+        shell-script: |-
+          npm ci
+          npm run lint
+          npm run test
+          npm run build
+        working-directory: frontend
+    enable-dependency-cache: true
+    runs-on: Linux-Small
+  Job4:
+    name: Package
+    dependencies:
+      - Job2
+      - Job3
+    steps:
+      - type: maven
+        name: Package backend JAR
+        goals: package
+        pom-location: backend/pom.xml
+        runner-arguments: -B -DskipTests
+        jdk-home: '%env.JDK_25_0%'
+      - type: script
+        name: Build frontend bundle
+        script-content: |-
+          cd frontend
+          npm ci
+          npm run build
+          cd dist && zip -r ../frontend-dist.zip . && cd ..
+    files-publication:
+      - path: backend/alexandria-service/target/*.jar
+        publish-artifact: true
+      - path: frontend/frontend-dist.zip
+        publish-artifact: true
+    enable-dependency-cache: true
+    runs-on: Linux-Small
+  Job5:
+    name: Backend Image
+    dependencies:
+      - Job4
+    steps:
+      - type: script
+        name: Build and push backend image
+        script-content: |-
+          set -e
+          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
+          IMAGE=ghcr.io/tnazare/alexandria-backend
+          docker build -t "$IMAGE:%build.number%" -t "$IMAGE:latest" backend
+          if [ "%teamcity.build.branch%" = "main" ]; then
+            docker push "$IMAGE:%build.number%"
+            docker push "$IMAGE:latest"
+          else
+            echo "Not on main — skipping push"
+          fi
+          docker logout ghcr.io
+    runs-on: self-hosted
+  Job6:
+    name: Frontend Image
+    dependencies:
+      - Job4
+    steps:
+      - type: script
+        name: Build and push frontend image
+        script-content: |-
+          set -e
+          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
+          IMAGE=ghcr.io/tnazare/alexandria-frontend
+          docker build -t "$IMAGE:%build.number%" -t "$IMAGE:latest" frontend
+          if [ "%teamcity.build.branch%" = "main" ]; then
+            docker push "$IMAGE:%build.number%"
+            docker push "$IMAGE:latest"
+          else
+            echo "Not on main — skipping push"
+          fi
+          docker logout ghcr.io
+    runs-on: self-hosted
+secrets:
+  GHCR_TOKEN: credentialsJSON:d1a79813-5f3f-4590-ae4b-b4c873343637
