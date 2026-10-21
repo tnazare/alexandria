@@ -135,6 +135,10 @@ jobs:
           printf '%s\n' "%DEPLOY_SSH_KEY%" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
+          # Ensure the deploy directory exists on the VM (scp won't create it).
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "%DEPLOY_USER%@%DEPLOY_HOST%" "mkdir -p %DEPLOY_PATH%"
+
           # Copy the prod compose file to the VM, then pull + up.
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
             deploy/docker-compose.prod.yml \
