@@ -117,7 +117,7 @@ jobs:
       - Job5
       - Job6
     parameters:
-      DEPLOY_HOST: REPLACE_WITH_VM_PUBLIC_IP
+      DEPLOY_HOST: 168.138.77.174
       DEPLOY_USER: ubuntu
       DEPLOY_PATH: ~/alexandria
     steps:
