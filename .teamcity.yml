@@ -124,7 +124,7 @@ jobs:
       - type: script
         name: Deploy to Oracle VM
         script-content: |-
-          set -euo pipefail
+          set -eu
           # Guard: skip until a real deploy target is configured (Oracle VM pending).
           if [ "%DEPLOY_HOST%" = "REPLACE_WITH_VM_PUBLIC_IP" ]; then
             echo "DEPLOY_HOST not configured yet — skipping deploy (no-op)."
