@@ -1,0 +1,55 @@
+# Production compose for the Oracle VM deploy target.
+# Unlike the root docker-compose.yml (which builds from source for local dev),
+# this pulls the published GHCR images so `docker compose pull && up -d` deploys
+# the exact artifacts produced by the TeamCity pipeline.
+#
+# Image tags default to "latest"; override with ALEXANDRIA_TAG to pin a build number.
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: alexandria
+      POSTGRES_USER: alexandria
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alexandria}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alexandria"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/tnazare/alexandria-backend:${ALEXANDRIA_TAG:-latest}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alexandria
+      SPRING_DATASOURCE_USERNAME: alexandria
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-alexandria}
+      # OIDC + search config are supplied via the VM's environment / .env file.
+      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      ALEXANDRIA_SEARCH_MODE: ${ALEXANDRIA_SEARCH_MODE:-fts}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  frontend:
+    image: ghcr.io/tnazare/alexandria-frontend:${ALEXANDRIA_TAG:-latest}
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

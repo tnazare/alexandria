@@ -72,14 +72,19 @@ jobs:
         name: Build and push backend image
         script-content: |-
           set -e
-          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
           IMAGE=ghcr.io/tnazare/alexandria-backend
-          docker build -t "$IMAGE:%build.number%" -t "$IMAGE:latest" backend
+          # Enable arm64 emulation + a buildx builder (idempotent).
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+          docker buildx create --use --name alx-builder 2>/dev/null || docker buildx use alx-builder
+          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
           if [ "%teamcity.build.branch%" = "main" ]; then
-            docker push "$IMAGE:%build.number%"
-            docker push "$IMAGE:latest"
+            # Multi-arch build pushes directly (buildx can't --load multi-platform).
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t "$IMAGE:%build.number%" -t "$IMAGE:latest" \
+              --push backend
           else
-            echo "Not on main — skipping push"
+            echo "Not on main — building amd64 only, no push"
+            docker buildx build --platform linux/amd64 -t "$IMAGE:%build.number%" backend
           fi
           docker logout ghcr.io
     runs-on: self-hosted
@@ -92,16 +97,57 @@ jobs:
         name: Build and push frontend image
         script-content: |-
           set -e
-          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
           IMAGE=ghcr.io/tnazare/alexandria-frontend
-          docker build -t "$IMAGE:%build.number%" -t "$IMAGE:latest" frontend
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+          docker buildx create --use --name alx-builder 2>/dev/null || docker buildx use alx-builder
+          echo "%GHCR_TOKEN%" | docker login ghcr.io -u tnazare --password-stdin
           if [ "%teamcity.build.branch%" = "main" ]; then
-            docker push "$IMAGE:%build.number%"
-            docker push "$IMAGE:latest"
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t "$IMAGE:%build.number%" -t "$IMAGE:latest" \
+              --push frontend
           else
-            echo "Not on main — skipping push"
+            echo "Not on main — building amd64 only, no push"
+            docker buildx build --platform linux/amd64 -t "$IMAGE:%build.number%" frontend
           fi
           docker logout ghcr.io
+    runs-on: self-hosted
+  Job7:
+    name: Deploy
+    dependencies:
+      - Job5
+      - Job6
+    parameters:
+      DEPLOY_HOST: "REPLACE_WITH_VM_PUBLIC_IP"
+      DEPLOY_USER: "ubuntu"
+      DEPLOY_PATH: "~/alexandria"
+      DEPLOY_SSH_KEY: ""
+    steps:
+      - type: script
+        name: Deploy to Oracle VM
+        script-content: |
+          set -euo pipefail
+          # Guard: skip until a real deploy target is configured (Oracle VM pending).
+          if [ "%DEPLOY_HOST%" = "REPLACE_WITH_VM_PUBLIC_IP" ]; then
+            echo "DEPLOY_HOST not configured yet — skipping deploy (no-op)."
+            exit 0
+          fi
+          # SSH key comes from the DEPLOY_SSH_KEY secret.
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "%DEPLOY_SSH_KEY%" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Copy the prod compose file to the VM, then pull + up.
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            deploy/docker-compose.prod.yml \
+            "%DEPLOY_USER%@%DEPLOY_HOST%:%DEPLOY_PATH%/docker-compose.yml"
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new \
+            "%DEPLOY_USER%@%DEPLOY_HOST%" \
+            "cd %DEPLOY_PATH% && \
+             echo '%GHCR_TOKEN%' | docker login ghcr.io -u tnazare --password-stdin && \
+             ALEXANDRIA_TAG=%build.number% docker compose pull && \
+             ALEXANDRIA_TAG=%build.number% docker compose up -d && \
+             docker logout ghcr.io"
     runs-on: self-hosted
 secrets:
   GHCR_TOKEN: credentialsJSON:d1a79813-5f3f-4590-ae4b-b4c873343637
