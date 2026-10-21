@@ -150,4 +150,4 @@ jobs:
     runs-on: self-hosted
 secrets:
   GHCR_TOKEN: credentialsJSON:d1a79813-5f3f-4590-ae4b-b4c873343637
-  DEPLOY_SSH_KEY: credentialsJSON:383bfbbb-3c11-45ff-b524-f8ad54c10d11
+  DEPLOY_SSH_KEY: credentialsJSON:85275278-c6b8-4926-ab73-3706f2cafe49
