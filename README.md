@@ -1,5 +1,7 @@
 # Alexandria
 
+[![Build Status](https://tnazare.teamcity.com/app/rest/builds/buildType:(id:Alexandria_Alexandria),branch:main/statusIcon.svg)](https://tnazare.teamcity.com/buildConfiguration/Alexandria_Alexandria?branch=main)
+
 Open-source, self-hosted enterprise skill layer for AI-assisted software engineering — a governed, searchable, evidence-ranked registry of reusable AI coding workflows that organizations deploy on their own infrastructure.
 
 Alexandria works across tools: GitHub Copilot, Codex, Cursor, AWS Kiro, Claude Code, and Sourcegraph Cody.
