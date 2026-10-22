@@ -1,10 +1,45 @@
 # Production compose for the Oracle VM deploy target.
-# Unlike the root docker-compose.yml (which builds from source for local dev),
-# this pulls the published GHCR images so `docker compose pull && up -d` deploys
+# Pulls the published GHCR images so `docker compose pull && up -d` deploys
 # the exact artifacts produced by the TeamCity pipeline.
+#
+# OIDC: this demo deployment uses the mock-oauth2-server (same as local dev)
+# so the backend can boot without a real IdP. For a real deployment, remove
+# the oidc service, drop SPRING_SECURITY_..._JWK_SET_URI, and set
+# OIDC_ISSUER_URI / OIDC_CLIENT_ID to a real provider.
 #
 # Image tags default to "latest"; override with ALEXANDRIA_TAG to pin a build number.
 services:
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    environment:
+      SERVER_PORT: 9000
+      JSON_CONFIG: >
+        {
+          "interactiveLogin": true,
+          "httpServer": "NettyWrapper",
+          "tokenCallbacks": [
+            {
+              "issuerId": "alexandria",
+              "tokenExpiry": 3600,
+              "requestMappings": [
+                {
+                  "requestParam": "scope",
+                  "match": "*",
+                  "claims": {
+                    "sub": "dev-user-001",
+                    "email": "dev@alexandria.local",
+                    "email_verified": true,
+                    "name": "Dev User",
+                    "preferred_username": "dev@alexandria.local",
+                    "alexandria_role": "Org_Admin"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+    restart: unless-stopped
+
   postgres:
     image: pgvector/pgvector:pg16
     environment:
@@ -29,13 +64,17 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/alexandria
       SPRING_DATASOURCE_USERNAME: alexandria
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-alexandria}
-      # OIDC + search config are supplied via the VM's environment / .env file.
-      OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:-}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      # Validate tokens via the mock server's JWK set (avoids issuer-location lookup).
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://oidc:9000/alexandria/jwks
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ""
+      OIDC_ISSUER_URI: http://oidc:9000/alexandria
+      OIDC_CLIENT_ID: alexandria-client
       ALEXANDRIA_SEARCH_MODE: ${ALEXANDRIA_SEARCH_MODE:-fts}
     depends_on:
       postgres:
         condition: service_healthy
+      oidc:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
