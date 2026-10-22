@@ -130,6 +130,11 @@ jobs:
             echo "DEPLOY_HOST not configured yet — skipping deploy (no-op)."
             exit 0
           fi
+          # Guard: only deploy from the main branch (never from feature branches/PRs).
+          if [ "%teamcity.build.branch%" != "main" ]; then
+            echo "Branch is %teamcity.build.branch%, not main — skipping deploy (no-op)."
+            exit 0
+          fi
           # SSH key comes from the DEPLOY_SSH_KEY secret.
           install -m 700 -d ~/.ssh
           printf '%s\n' "%DEPLOY_SSH_KEY%" > ~/.ssh/deploy_key
