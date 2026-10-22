@@ -387,5 +387,3 @@ Cloudflare Tunnel is itself a strong diary story (secrets, SSH deploy, zero open
    so avoid it if "free" is a hard requirement.
 6. **Cloudflare Access vs MCP** — do NOT put interactive Access on `/api/agent/v1/mcp`;
    it breaks non-interactive agent clients. Scope Access to human paths only.
-
-<!-- CI dry run: Session 6 branch build test -->
