@@ -24,7 +24,7 @@ jobs:
     enable-dependency-cache: true
     runs-on: self-hosted
   Job9:
-    name: Java Verify
+    name: Java Verify on the cloud
     dependencies:
       - Job1
     steps:
