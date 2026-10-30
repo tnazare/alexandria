@@ -23,6 +23,18 @@ jobs:
         jdk-home: '%env.JDK_25_0%'
     enable-dependency-cache: true
     runs-on: self-hosted
+  Job9:
+    name: Java Verify
+    dependencies:
+      - Job1
+    steps:
+      - type: maven
+        name: Verify
+        goals: verify
+        pom-location: backend/pom.xml
+        jdk-home: '%env.JDK_25_0%'
+    enable-dependency-cache: true
+    runs-on: Linux-Small
   Job3:
     name: Frontend Build
     steps:
